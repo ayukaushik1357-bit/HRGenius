@@ -1,0 +1,94 @@
+<div class="login-wrapper">
+  <div class="login-brand-panel">
+    <div class="brand-header">
+      <div class="brand-icon">
+        <mat-icon>corporate_fare</mat-icon>
+      </div>
+      <h1>HRGenius</h1>
+    </div>
+    <p class="tagline">The complete enterprise human resources management platform</p>
+
+    <div class="features-list">
+      <div class="feature-item">
+        <mat-icon>security</mat-icon>
+        <div>
+          <h4>Role-Based Access</h4>
+          <p>Strict permission boundaries across Admin, HR, Manager, and Employee roles.</p>
+        </div>
+      </div>
+      <div class="feature-item">
+        <mat-icon>badge</mat-icon>
+        <div>
+          <h4>Employee Records</h4>
+          <p>Lifecycle tracking from onboarding to notice period with document storage.</p>
+        </div>
+      </div>
+      <div class="feature-item">
+        <mat-icon>token</mat-icon>
+        <div>
+          <h4>Zero-Trust Token Security</h4>
+          <p>Access tokens kept in-memory with HttpOnly Strict cookie refresh rotation.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="login-form-panel">
+    <div class="form-container">
+      <div class="form-header">
+        <h2>Sign In</h2>
+        <p>Enter your corporate credentials to continue</p>
+      </div>
+
+      @if (errorMessage) {
+        <div class="alert-danger">
+          <mat-icon>error_outline</mat-icon>
+          <span>{{ errorMessage }}</span>
+        </div>
+      }
+
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+        <mat-form-field appearance="outline" class="w-full">
+          <mat-label>Username</mat-label>
+          <input matInput formControlName="username" placeholder="e.g. admin" autocomplete="username">
+          <mat-icon matPrefix>person</mat-icon>
+          @if (loginForm.get('username')?.hasError('required') && loginForm.get('username')?.touched) {
+            <mat-error>Username is required</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="w-full">
+          <mat-label>Password</mat-label>
+          <input matInput [type]="hidePassword ? 'password' : 'text'" formControlName="password" autocomplete="current-password">
+          <mat-icon matPrefix>lock</mat-icon>
+          <button mat-icon-button matSuffix (click)="hidePassword = !hidePassword" type="button">
+            <mat-icon>{{ hidePassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+          </button>
+          @if (loginForm.get('password')?.hasError('required') && loginForm.get('password')?.touched) {
+            <mat-error>Password is required</mat-error>
+          }
+        </mat-form-field>
+
+        <button mat-flat-button color="primary" type="submit" class="submit-btn" [disabled]="isLoading">
+          @if (isLoading) {
+            <mat-spinner diameter="20" class="btn-spinner"></mat-spinner>
+            <span>Signing in...</span>
+          } @else {
+            <span>Sign In to HRGenius &rarr;</span>
+          }
+        </button>
+      </form>
+
+      <div class="demo-box">
+        <div class="demo-header">
+          <mat-icon>info</mat-icon>
+          <span>Demo Credentials</span>
+        </div>
+        <div class="demo-body">
+          <p><b>Username:</b> admin &nbsp;|&nbsp; <b>Password:</b> Admin&#64;123</p>
+          <button mat-stroked-button (click)="fillAdmin()" type="button" class="mt-2">Use Admin Credentials</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,206 @@
+<div class="page-container" *ngIf="employee">
+  <!-- Top Navigation & Action -->
+  <div class="profile-top-actions">
+    <a mat-button routerLink="/employees" class="back-link">
+      <mat-icon>arrow_back</mat-icon>
+      <span>Back to Employee List</span>
+    </a>
+
+    @if (isAdminOrHr) {
+      <div class="action-buttons">
+        <a mat-flat-button color="primary" [routerLink]="['/employees', employee.id, 'edit']">
+          <mat-icon>edit</mat-icon>
+          <span>Edit Profile</span>
+        </a>
+      </div>
+    }
+  </div>
+
+  <!-- Profile Hero Header -->
+  <mat-card class="hero-card">
+    <div class="hero-content">
+      <div class="avatar-hero">
+        {{ employee.firstName.charAt(0) }}{{ employee.lastName.charAt(0) }}
+      </div>
+
+      <div class="hero-details">
+        <div class="name-status-row">
+          <h2>{{ employee.firstName }} {{ employee.lastName }}</h2>
+          <span class="badge" [ngClass]="getStatusClass(employee.status)">{{ employee.status }}</span>
+        </div>
+
+        <div class="badges-row">
+          <span class="code-pill">{{ employee.employeeCode }}</span>
+          <span class="meta-tag"><mat-icon>domain</mat-icon> {{ employee.departmentName || 'No Department' }}</span>
+          <span class="meta-tag"><mat-icon>badge</mat-icon> {{ employee.designationTitle || 'No Designation' }}</span>
+          <span class="meta-tag"><mat-icon>mail</mat-icon> {{ employee.email }}</span>
+          @if (employee.phone) {
+            <span class="meta-tag"><mat-icon>phone</mat-icon> {{ employee.phone }}</span>
+          }
+        </div>
+      </div>
+    </div>
+  </mat-card>
+
+  <!-- Profile Content Tabs -->
+  <mat-card class="tabs-card">
+    <mat-tab-group animationDuration="200ms">
+      <!-- TAB 1: General & Job Details -->
+      <mat-tab label="Overview & Job">
+        <div class="tab-content">
+          <div class="info-columns">
+            <div class="info-group">
+              <h3>Employment Information</h3>
+              <div class="info-row">
+                <span class="label">Employment Type:</span>
+                <span class="value">{{ employee.employmentType }}</span>
+              </div>
+              <div class="info-row">
+                <span class="label">Date of Joining:</span>
+                <span class="value">{{ employee.joiningDate }}</span>
+              </div>
+              <div class="info-row">
+                <span class="label">Reporting Manager:</span>
+                <span class="value">{{ employee.reportingManagerName || 'None (Direct Report / Executive)' }}</span>
+              </div>
+              <div class="info-row">
+                <span class="label">Annual CTC:</span>
+                <span class="value highlight-val">{{ employee.salaryCTC ? ('$' + (employee.salaryCTC | number:'1.2-2')) : 'Confidential' }}</span>
+              </div>
+            </div>
+
+            <div class="info-group">
+              <h3>Personal Details</h3>
+              <div class="info-row">
+                <span class="label">Date of Birth:</span>
+                <span class="value">{{ employee.dateOfBirth || 'Not provided' }}</span>
+              </div>
+              <div class="info-row">
+                <span class="label">Gender:</span>
+                <span class="value">{{ employee.gender || 'Not specified' }}</span>
+              </div>
+              <div class="info-row">
+                <span class="label">Audit Created By:</span>
+                <span class="value">{{ employee.createdBy }} ({{ employee.createdAt | date:'medium' }})</span>
+              </div>
+              <div class="info-row">
+                <span class="label">Last Updated:</span>
+                <span class="value">{{ employee.updatedBy || '—' }} ({{ employee.updatedAt | date:'medium' }})</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </mat-tab>
+
+      <!-- TAB 2: Addresses & Emergency Contacts -->
+      <mat-tab label="Addresses & Contacts">
+        <div class="tab-content">
+          <div class="info-columns">
+            <div class="info-group">
+              <h3>Addresses</h3>
+              @if (employee.addresses && employee.addresses.length > 0) {
+                @for (addr of employee.addresses; track addr.id) {
+                  <div class="sub-card">
+                    <span class="badge badge-info">{{ addr.addressType }}</span>
+                    <p class="mt-2"><b>{{ addr.line1 }}</b></p>
+                    @if (addr.line2) { <p>{{ addr.line2 }}</p> }
+                    <p>{{ addr.city }}, {{ addr.state }} {{ addr.zipCode }}</p>
+                    <p>{{ addr.country }}</p>
+                  </div>
+                }
+              } @else {
+                <p class="text-muted">No address details registered.</p>
+              }
+            </div>
+
+            <div class="info-group">
+              <h3>Emergency Contacts</h3>
+              @if (employee.emergencyContacts && employee.emergencyContacts.length > 0) {
+                @for (contact of employee.emergencyContacts; track contact.id) {
+                  <div class="sub-card">
+                    <div class="contact-header">
+                      <mat-icon color="warn">contact_phone</mat-icon>
+                      <div>
+                        <h4>{{ contact.name }}</h4>
+                        <span class="text-muted">{{ contact.relationship }}</span>
+                      </div>
+                    </div>
+                    <p class="contact-phone"><mat-icon>phone</mat-icon> {{ contact.phone }}</p>
+                  </div>
+                }
+              } @else {
+                <p class="text-muted">No emergency contacts registered.</p>
+              }
+            </div>
+          </div>
+        </div>
+      </mat-tab>
+
+      <!-- TAB 3: Documents Upload & Management -->
+      <mat-tab label="Documents ({{ documents.length }})">
+        <div class="tab-content">
+          @if (isAdminOrHr) {
+            <!-- Upload Box -->
+            <div class="upload-box">
+              <h3>Upload Employee Document</h3>
+              <p class="text-muted">Upload verifiable credentials (ID proof, offer letter, certificates)</p>
+
+              <div class="upload-controls">
+                <mat-form-field appearance="outline" class="doc-type-select">
+                  <mat-label>Document Type</mat-label>
+                  <mat-select [(ngModel)]="selectedDocType">
+                    <mat-option value="ID_PROOF">ID Proof</mat-option>
+                    <mat-option value="OFFER_LETTER">Offer Letter</mat-option>
+                    <mat-option value="RESUME">Resume</mat-option>
+                    <mat-option value="OTHER">Other</mat-option>
+                  </mat-select>
+                </mat-form-field>
+
+                <input type="file" id="fileUploadInput" (change)="onFileSelected($event)" class="file-input">
+
+                <button mat-flat-button color="primary" (click)="uploadDocument()" [disabled]="!selectedFile || isUploading">
+                  <mat-icon>cloud_upload</mat-icon>
+                  <span>{{ isUploading ? 'Uploading...' : 'Upload File' }}</span>
+                </button>
+              </div>
+            </div>
+          }
+
+          <!-- Document List -->
+          <div class="documents-grid mt-4">
+            @for (doc of documents; track doc.id) {
+              <div class="document-item">
+                <div class="doc-icon">
+                  <mat-icon>description</mat-icon>
+                </div>
+                <div class="doc-details">
+                  <span class="doc-name" [matTooltip]="doc.originalFileName">{{ doc.originalFileName }}</span>
+                  <div class="doc-meta">
+                    <span class="badge badge-primary">{{ doc.documentType }}</span>
+                    <span>{{ formatFileSize(doc.fileSize) }}</span>
+                    <span>{{ doc.uploadedAt | date:'shortDate' }}</span>
+                  </div>
+                </div>
+                <div class="doc-actions">
+                  <button mat-icon-button (click)="downloadDocument(doc)" matTooltip="Download file">
+                    <mat-icon color="primary">download</mat-icon>
+                  </button>
+                  @if (isAdminOrHr) {
+                    <button mat-icon-button (click)="deleteDocument(doc.id)" matTooltip="Delete" color="warn">
+                      <mat-icon>delete</mat-icon>
+                    </button>
+                  }
+                </div>
+              </div>
+            } @empty {
+              <div class="empty-state">
+                <mat-icon>folder_open</mat-icon>
+                <p>No documents uploaded for this employee yet</p>
+              </div>
+            }
+          </div>
+        </div>
+      </mat-tab>
+    </mat-tab-group>
+  </mat-card>
+</div>

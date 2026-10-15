@@ -1,0 +1,83 @@
+<div class="layout-container">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="brand-section">
+      <div class="logo-mark">
+        <mat-icon>corporate_fare</mat-icon>
+      </div>
+      <div class="brand-text">
+        <span class="brand-name">HRGenius</span>
+        <span class="brand-tagline">Enterprise Suite</span>
+      </div>
+    </div>
+
+    <nav class="nav-links">
+      <div class="nav-section-label">PEOPLE & ORGANIZATION</div>
+
+      <a mat-list-item routerLink="/employees" routerLinkActive="active" class="nav-item">
+        <mat-icon>people_alt</mat-icon>
+        <span class="nav-text">Employees</span>
+      </a>
+
+      @if (isAdminOrHr) {
+        <a mat-list-item routerLink="/departments" routerLinkActive="active" class="nav-item">
+          <mat-icon>domain</mat-icon>
+          <span class="nav-text">Departments</span>
+        </a>
+
+        <a mat-list-item routerLink="/designations" routerLinkActive="active" class="nav-item">
+          <mat-icon>badge</mat-icon>
+          <span class="nav-text">Designations</span>
+        </a>
+      }
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-brief">
+        <div class="avatar-circle">{{ username.charAt(0).toUpperCase() }}</div>
+        <div class="user-details">
+          <span class="user-name">{{ username }}</span>
+          <span class="user-role">{{ userRoleDisplay }}</span>
+        </div>
+      </div>
+      <button mat-icon-button (click)="logout()" matTooltip="Sign Out" class="logout-btn">
+        <mat-icon>logout</mat-icon>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main Content Area -->
+  <div class="main-wrapper">
+    <header class="topbar">
+      <div class="topbar-left">
+        <span class="page-context">HR Management System</span>
+      </div>
+
+      <div class="topbar-right">
+        <span class="badge badge-primary">{{ userRoleDisplay }}</span>
+
+        <button mat-button [matMenuTriggerFor]="userMenu" class="user-menu-trigger">
+          <div class="avatar-sm">{{ username.charAt(0).toUpperCase() }}</div>
+          <span>{{ username }}</span>
+          <mat-icon>expand_more</mat-icon>
+        </button>
+
+        <mat-menu #userMenu="matMenu" xPosition="before">
+          <button mat-menu-item disabled>
+            <mat-icon>account_circle</mat-icon>
+            <span>Signed in as <b>{{ username }}</b></span>
+          </button>
+          <mat-divider></mat-divider>
+          <button mat-menu-item (click)="logout()">
+            <mat-icon>logout</mat-icon>
+            <span>Sign Out</span>
+          </button>
+        </mat-menu>
+      </div>
+    </header>
+
+    <main class="content-body">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</div>

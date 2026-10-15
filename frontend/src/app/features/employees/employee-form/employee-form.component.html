@@ -1,0 +1,240 @@
+<div class="page-container">
+  <div class="page-header">
+    <div class="header-left">
+      <div class="breadcrumb">
+        <a routerLink="/employees">Employees</a>
+        <mat-icon>chevron_right</mat-icon>
+        <span>{{ isEditMode ? 'Edit Employee' : 'New Employee' }}</span>
+      </div>
+      <h1 class="page-title">{{ isEditMode ? 'Update Employee Record' : 'Onboard New Employee' }}</h1>
+    </div>
+
+    <div class="header-right">
+      <a mat-stroked-button routerLink="/employees">Cancel</a>
+      <button mat-flat-button color="primary" (click)="onSubmit()" [disabled]="isLoading">
+        <mat-icon>save</mat-icon>
+        <span>{{ isEditMode ? 'Save Changes' : 'Create Employee' }}</span>
+      </button>
+    </div>
+  </div>
+
+  <form [formGroup]="employeeForm" (ngSubmit)="onSubmit()" class="form-layout">
+    <!-- Basic Information Card -->
+    <mat-card class="section-card">
+      <div class="section-header">
+        <mat-icon>badge</mat-icon>
+        <div>
+          <h3>Basic & Personal Details</h3>
+          <p>Core identity and communication details</p>
+        </div>
+      </div>
+
+      <div class="form-grid">
+        <mat-form-field appearance="outline">
+          <mat-label>First Name</mat-label>
+          <input matInput formControlName="firstName" placeholder="John">
+          @if (employeeForm.get('firstName')?.hasError('required') && employeeForm.get('firstName')?.touched) {
+            <mat-error>First name is required</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Last Name</mat-label>
+          <input matInput formControlName="lastName" placeholder="Doe">
+          @if (employeeForm.get('lastName')?.hasError('required') && employeeForm.get('lastName')?.touched) {
+            <mat-error>Last name is required</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Email Address</mat-label>
+          <input matInput type="email" formControlName="email" placeholder="john.doe@company.com">
+          @if (employeeForm.get('email')?.hasError('required') && employeeForm.get('email')?.touched) {
+            <mat-error>Email is required</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Phone Number</mat-label>
+          <input matInput formControlName="phone" placeholder="+1 (555) 000-0000">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Date of Birth</mat-label>
+          <input matInput type="date" formControlName="dateOfBirth">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Gender</mat-label>
+          <mat-select formControlName="gender">
+            <mat-option value="MALE">Male</mat-option>
+            <mat-option value="FEMALE">Female</mat-option>
+            <mat-option value="OTHER">Other</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+    </mat-card>
+
+    <!-- Employment Details Card -->
+    <mat-card class="section-card">
+      <div class="section-header">
+        <mat-icon>work</mat-icon>
+        <div>
+          <h3>Employment & Position</h3>
+          <p>Department, designation, hierarchy and compensation</p>
+        </div>
+      </div>
+
+      <div class="form-grid">
+        <mat-form-field appearance="outline">
+          <mat-label>Joining Date</mat-label>
+          <input matInput type="date" formControlName="joiningDate">
+          @if (employeeForm.get('joiningDate')?.hasError('required') && employeeForm.get('joiningDate')?.touched) {
+            <mat-error>Joining date is required</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Department</mat-label>
+          <mat-select formControlName="departmentId">
+            <mat-option [value]="null">None</mat-option>
+            @for (dept of departments; track dept.id) {
+              <mat-option [value]="dept.id">{{ dept.name }} ({{ dept.code }})</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Designation / Role</mat-label>
+          <mat-select formControlName="designationId">
+            <mat-option [value]="null">None</mat-option>
+            @for (desig of designations; track desig.id) {
+              <mat-option [value]="desig.id">{{ desig.title }} (Level {{ desig.level }})</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Reporting Manager</mat-label>
+          <mat-select formControlName="reportingManagerId">
+            <mat-option [value]="null">No Manager (Top-level)</mat-option>
+            @for (mgr of managers; track mgr.id) {
+              <mat-option [value]="mgr.id">{{ mgr.firstName }} {{ mgr.lastName }} ({{ mgr.employeeCode }})</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Employment Type</mat-label>
+          <mat-select formControlName="employmentType">
+            <mat-option value="FULL_TIME">Full Time</mat-option>
+            <mat-option value="PART_TIME">Part Time</mat-option>
+            <mat-option value="CONTRACT">Contract</mat-option>
+            <mat-option value="INTERN">Intern</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Employee Status</mat-label>
+          <mat-select formControlName="status">
+            <mat-option value="ACTIVE">Active</mat-option>
+            <mat-option value="ON_NOTICE">On Notice</mat-option>
+            <mat-option value="EXITED">Exited</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Annual CTC Salary ($)</mat-label>
+          <input matInput type="number" formControlName="salaryCTC" placeholder="e.g. 95000">
+        </mat-form-field>
+      </div>
+    </mat-card>
+
+    <!-- Address Card -->
+    <mat-card class="section-card">
+      <div class="section-header">
+        <mat-icon>home</mat-icon>
+        <div>
+          <h3>Address Details</h3>
+          <p>Residential location information</p>
+        </div>
+      </div>
+
+      <div class="form-grid">
+        <mat-form-field appearance="outline" class="col-span-2">
+          <mat-label>Street Address Line 1</mat-label>
+          <input matInput formControlName="line1" placeholder="123 Innovation Way, Apt 4B">
+          @if (employeeForm.get('line1')?.hasError('required') && employeeForm.get('line1')?.touched) {
+            <mat-error>Address line 1 is required</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>City</mat-label>
+          <input matInput formControlName="city" placeholder="San Francisco">
+          @if (employeeForm.get('city')?.hasError('required') && employeeForm.get('city')?.touched) {
+            <mat-error>City is required</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>State / Province</mat-label>
+          <input matInput formControlName="state" placeholder="California">
+          @if (employeeForm.get('state')?.hasError('required') && employeeForm.get('state')?.touched) {
+            <mat-error>State is required</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Country</mat-label>
+          <input matInput formControlName="country" placeholder="United States">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Zip / Postal Code</mat-label>
+          <input matInput formControlName="zipCode" placeholder="94105">
+          @if (employeeForm.get('zipCode')?.hasError('required') && employeeForm.get('zipCode')?.touched) {
+            <mat-error>Zip code is required</mat-error>
+          }
+        </mat-form-field>
+      </div>
+    </mat-card>
+
+    <!-- Emergency Contact Card -->
+    <mat-card class="section-card">
+      <div class="section-header">
+        <mat-icon>contact_emergency</mat-icon>
+        <div>
+          <h3>Emergency Contact</h3>
+          <p>Person to notify in case of workplace emergencies</p>
+        </div>
+      </div>
+
+      <div class="form-grid">
+        <mat-form-field appearance="outline">
+          <mat-label>Contact Person Name</mat-label>
+          <input matInput formControlName="contactName" placeholder="Jane Doe">
+          @if (employeeForm.get('contactName')?.hasError('required') && employeeForm.get('contactName')?.touched) {
+            <mat-error>Contact name is required</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Relationship</mat-label>
+          <input matInput formControlName="relationship" placeholder="Spouse / Parent / Sibling">
+          @if (employeeForm.get('relationship')?.hasError('required') && employeeForm.get('relationship')?.touched) {
+            <mat-error>Relationship is required</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Contact Phone</mat-label>
+          <input matInput formControlName="contactPhone" placeholder="+1 (555) 999-8888">
+          @if (employeeForm.get('contactPhone')?.hasError('required') && employeeForm.get('contactPhone')?.touched) {
+            <mat-error>Contact phone is required</mat-error>
+          }
+        </mat-form-field>
+      </div>
+    </mat-card>
+  </form>
+</div>

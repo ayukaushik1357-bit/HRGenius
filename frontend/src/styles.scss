@@ -1,0 +1,150 @@
+/* ==============================================================
+   HRGenius Design System & Material Theme
+   ============================================================== */
+@use '@angular/material' as mat;
+
+@include mat.core();
+
+$hr-primary: mat.m2-define-palette(mat.$m2-indigo-palette, 600, 400, 800);
+$hr-accent: mat.m2-define-palette(mat.$m2-cyan-palette, 600, 400, 800);
+$hr-warn: mat.m2-define-palette(mat.$m2-red-palette);
+
+$hr-theme: mat.m2-define-light-theme((
+  color: (
+    primary: $hr-primary,
+    accent: $hr-accent,
+    warn: $hr-warn,
+  ),
+  typography: mat.m2-define-typography-config(
+    $font-family: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+  ),
+  density: 0,
+));
+
+@include mat.all-component-themes($hr-theme);
+
+:root {
+  --primary-color: #4f46e5;
+  --primary-light: #6366f1;
+  --primary-dark: #3730a3;
+  --primary-bg: #eef2ff;
+
+  --accent-color: #06b6d4;
+  --success-color: #10b981;
+  --warning-color: #f59e0b;
+  --danger-color: #ef4444;
+
+  --bg-page: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-card: #ffffff;
+
+  --text-main: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+
+  --border-light: #e2e8f0;
+  --border-focus: #6366f1;
+
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+  --shadow-glow: 0 10px 25px -5px rgba(79, 70, 229, 0.25);
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: var(--bg-page);
+  color: var(--text-main);
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--primary-color);
+  text-decoration: none;
+  transition: color 0.15s ease-in-out;
+  &:hover {
+    color: var(--primary-dark);
+  }
+}
+
+/* Material component overrides for modern look */
+.mat-mdc-card {
+  border-radius: var(--radius-md) !important;
+  border: 1px solid var(--border-light) !important;
+  box-shadow: var(--shadow-sm) !important;
+  background-color: var(--bg-card) !important;
+}
+
+.mat-mdc-button-base {
+  border-radius: var(--radius-sm) !important;
+  font-weight: 500 !important;
+  letter-spacing: normal !important;
+}
+
+.mat-mdc-table {
+  background: transparent !important;
+}
+
+.mat-mdc-header-cell {
+  font-weight: 600 !important;
+  color: var(--text-secondary) !important;
+  text-transform: uppercase;
+  font-size: 0.75rem !important;
+  letter-spacing: 0.05em;
+  border-bottom-color: var(--border-light) !important;
+}
+
+.mat-mdc-cell {
+  color: var(--text-main) !important;
+  border-bottom-color: var(--border-light) !important;
+  font-size: 0.875rem !important;
+}
+
+.mat-mdc-row:hover {
+  background-color: #f1f5f9 !important;
+}
+
+/* Utility Badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.025em;
+
+  &.badge-success {
+    background-color: #d1fae5;
+    color: #065f46;
+  }
+  &.badge-warning {
+    background-color: #fef3c7;
+    color: #92400e;
+  }
+  &.badge-danger {
+    background-color: #fee2e2;
+    color: #991b1b;
+  }
+  &.badge-info {
+    background-color: #e0f2fe;
+    color: #075985;
+  }
+  &.badge-primary {
+    background-color: var(--primary-bg);
+    color: var(--primary-dark);
+  }
+}

@@ -1,0 +1,146 @@
+.page-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  .page-title {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--text-main);
+    letter-spacing: -0.02em;
+    margin-bottom: 4px;
+  }
+
+  .page-subtitle {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+  }
+
+  .add-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    height: 42px;
+    padding: 0 18px;
+    background: var(--primary-color) !important;
+    color: white !important;
+  }
+}
+
+.filter-card {
+  padding: 18px 20px;
+
+  .filter-grid {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+
+    .filter-field {
+      flex: 1;
+      min-width: 200px;
+      margin-bottom: -1.25em; // Material form field baseline alignment
+    }
+
+    .filter-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+  }
+}
+
+.table-card {
+  padding: 0;
+  overflow: hidden;
+  position: relative;
+
+  .loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+  }
+
+  .table-responsive {
+    overflow-x: auto;
+  }
+
+  .code-badge {
+    font-family: monospace;
+    font-weight: 600;
+    font-size: 0.82rem;
+    padding: 3px 8px;
+    background: #f1f5f9;
+    border-radius: var(--radius-sm);
+    color: #334155;
+  }
+
+  .name-cell {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    .avatar-table {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #e0e7ff, #c7d2fe);
+      color: #3730a3;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.75rem;
+    }
+
+    .name-info {
+      display: flex;
+      flex-direction: column;
+
+      .full-name {
+        font-weight: 600;
+        color: var(--text-main);
+      }
+      .phone-sub {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+      }
+    }
+  }
+
+  .text-right {
+    text-align: right;
+  }
+
+  .empty-cell {
+    padding: 40px !important;
+  }
+
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    gap: 8px;
+
+    mat-icon {
+      font-size: 40px;
+      width: 40px;
+      height: 40px;
+    }
+  }
+}

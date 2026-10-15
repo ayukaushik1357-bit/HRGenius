@@ -1,0 +1,59 @@
+import { Routes } from '@angular/router';
+import { authGuard } from './core/guards/auth.guard';
+import { roleGuard } from './core/guards/role.guard';
+import { MainLayoutComponent } from './layout/main-layout/main-layout.component';
+
+export const routes: Routes = [
+  {
+    path: 'auth/login',
+    loadComponent: () => import('./features/auth/login/login.component').then(m => m.LoginComponent)
+  },
+  {
+    path: '',
+    component: MainLayoutComponent,
+    canActivate: [authGuard],
+    children: [
+      {
+        path: '',
+        pathMatch: 'full',
+        redirectTo: 'employees'
+      },
+      {
+        path: 'employees',
+        loadComponent: () => import('./features/employees/employee-list/employee-list.component').then(m => m.EmployeeListComponent)
+      },
+      {
+        path: 'employees/new',
+        loadComponent: () => import('./features/employees/employee-form/employee-form.component').then(m => m.EmployeeFormComponent),
+        canActivate: [roleGuard],
+        data: { roles: ['ADMIN', 'HR_MANAGER'] }
+      },
+      {
+        path: 'employees/:id',
+        loadComponent: () => import('./features/employees/employee-profile/employee-profile.component').then(m => m.EmployeeProfileComponent)
+      },
+      {
+        path: 'employees/:id/edit',
+        loadComponent: () => import('./features/employees/employee-form/employee-form.component').then(m => m.EmployeeFormComponent),
+        canActivate: [roleGuard],
+        data: { roles: ['ADMIN', 'HR_MANAGER'] }
+      },
+      {
+        path: 'departments',
+        loadComponent: () => import('./features/departments/department-list/department-list.component').then(m => m.DepartmentListComponent),
+        canActivate: [roleGuard],
+        data: { roles: ['ADMIN', 'HR_MANAGER'] }
+      },
+      {
+        path: 'designations',
+        loadComponent: () => import('./features/designations/designation-list/designation-list.component').then(m => m.DesignationListComponent),
+        canActivate: [roleGuard],
+        data: { roles: ['ADMIN', 'HR_MANAGER'] }
+      }
+    ]
+  },
+  {
+    path: '**',
+    redirectTo: 'employees'
+  }
+];

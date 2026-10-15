@@ -1,0 +1,29 @@
+# ==============================================================
+# HRGenius Root .gitignore
+# ==============================================================
+
+# Backend (Maven & Java)
+backend/target/
+backend/*.jar
+backend/*.war
+backend/uploads/
+backend/.flattened-pom.xml
+
+# Frontend (Node & Angular)
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+frontend/npm-debug.log
+frontend/yarn-error.log
+
+# IDE & OS files
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

@@ -1,0 +1,169 @@
+<div class="page-container">
+  <!-- Header with Page Title and Quick Action -->
+  <div class="page-header">
+    <div class="header-left">
+      <h1 class="page-title">Employees</h1>
+      <p class="page-subtitle">Manage corporate personnel records, roles, and profiles</p>
+    </div>
+
+    @if (isAdminOrHr) {
+      <div class="header-right">
+        <a mat-flat-button color="primary" routerLink="/employees/new" class="add-btn">
+          <mat-icon>person_add</mat-icon>
+          <span>Add Employee</span>
+        </a>
+      </div>
+    }
+  </div>
+
+  <!-- Filters Card -->
+  <mat-card class="filter-card">
+    <div class="filter-grid">
+      <mat-form-field appearance="outline" class="filter-field">
+        <mat-label>Search by Name</mat-label>
+        <input matInput [(ngModel)]="searchName" (keyup.enter)="onFilterChange()" placeholder="e.g. John Doe">
+        <mat-icon matPrefix>search</mat-icon>
+        @if (searchName) {
+          <button mat-icon-button matSuffix (click)="searchName = ''; onFilterChange()">
+            <mat-icon>close</mat-icon>
+          </button>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="filter-field">
+        <mat-label>Department</mat-label>
+        <mat-select [(ngModel)]="selectedDepartmentId" (selectionChange)="onFilterChange()">
+          <mat-option [value]="undefined">All Departments</mat-option>
+          @for (dept of departments; track dept.id) {
+            <mat-option [value]="dept.id">{{ dept.name }}</mat-option>
+          }
+        </mat-select>
+        <mat-icon matPrefix>domain</mat-icon>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="filter-field">
+        <mat-label>Status</mat-label>
+        <mat-select [(ngModel)]="selectedStatus" (selectionChange)="onFilterChange()">
+          <mat-option value="">All Statuses</mat-option>
+          <mat-option value="ACTIVE">Active</mat-option>
+          <mat-option value="ON_NOTICE">On Notice</mat-option>
+          <mat-option value="EXITED">Exited</mat-option>
+        </mat-select>
+        <mat-icon matPrefix>flag</mat-icon>
+      </mat-form-field>
+
+      <div class="filter-actions">
+        <button mat-flat-button color="primary" (click)="onFilterChange()">Apply</button>
+        <button mat-stroked-button (click)="resetFilters()">Reset</button>
+      </div>
+    </div>
+  </mat-card>
+
+  <!-- Table Card -->
+  <mat-card class="table-card">
+    @if (isLoading) {
+      <div class="loading-overlay">
+        <mat-spinner diameter="40"></mat-spinner>
+      </div>
+    }
+
+    <div class="table-responsive">
+      <table mat-table [dataSource]="employees" class="w-full">
+        <!-- Code Column -->
+        <ng-container matColumnDef="code">
+          <th mat-header-cell *matHeaderCellDef>Emp Code</th>
+          <td mat-cell *matCellDef="let emp">
+            <span class="code-badge">{{ emp.employeeCode }}</span>
+          </td>
+        </ng-container>
+
+        <!-- Name Column -->
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef>Name</th>
+          <td mat-cell *matCellDef="let emp">
+            <div class="name-cell">
+              <div class="avatar-table">{{ emp.firstName.charAt(0) }}{{ emp.lastName.charAt(0) }}</div>
+              <div class="name-info">
+                <span class="full-name">{{ emp.firstName }} {{ emp.lastName }}</span>
+                <span class="phone-sub">{{ emp.phone || 'No phone' }}</span>
+              </div>
+            </div>
+          </td>
+        </ng-container>
+
+        <!-- Email Column -->
+        <ng-container matColumnDef="email">
+          <th mat-header-cell *matHeaderCellDef>Email</th>
+          <td mat-cell *matCellDef="let emp">{{ emp.email }}</td>
+        </ng-container>
+
+        <!-- Department Column -->
+        <ng-container matColumnDef="department">
+          <th mat-header-cell *matHeaderCellDef>Department</th>
+          <td mat-cell *matCellDef="let emp">{{ emp.departmentName || '—' }}</td>
+        </ng-container>
+
+        <!-- Designation Column -->
+        <ng-container matColumnDef="designation">
+          <th mat-header-cell *matHeaderCellDef>Designation</th>
+          <td mat-cell *matCellDef="let emp">{{ emp.designationTitle || '—' }}</td>
+        </ng-container>
+
+        <!-- Status Column -->
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef>Status</th>
+          <td mat-cell *matCellDef="let emp">
+            <span class="badge" [ngClass]="getStatusClass(emp.status)">
+              {{ emp.status }}
+            </span>
+          </td>
+        </ng-container>
+
+        <!-- Actions Column -->
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef class="text-right">Actions</th>
+          <td mat-cell *matCellDef="let emp" class="text-right">
+            <a mat-icon-button [routerLink]="['/employees', emp.id]" matTooltip="View Profile">
+              <mat-icon color="primary">visibility</mat-icon>
+            </a>
+
+            @if (isAdminOrHr) {
+              <a mat-icon-button [routerLink]="['/employees', emp.id, 'edit']" matTooltip="Edit Employee">
+                <mat-icon>edit</mat-icon>
+              </a>
+            }
+
+            @if (isAdmin) {
+              <button mat-icon-button (click)="deleteEmployee(emp)" matTooltip="Delete" color="warn">
+                <mat-icon>delete</mat-icon>
+              </button>
+            }
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+
+        <!-- No data row -->
+        <tr class="mat-row" *matNoDataRow>
+          <td class="mat-cell empty-cell" [attr.colspan]="displayedColumns.length">
+            @if (!isLoading) {
+              <div class="empty-state">
+                <mat-icon>person_search</mat-icon>
+                <p>No employees found matching the specified criteria</p>
+              </div>
+            }
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <mat-paginator
+      [length]="totalElements"
+      [pageSize]="pageSize"
+      [pageSizeOptions]="[5, 10, 25, 50]"
+      (page)="onPageChange($event)"
+      showFirstLastButtons>
+    </mat-paginator>
+  </mat-card>
+</div>
