@@ -230,3 +230,122 @@
   padding: 28px;
   background: var(--bg-page);
 }
+
+// Notification Dropdown Styling
+.notification-bell-btn {
+  color: #475569;
+}
+
+.notif-dropdown-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  min-width: 320px;
+
+  .title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #1e293b;
+  }
+
+  .mark-read-btn {
+    font-size: 0.75rem;
+    height: 28px;
+    line-height: 28px;
+  }
+}
+
+.notif-list-container {
+  max-height: 360px;
+  overflow-y: auto;
+  min-width: 320px;
+}
+
+.notif-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  cursor: pointer;
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: #f8fafc;
+  }
+
+  &.unread {
+    background: #eff6ff;
+
+    .notif-title {
+      font-weight: 700;
+      color: #1e3a8a;
+    }
+  }
+
+  .notif-icon-wrap {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+
+    &.leave { background: #dbeafe; color: #1e40af; }
+    &.interview { background: #fef3c7; color: #b45309; }
+    &.payroll { background: #dcfce7; color: #15803d; }
+    &.onboarding { background: #e0e7ff; color: #4338ca; }
+    &.general { background: #f1f5f9; color: #475569; }
+  }
+
+  .notif-text {
+    display: flex;
+    flex-direction: column;
+
+    .notif-title {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #1e293b;
+    }
+
+    .notif-msg {
+      font-size: 0.75rem;
+      color: #64748b;
+      margin-top: 2px;
+    }
+
+    .notif-time {
+      font-size: 0.68rem;
+      color: #94a3b8;
+      margin-top: 4px;
+    }
+  }
+}
+
+.empty-notif-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
+  color: #94a3b8;
+  gap: 8px;
+
+  mat-icon {
+    font-size: 32px;
+    width: 32px;
+    height: 32px;
+  }
+  span {
+    font-size: 0.85rem;
+  }
+}
+

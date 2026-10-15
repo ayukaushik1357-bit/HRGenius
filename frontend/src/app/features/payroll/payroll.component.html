@@ -1,0 +1,292 @@
+<div class="page-container">
+  <div class="page-header">
+    <div class="header-titles">
+      <h1 class="page-title">Payroll Management & Payslips</h1>
+      <p class="page-subtitle">Monthly payroll runs, statutory Indian deductions (PF, ESI, PT, TDS), loss of pay, and PDF payslips</p>
+    </div>
+    @if (isAdminOrHr) {
+      <div class="header-actions">
+        <button mat-stroked-button color="primary" (click)="openSalaryModal()">
+          <mat-icon>payments</mat-icon> Configure Salary Structure
+        </button>
+      </div>
+    }
+  </div>
+
+  <mat-tab-group class="custom-tabs">
+    <!-- Tab 1: My Payslips (All Employees) -->
+    <mat-tab label="My Payslips">
+      <div class="tab-content">
+        <mat-card class="table-card">
+          <table mat-table [dataSource]="myPayslips()" class="custom-table">
+            <ng-container matColumnDef="monthYear">
+              <th mat-header-cell *matHeaderCellDef>Pay Period</th>
+              <td mat-cell *matCellDef="let p"><b>{{ p.month }}/{{ p.year }}</b></td>
+            </ng-container>
+
+            <ng-container matColumnDef="gross">
+              <th mat-header-cell *matHeaderCellDef>Gross Pay</th>
+              <td mat-cell *matCellDef="let p">INR {{ p.grossSalary }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="lop">
+              <th mat-header-cell *matHeaderCellDef>LOP (Unpaid)</th>
+              <td mat-cell *matCellDef="let p" class="text-danger">-INR {{ p.lopDeduction }}</td>
+            </ng-container>
+
+
+            <ng-container matColumnDef="pf">
+              <th mat-header-cell *matHeaderCellDef>PF (12%)</th>
+              <td mat-cell *matCellDef="let p">-INR {{ p.pfDeduction }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="esi">
+              <th mat-header-cell *matHeaderCellDef>ESI</th>
+              <td mat-cell *matCellDef="let p">{{ p.esiDeduction > 0 ? '-INR ' + p.esiDeduction : 'Exempt' }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="pt">
+              <th mat-header-cell *matHeaderCellDef>PT</th>
+              <td mat-cell *matCellDef="let p">-INR {{ p.ptDeduction }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="tds">
+              <th mat-header-cell *matHeaderCellDef>TDS (Tax)</th>
+              <td mat-cell *matCellDef="let p">-INR {{ p.tdsDeduction }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="net">
+              <th mat-header-cell *matHeaderCellDef>Net Payable</th>
+              <td mat-cell *matCellDef="let p"><b class="net-pay-amount">INR {{ p.netSalary }}</b></td>
+            </ng-container>
+
+            <ng-container matColumnDef="status">
+              <th mat-header-cell *matHeaderCellDef>Status</th>
+              <td mat-cell *matCellDef="let p">
+                <span class="status-chip" [class]="p.status.toLowerCase()">{{ p.status }}</span>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="actions">
+              <th mat-header-cell *matHeaderCellDef>PDF</th>
+              <td mat-cell *matCellDef="let p">
+                <button mat-icon-button color="primary" (click)="downloadPdf(p)" matTooltip="Download PDF Payslip">
+                  <mat-icon>picture_as_pdf</mat-icon>
+                </button>
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="payslipColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: payslipColumns;"></tr>
+          </table>
+          @if (myPayslips().length === 0) {
+            <div class="empty-state">No payslips generated for your profile yet.</div>
+          }
+        </mat-card>
+      </div>
+    </mat-tab>
+
+    <!-- Tab 2: HR Monthly Payroll Runs -->
+    @if (isAdminOrHr) {
+      <mat-tab label="Monthly Payroll Runs (HR)">
+        <div class="tab-content">
+          <!-- Execution Box -->
+          <mat-card class="run-control-card">
+            <div class="run-form-inline">
+              <mat-form-field appearance="outline">
+                <mat-label>Year</mat-label>
+                <input matInput type="number" [(ngModel)]="runYear" />
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Month</mat-label>
+                <input matInput type="number" min="1" max="12" [(ngModel)]="runMonth" />
+              </mat-form-field>
+
+              <button mat-raised-button color="primary" (click)="processPayrollRun()" class="btn-execute">
+                <mat-icon>calculate</mat-icon> Run Monthly Payroll
+              </button>
+            </div>
+            <p class="run-hint">Calculates gross wages, evaluates attendance & unpaid leave days (loss of pay), applies statutory deductions (PF 12%, ESI threshold, Professional Tax, TDS) for all active employees.</p>
+          </mat-card>
+
+          <!-- Payroll Run History Table -->
+          <mat-card class="table-card">
+            <h3>Payroll Run History</h3>
+            <table mat-table [dataSource]="payrollRuns()" class="custom-table">
+              <ng-container matColumnDef="period">
+                <th mat-header-cell *matHeaderCellDef>Period</th>
+                <td mat-cell *matCellDef="let r"><b>{{ r.month }}/{{ r.year }}</b></td>
+              </ng-container>
+
+              <ng-container matColumnDef="employees">
+                <th mat-header-cell *matHeaderCellDef>Total Employees</th>
+                <td mat-cell *matCellDef="let r">{{ r.totalEmployees }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="totalGross">
+                <th mat-header-cell *matHeaderCellDef>Total Gross</th>
+                <td mat-cell *matCellDef="let r">INR {{ r.totalGrossPay }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="totalNet">
+                <th mat-header-cell *matHeaderCellDef>Total Net Disbursed</th>
+                <td mat-cell *matCellDef="let r"><b class="net-pay-amount">INR {{ r.totalNetPay }}</b></td>
+              </ng-container>
+
+              <ng-container matColumnDef="status">
+                <th mat-header-cell *matHeaderCellDef>Status</th>
+                <td mat-cell *matCellDef="let r">
+                  <span class="status-chip" [class]="r.status.toLowerCase()">{{ r.status }}</span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef>Actions</th>
+                <td mat-cell *matCellDef="let r" class="action-buttons">
+                  <button mat-button color="primary" (click)="viewRunPayslips(r)">
+                    <mat-icon>list</mat-icon> View Payslips
+                  </button>
+                  @if (r.status !== 'PAID') {
+                    <button mat-raised-button color="accent" (click)="markRunAsPaid(r)">
+                      <mat-icon>verified</mat-icon> Mark Paid & Notify
+                    </button>
+                  }
+                </td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="runColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: runColumns;"></tr>
+            </table>
+          </mat-card>
+
+          <!-- Payslips for Selected Run -->
+          @if (selectedRun(); as run) {
+            <mat-card class="table-card">
+              <div class="table-header">
+                <h3>Employee Payslips for {{ run.month }}/{{ run.year }} ({{ runPayslips().length }} Employees)</h3>
+                <span class="badge" [class.badge-success]="run.status === 'PAID'">{{ run.status }}</span>
+              </div>
+
+              <table mat-table [dataSource]="runPayslips()" class="custom-table">
+                <ng-container matColumnDef="monthYear">
+                  <th mat-header-cell *matHeaderCellDef>Employee</th>
+                  <td mat-cell *matCellDef="let p"><b>{{ p.employeeName }}</b> ({{ p.employeeCode }})</td>
+                </ng-container>
+
+                <ng-container matColumnDef="gross">
+                  <th mat-header-cell *matHeaderCellDef>Gross Pay</th>
+                  <td mat-cell *matCellDef="let p">INR {{ p.grossSalary }}</td>
+                </ng-container>
+
+                <ng-container matColumnDef="lop">
+                  <th mat-header-cell *matHeaderCellDef>LOP (Unpaid)</th>
+                  <td mat-cell *matCellDef="let p" class="text-danger">-INR {{ p.lopDeduction }}</td>
+                </ng-container>
+
+                <ng-container matColumnDef="pf">
+                  <th mat-header-cell *matHeaderCellDef>PF</th>
+                  <td mat-cell *matCellDef="let p">-INR {{ p.pfDeduction }}</td>
+                </ng-container>
+
+                <ng-container matColumnDef="esi">
+                  <th mat-header-cell *matHeaderCellDef>ESI</th>
+                  <td mat-cell *matCellDef="let p">{{ p.esiDeduction > 0 ? '-INR ' + p.esiDeduction : '0' }}</td>
+                </ng-container>
+
+                <ng-container matColumnDef="pt">
+                  <th mat-header-cell *matHeaderCellDef>PT</th>
+                  <td mat-cell *matCellDef="let p">-INR {{ p.ptDeduction }}</td>
+                </ng-container>
+
+                <ng-container matColumnDef="tds">
+                  <th mat-header-cell *matHeaderCellDef>TDS</th>
+                  <td mat-cell *matCellDef="let p">-INR {{ p.tdsDeduction }}</td>
+                </ng-container>
+
+                <ng-container matColumnDef="net">
+                  <th mat-header-cell *matHeaderCellDef>Net Salary</th>
+                  <td mat-cell *matCellDef="let p"><b class="net-pay-amount">INR {{ p.netSalary }}</b></td>
+                </ng-container>
+
+                <ng-container matColumnDef="status">
+                  <th mat-header-cell *matHeaderCellDef>Status</th>
+                  <td mat-cell *matCellDef="let p">
+                    <span class="status-chip" [class]="p.status.toLowerCase()">{{ p.status }}</span>
+                  </td>
+                </ng-container>
+
+                <ng-container matColumnDef="actions">
+                  <th mat-header-cell *matHeaderCellDef>PDF</th>
+                  <td mat-cell *matCellDef="let p">
+                    <button mat-icon-button color="primary" (click)="downloadPdf(p)">
+                      <mat-icon>picture_as_pdf</mat-icon>
+                    </button>
+                  </td>
+                </ng-container>
+
+                <tr mat-header-row *matHeaderRowDef="payslipColumns"></tr>
+                <tr mat-row *matRowDef="let row; columns: payslipColumns;"></tr>
+
+              </table>
+            </mat-card>
+          }
+        </div>
+      </mat-tab>
+    }
+  </mat-tab-group>
+</div>
+
+<!-- Salary Structure Modal -->
+@if (showSalaryModal) {
+  <div class="modal-backdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2>Configure Salary Structure</h2>
+        <button mat-icon-button (click)="closeSalaryModal()"><mat-icon>close</mat-icon></button>
+      </div>
+      <form [formGroup]="salaryForm" (ngSubmit)="saveSalary()" class="modal-form">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Select Employee</mat-label>
+          <mat-select formControlName="employeeId">
+            @for (emp of employees(); track emp.id) {
+              <mat-option [value]="emp.id">{{ emp.firstName }} {{ emp.lastName }} ({{ emp.employeeCode }})</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline">
+            <mat-label>Basic Salary (Monthly)</mat-label>
+            <input matInput type="number" formControlName="basicSalary" />
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>HRA (House Rent Allowance)</mat-label>
+            <input matInput type="number" formControlName="hra" />
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline">
+            <mat-label>Special Allowance</mat-label>
+            <input matInput type="number" formControlName="specialAllowance" />
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Other Allowances</mat-label>
+            <input matInput type="number" formControlName="otherAllowances" />
+          </mat-form-field>
+        </div>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Effective From</mat-label>
+          <input matInput type="date" formControlName="effectiveFrom" />
+        </mat-form-field>
+
+        <div class="modal-actions">
+          <button type="button" mat-button (click)="closeSalaryModal()">Cancel</button>
+          <button type="submit" mat-raised-button color="primary" [disabled]="salaryForm.invalid">Save Salary Structure</button>
+        </div>
+      </form>
+    </div>
+  </div>
+}

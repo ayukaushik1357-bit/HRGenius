@@ -1,8 +1,10 @@
-import { Component, inject } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { SharedModule } from '../../shared/shared.module';
 import { AuthService } from '../../core/services/auth.service';
+import { AppNotificationService } from '../../core/services/app-notification.service';
+import { AppNotification } from '../../core/models/app-notification.model';
 
 @Component({
   selector: 'app-main-layout',
@@ -11,8 +13,9 @@ import { AuthService } from '../../core/services/auth.service';
   templateUrl: './main-layout.component.html',
   styleUrls: ['./main-layout.component.scss']
 })
-export class MainLayoutComponent {
+export class MainLayoutComponent implements OnInit {
   authService = inject(AuthService);
+  notificationService = inject(AppNotificationService);
 
   get username(): string {
     return this.authService.currentUser()?.username || 'User';
@@ -29,6 +32,28 @@ export class MainLayoutComponent {
 
   get isAdminOrHr(): boolean {
     return this.authService.hasAnyRole(['ADMIN', 'HR_MANAGER']);
+  }
+
+  ngOnInit(): void {
+    this.notificationService.fetchUnreadCount();
+    // Poll notifications every 30 seconds
+    setInterval(() => {
+      this.notificationService.fetchUnreadCount();
+    }, 30000);
+  }
+
+  loadNotifications(): void {
+    this.notificationService.fetchNotifications().subscribe();
+  }
+
+  markRead(n: AppNotification): void {
+    if (!n.read) {
+      this.notificationService.markAsRead(n.id).subscribe();
+    }
+  }
+
+  markAllRead(): void {
+    this.notificationService.markAllAsRead().subscribe();
   }
 
   logout(): void {

@@ -15,8 +15,10 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long>, JpaSp
 
     Optional<Employee> findByEmployeeCode(String employeeCode);
     Optional<Employee> findByEmail(String email);
+    Optional<Employee> findByUserId(Long userId);
     boolean existsByEmail(String email);
     boolean existsByEmployeeCode(String employeeCode);
+
 
     @Query("SELECT e FROM Employee e " +
            "LEFT JOIN FETCH e.department " +

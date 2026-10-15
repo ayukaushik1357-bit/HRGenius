@@ -1,0 +1,332 @@
+.page-container {
+  padding: 24px;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+
+  .page-title {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0;
+  }
+
+  .page-subtitle {
+    color: #64748b;
+    font-size: 0.9rem;
+    margin: 4px 0 0;
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 12px;
+  }
+}
+
+.pipeline-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+
+  .filter-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #475569;
+    white-space: nowrap;
+  }
+
+  button {
+    white-space: nowrap;
+    border-radius: 20px;
+  }
+
+  .active-filter {
+    background: #1e3a8a;
+    color: white;
+  }
+}
+
+/* Kanban Board Layout */
+.kanban-board {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(240px, 1fr));
+  gap: 16px;
+  overflow-x: auto;
+  padding-bottom: 24px;
+  min-height: calc(100vh - 280px);
+}
+
+.kanban-column {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+
+  .column-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #cbd5e1;
+
+    .column-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      color: #334155;
+    }
+
+    .column-count {
+      background: #e2e8f0;
+      color: #475569;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+  }
+
+  &.stage-applied .column-header { border-bottom-color: #3b82f6; }
+  &.stage-screening .column-header { border-bottom-color: #8b5cf6; }
+  &.stage-interview .column-header { border-bottom-color: #f59e0b; }
+  &.stage-offered .column-header { border-bottom-color: #06b6d4; }
+  &.stage-hired .column-header { border-bottom-color: #10b981; }
+  &.stage-rejected .column-header { border-bottom-color: #ef4444; }
+}
+
+.column-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+}
+
+.candidate-card {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  border-radius: 10px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+
+  .candidate-avatar {
+    background: #3b82f6;
+    color: white;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+  }
+
+  mat-card-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+  }
+
+  mat-card-subtitle {
+    font-size: 0.8rem;
+    color: #64748b;
+  }
+
+  .card-meta {
+    font-size: 0.8rem;
+    color: #475569;
+    margin-top: 8px;
+
+    .meta-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 4px;
+
+      mat-icon {
+        font-size: 14px;
+        width: 14px;
+        height: 14px;
+        color: #94a3b8;
+      }
+    }
+
+    .meta-notes {
+      font-style: italic;
+      color: #64748b;
+      margin-top: 6px;
+      padding-left: 6px;
+      border-left: 2px solid #cbd5e1;
+    }
+  }
+
+  .card-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 8px 12px;
+    border-top: 1px solid #f1f5f9;
+  }
+}
+
+.empty-column-state {
+  text-align: center;
+  padding: 30px 10px;
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+
+/* Job Postings Grid */
+.job-postings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+  margin-top: 16px;
+}
+
+.job-card {
+  border-radius: 12px;
+
+  .job-badges {
+    display: flex;
+    gap: 6px;
+    margin: 8px 0 12px;
+  }
+
+  .job-desc {
+    color: #475569;
+    font-size: 0.88rem;
+    line-height: 1.4;
+    margin-bottom: 8px;
+  }
+
+  .job-requirements {
+    font-size: 0.82rem;
+    color: #64748b;
+    background: #f8fafc;
+    padding: 8px;
+    border-radius: 6px;
+  }
+}
+
+/* Modal Styling */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal-card {
+  background: white;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 580px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  padding: 24px;
+
+  &.modal-large {
+    max-width: 720px;
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+
+    h2 {
+      margin: 0;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #1e293b;
+    }
+  }
+
+  .modal-hint {
+    font-size: 0.85rem;
+    color: #64748b;
+    margin-bottom: 16px;
+    background: #f0f9ff;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border-left: 3px solid #0284c7;
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .full-width {
+    width: 100%;
+  }
+
+  .form-subtitle {
+    margin: 16px 0 8px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #334155;
+  }
+
+  .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 20px;
+    padding-top: 12px;
+    border-top: 1px solid #f1f5f9;
+  }
+}
+
+.existing-interviews {
+  background: #f8fafc;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+
+  h4 {
+    margin: 0 0 8px;
+    font-size: 0.85rem;
+    color: #475569;
+  }
+
+  .interview-item {
+    font-size: 0.8rem;
+    padding: 6px 0;
+    border-bottom: 1px solid #e2e8f0;
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+}
+
+.badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+
+  &.badge-success { background: #dcfce7; color: #15803d; }
+  &.badge-warning { background: #fef3c7; color: #b45309; }
+  &.badge-secondary { background: #f1f5f9; color: #475569; }
+}

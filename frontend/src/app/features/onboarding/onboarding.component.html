@@ -1,0 +1,130 @@
+<div class="page-container">
+  <div class="page-header">
+    <div class="header-titles">
+      <h1 class="page-title">Employee Onboarding & Induction</h1>
+      <p class="page-subtitle">Track new joiner checklist tasks, monitor IT/doc completion, and configure onboarding templates</p>
+    </div>
+    <div class="header-actions">
+      <button mat-stroked-button color="primary" (click)="openTemplateModal()">
+        <mat-icon>playlist_add</mat-icon> New Template
+      </button>
+    </div>
+  </div>
+
+  <div class="onboarding-layout">
+    <!-- Left: Employee Selector -->
+    <div class="employee-sidebar">
+      <h3 class="section-title">New Joiners & Employees</h3>
+      <div class="employee-list">
+        @for (emp of employees(); track emp.id) {
+          <div class="emp-item" [class.selected]="selectedEmployee()?.id === emp.id" (click)="selectEmployee(emp)">
+            <div class="emp-avatar">{{ emp.firstName.charAt(0) }}</div>
+            <div class="emp-info">
+              <span class="emp-name">{{ emp.firstName }} {{ emp.lastName }}</span>
+              <span class="emp-meta">{{ emp.employeeCode }} • {{ emp.designationTitle || 'Employee' }}</span>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Right: Checklist Details & Progress -->
+    <div class="checklist-main">
+      @if (selectedEmployee(); as emp) {
+        <mat-card class="progress-card">
+          <div class="progress-header">
+            <div>
+              <h2>{{ emp.firstName }} {{ emp.lastName }}</h2>
+              <span class="emp-details-tag">{{ emp.employeeCode }} • Joined: {{ emp.joiningDate }}</span>
+            </div>
+            <div class="progress-metric">
+              <span class="metric-number">{{ progress()?.progressPercentage || 0 }}%</span>
+              <span class="metric-label">Completed</span>
+            </div>
+          </div>
+
+          <mat-progress-bar mode="determinate" [value]="progress()?.progressPercentage || 0" class="custom-progress"></mat-progress-bar>
+
+          <div class="progress-stats">
+            <span><b>{{ progress()?.completedTasks || 0 }}</b> of <b>{{ progress()?.totalTasks || 0 }}</b> tasks finished</span>
+
+            @if ((progress()?.totalTasks || 0) === 0 && templates().length > 0) {
+              <div class="assign-template-box">
+                <span>No checklist assigned yet. Assign a template:</span>
+                <button mat-flat-button color="primary" (click)="assignTemplateToSelected(templates()[0].id)">
+                  Assign {{ templates()[0].name }}
+                </button>
+              </div>
+            }
+          </div>
+        </mat-card>
+
+        <!-- Tasks Grouped by Category -->
+        <div class="task-categories">
+          @for (cat of categories; track cat) {
+            <mat-card class="category-card">
+              <div class="category-header">
+                <span class="category-title">{{ cat }}</span>
+                <span class="category-count">{{ getTasksByCategory(cat).length }} tasks</span>
+              </div>
+
+              <div class="tasks-list">
+                @for (t of getTasksByCategory(cat); track t.id) {
+                  <div class="task-item" [class.completed]="t.status === 'COMPLETED'">
+                    <mat-checkbox [checked]="t.status === 'COMPLETED'" (change)="toggleTask(t)" color="primary">
+                      <div class="task-content">
+                        <span class="task-title">{{ t.title }}</span>
+                        @if (t.description) {
+                          <span class="task-desc">{{ t.description }}</span>
+                        }
+                        <div class="task-meta">
+                          @if (t.dueDate) { <span>Due: {{ t.dueDate }}</span> }
+                          @if (t.ownerName) { <span>Owner: {{ t.ownerName }}</span> }
+                        </div>
+                      </div>
+                    </mat-checkbox>
+                  </div>
+                }
+                @if (getTasksByCategory(cat).length === 0) {
+                  <div class="empty-task-placeholder">No {{ cat.toLowerCase() }} tasks</div>
+                }
+              </div>
+            </mat-card>
+          }
+        </div>
+      } @else {
+        <div class="no-selection-state">
+          <mat-icon>person_search</mat-icon>
+          <p>Select an employee from the left sidebar to view their onboarding checklist</p>
+        </div>
+      }
+    </div>
+  </div>
+</div>
+
+<!-- Template Modal -->
+@if (showTemplateModal) {
+  <div class="modal-backdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2>Create Onboarding Template</h2>
+        <button mat-icon-button (click)="closeTemplateModal()"><mat-icon>close</mat-icon></button>
+      </div>
+      <form [formGroup]="templateForm" (ngSubmit)="submitTemplate()" class="modal-form">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Template Name</mat-label>
+          <input matInput formControlName="name" placeholder="e.g. Sales Executive Onboarding" />
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Description</mat-label>
+          <textarea matInput rows="3" formControlName="description"></textarea>
+        </mat-form-field>
+
+        <div class="modal-actions">
+          <button type="button" mat-button (click)="closeTemplateModal()">Cancel</button>
+          <button type="submit" mat-raised-button color="primary" [disabled]="templateForm.invalid">Save Template</button>
+        </div>
+      </form>
+    </div>
+  </div>
+}

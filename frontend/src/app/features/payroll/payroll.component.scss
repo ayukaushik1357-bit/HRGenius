@@ -1,0 +1,165 @@
+.page-container {
+  padding: 24px;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+
+  .page-title {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0;
+  }
+
+  .page-subtitle {
+    color: #64748b;
+    font-size: 0.9rem;
+    margin: 4px 0 0;
+  }
+}
+
+.run-control-card {
+  padding: 20px;
+  border-radius: 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 20px;
+
+  .run-form-inline {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+
+    .btn-execute {
+      height: 52px;
+      margin-bottom: 22px;
+      padding: 0 24px;
+      font-weight: 600;
+    }
+  }
+
+  .run-hint {
+    font-size: 0.82rem;
+    color: #64748b;
+    margin: 0;
+  }
+}
+
+.table-card {
+  border-radius: 14px;
+  padding: 20px;
+  margin-top: 16px;
+
+  .table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+
+    h3 {
+      margin: 0;
+      font-size: 1.15rem;
+      font-weight: 700;
+    }
+  }
+}
+
+.custom-table {
+  width: 100%;
+}
+
+.text-danger {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.net-pay-amount {
+  color: #15803d;
+  font-size: 0.95rem;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.status-chip {
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+
+  &.draft { background: #f1f5f9; color: #475569; }
+  &.processed { background: #fef3c7; color: #b45309; }
+  &.paid { background: #dcfce7; color: #15803d; }
+}
+
+.badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+
+  &.badge-success { background: #dcfce7; color: #15803d; }
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px;
+  color: #94a3b8;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-card {
+  background: white;
+  border-radius: 14px;
+  padding: 24px;
+  width: 100%;
+  max-width: 560px;
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+
+    h2 {
+      margin: 0;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #1e293b;
+    }
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .full-width {
+    width: 100%;
+  }
+
+  .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 20px;
+  }
+}

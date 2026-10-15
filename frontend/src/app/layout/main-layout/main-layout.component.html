@@ -12,8 +12,8 @@
     </div>
 
     <nav class="nav-links">
+      <!-- Section 1: People & Organization -->
       <div class="nav-section-label">PEOPLE & ORGANIZATION</div>
-
       <a mat-list-item routerLink="/employees" routerLinkActive="active" class="nav-item">
         <mat-icon>people_alt</mat-icon>
         <span class="nav-text">Employees</span>
@@ -30,6 +30,35 @@
           <span class="nav-text">Designations</span>
         </a>
       }
+
+      <!-- Section 2: Talent Acquisition -->
+      <div class="nav-section-label">TALENT ACQUISITION</div>
+      <a mat-list-item routerLink="/recruitment" routerLinkActive="active" class="nav-item">
+        <mat-icon>view_kanban</mat-icon>
+        <span class="nav-text">Recruitment</span>
+      </a>
+      <a mat-list-item routerLink="/onboarding" routerLinkActive="active" class="nav-item">
+        <mat-icon>how_to_reg</mat-icon>
+        <span class="nav-text">Onboarding</span>
+      </a>
+
+      <!-- Section 3: Time & Attendance -->
+      <div class="nav-section-label">TIME & LEAVE</div>
+      <a mat-list-item routerLink="/attendance" routerLinkActive="active" class="nav-item">
+        <mat-icon>schedule</mat-icon>
+        <span class="nav-text">Attendance</span>
+      </a>
+      <a mat-list-item routerLink="/leaves" routerLinkActive="active" class="nav-item">
+        <mat-icon>event_available</mat-icon>
+        <span class="nav-text">Leaves & Approvals</span>
+      </a>
+
+      <!-- Section 4: Compensation -->
+      <div class="nav-section-label">COMPENSATION</div>
+      <a mat-list-item routerLink="/payroll" routerLinkActive="active" class="nav-item">
+        <mat-icon>account_balance_wallet</mat-icon>
+        <span class="nav-text">Payroll & Payslips</span>
+      </a>
     </nav>
 
     <div class="sidebar-footer">
@@ -54,6 +83,65 @@
       </div>
 
       <div class="topbar-right">
+        <!-- Notification Bell -->
+        <button
+          mat-icon-button
+          [matMenuTriggerFor]="notificationMenu"
+          (click)="loadNotifications()"
+          class="notification-bell-btn"
+          aria-label="Notifications"
+        >
+          <mat-icon
+            [matBadge]="notificationService.unreadCount() > 0 ? notificationService.unreadCount() : null"
+            matBadgeColor="warn"
+            matBadgeSize="small"
+          >
+            notifications
+          </mat-icon>
+        </button>
+
+        <!-- Notifications Dropdown Menu -->
+        <mat-menu #notificationMenu="matMenu" class="notifications-dropdown" xPosition="before">
+          <div class="notif-dropdown-header" (click)="$event.stopPropagation()">
+            <span class="title">Notifications</span>
+            @if (notificationService.unreadCount() > 0) {
+              <button mat-button color="primary" class="mark-read-btn" (click)="markAllRead()">
+                Mark all read
+              </button>
+            }
+          </div>
+          <mat-divider></mat-divider>
+          <div class="notif-list-container" (click)="$event.stopPropagation()">
+            @for (n of notificationService.notifications(); track n.id) {
+              <div class="notif-item" [class.unread]="!n.read" (click)="markRead(n)">
+                <div class="notif-icon-wrap" [class]="n.type ? n.type.toLowerCase() : 'general'">
+                  <mat-icon>
+
+                    @switch (n.type) {
+                      @case ('LEAVE') { event_available }
+                      @case ('INTERVIEW') { event }
+                      @case ('PAYROLL') { payments }
+                      @case ('ONBOARDING') { task_alt }
+                      @default { notifications }
+                    }
+                  </mat-icon>
+                </div>
+                <div class="notif-text">
+                  <div class="notif-title">{{ n.title }}</div>
+                  <div class="notif-msg">{{ n.message }}</div>
+                  <div class="notif-time">{{ n.createdAt | date:'short' }}</div>
+                </div>
+              </div>
+            }
+            @if (notificationService.notifications().length === 0) {
+              <div class="empty-notif-state">
+                <mat-icon>notifications_none</mat-icon>
+                <span>No notifications yet</span>
+              </div>
+            }
+          </div>
+        </mat-menu>
+
         <span class="badge badge-primary">{{ userRoleDisplay }}</span>
 
         <button mat-button [matMenuTriggerFor]="userMenu" class="user-menu-trigger">

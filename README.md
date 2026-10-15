@@ -1,6 +1,6 @@
-# HRGenius — Enterprise HR Management System (Phase 1)
+# HRGenius — Enterprise HR Management System (Phases 1 & 2)
 
-HRGenius is a modern, full-stack Human Resources Management System designed for scalable workforce management with high visual aesthetics and zero-trust security.
+HRGenius is a modern, full-stack Human Resources Management System designed for scalable workforce management with high visual aesthetics, zero-trust security, and complete lifecycle coverage from recruitment to payroll.
 
 ---
 
@@ -9,152 +9,90 @@ HRGenius is a modern, full-stack Human Resources Management System designed for 
 | Layer | Technologies |
 | :--- | :--- |
 | **Backend** | Java 17+, Spring Boot 3.2.5, Spring Data JPA / Hibernate, Spring Security 6 (Stateless JWT), Flyway |
-| **Frontend** | Angular 21 (latest stable), Angular Material, SCSS Design System, RxJS |
-| **Databases** | Oracle Database (Oracle XE for dev/prod with Flyway migrations) & H2 (In-memory dev profile) |
-| **Build & Tooling** | Maven, npm, SpringDoc OpenAPI 3.0 / Swagger UI |
+| **Frontend** | Angular 21 (latest stable), Angular Material, SCSS Design System, RxJS Signals |
+| **Databases** | Oracle Database (Oracle XE for dev/prod with Flyway migrations V1–V7) & H2 (In-memory dev profile) |
+| **Build & Tooling** | Maven, npm, SpringDoc OpenAPI 3.0 / Swagger UI, OpenPDF (Payslip PDF Generation), Spring Mail |
 
 ---
 
-## 🏗️ Project Architecture
+## 🏗️ Modules & Core Capabilities
 
-```
-HRGenius/
-├── backend/                                   # Spring Boot 3 API
-│   ├── mvnw.cmd / pom.xml
-│   ├── src/main/java/com/hrgenius/
-│   │   ├── HrGeniusApplication.java
-│   │   ├── config/                            # CORS, OpenAPI, JPA Auditing, File Storage, H2Seeder
-│   │   ├── controller/                        # REST Controllers (Auth, Employee, Dept, Desig, Document)
-│   │   ├── dto/                               # Bean Validated DTOs (Request / Response / Paged)
-│   │   ├── entity/                            # JPA Audited Entities (Employee, Department, Document, etc.)
-│   │   ├── exception/                         # GlobalExceptionHandler & ApiError response shape
-│   │   ├── mapper/                            # Entity ↔ DTO Manual Mappers
-│   │   ├── repository/                        # Spring Data JPA Repositories
-│   │   ├── security/                          # JWT Token Provider, Filter, UserPrincipal, SecurityConfig
-│   │   └── service/                           # Business logic layer
-│   ├── src/main/resources/
-│   │   ├── application.yml                    # Multi-profile config (h2, dev, prod)
-│   │   └── db/migration/                      # Flyway Oracle SQL migrations (V1 - V4)
-│   └── src/test/java/com/hrgenius/            # JUnit 5 + Mockito + WebMvcTest test suites
-│
-└── frontend/                                  # Angular 21 Single Page App
-    ├── src/
-    │   ├── app/
-    │   │   ├── core/                          # AuthService, Guards (auth & role), JWT Interceptor, Models
-    │   │   ├── layout/                        # MainLayoutComponent (Responsive Sidebar & Header)
-    │   │   ├── features/
-    │   │   │   ├── auth/                      # Modern split-panel login page
-    │   │   │   ├── employees/                 # Employee list, onboard/edit form, rich profile view
-    │   │   │   ├── departments/               # Department management CRUD
-    │   │   │   └── designations/              # Designation management CRUD
-    │   │   └── shared/                        # SharedModule exporting all Angular Material components
-    │   ├── styles.scss                        # Curated CSS custom variables & Material theme
-    │   └── environments/                      # API endpoints config
-```
+### Phase 1 Modules
+1. **Zero-Trust Security & Authentication**
+   - Access token kept strictly in-memory in Angular client; refresh token stored in `HttpOnly`, `SameSite=Lax` secure cookies.
+   - Role-Based Access Control (`ADMIN`, `HR_MANAGER`, `MANAGER`, `EMPLOYEE`).
+2. **Workforce Management (Employees, Departments, Designations)**
+   - Multi-field search, pagination, sorting with portable JPA specification criteria.
+   - Employee profile with addresses, emergency contacts, and document repository upload/download.
 
----
-
-## 🔐 Security & Authentication Features
-
-- **Access Token:** Kept strictly in-memory on the Angular client (not stored in `localStorage` or `sessionStorage` to mitigate XSS attacks).
-- **Refresh Token:** Stored in an **HttpOnly, SameSite=Lax** secure cookie that rotates automatically on token refresh (`/api/auth/refresh`).
-- **Automatic Interceptor:** Angular `jwtInterceptor` attaches bearer tokens and transparently refreshes expired access tokens on 401 responses.
-- **Role-Based Access Control:** Role hierarchy (`ADMIN`, `HR_MANAGER`, `MANAGER`, `EMPLOYEE`) enforced via `@PreAuthorize` on backend endpoints and `roleGuard` on frontend routes.
+### Phase 2 Modules
+1. **Recruitment & Applicant Tracking System (ATS)**
+   - `JobPosting`: Linked to department and designation with status (`DRAFT`, `OPEN`, `CLOSED`).
+   - `Candidate` & `Application`: Pipeline Kanban board (`APPLIED` → `SCREENING` → `INTERVIEW` → `OFFERED` → `HIRED` → `REJECTED`).
+   - `Interview`: Multi-round scheduling with assigned interviewers, ratings (1–5), and evaluation feedback.
+   - `Offer`: CTC calculation and official offer generation.
+   - **Hire to Employee Conversion**: 1-click conversion from hired candidate to an active employee profile, user account provisioning, salary structure setup, and automatic onboarding checklist assignment.
+2. **Employee Onboarding & Induction**
+   - Onboarding checklist templates (Documents, IT Setup, Induction, Training).
+   - Auto-assigned to new joiners with due dates and owners.
+   - Real-time progress bar (%) and interactive task completion toggles.
+3. **Time, Attendance & Leave Management**
+   - Daily Check-in / Check-out with automatic working hours and shift status calculation (`PRESENT`, `HALF_DAY`, `ABSENT`).
+   - Monthly calendar log view and company holiday calendar.
+   - Annual leave quota balances (`Casual`, `Sick`, `Earned`, `Unpaid / Loss of Pay`).
+   - Leave application workflow with overlap prevention, balance quota enforcement, and manager approval inbox.
+4. **Payroll & Statutory Compliance (Indian Context)**
+   - Monthly salary structures (Basic, HRA, Special Allowance, Other Allowances).
+   - Statutory Indian deductions:
+     - **Provident Fund (PF)**: 12% of basic wages.
+     - **Employee State Insurance (ESI)**: 0.75% for gross salaries ≤ INR 21,000.
+     - **Professional Tax (PT)**: INR 200/month.
+     - **TDS**: Progressive annual tax brackets with standard deduction.
+     - **Loss of Pay (LOP)**: Prorated salary deduction based on approved unpaid leaves and mid-month joiner dates.
+   - Monthly payroll runs (`DRAFT` → `PROCESSED` → `PAID` with record locking).
+   - Downloadable payslip PDF generation powered by OpenPDF.
+5. **In-App & Email Notifications**
+   - Configurable Spring Mail SMTP dispatch for interviews, leaves, and salary credit.
+   - In-app notification bell with live unread counter badge and dropdown drawer.
 
 ---
 
-## 🚀 Getting Started
+## 🚀 Running the Project
 
-### 1. Prerequisites
-- **Java 17 or higher** (`java -version`)
-- **Maven** (or use the included `mvnw.cmd` in `backend/`)
-- **Node.js 18+ and npm** (`node -v` & `npm -v`)
-
----
-
-### 2. Backend Setup & Run
-
-#### Option A: Quickstart with H2 In-Memory Database (No Oracle install required)
-For instant local testing without setting up an Oracle instance:
+### 1. Backend (Spring Boot 3)
 ```bash
 cd backend
-./mvnw.cmd spring-boot:run -Dspring-boot.run.profiles=h2
+.\mvnw.cmd spring-boot:run
 ```
-*The `h2` profile automatically seeds sample departments, designations, and the default `admin` user!*
+- Runs on **`http://localhost:8080/api`**
+- H2 profile is active by default with automatic schema seeding.
+- Swagger UI / OpenAPI docs: **`http://localhost:8080/api/swagger-ui.html`**
+- H2 Console: **`http://localhost:8080/api/h2-console`** (`jdbc:h2:mem:hrgenius`, User: `sa`, Password: empty)
 
-#### Option B: Running with Oracle XE Database
-1. Ensure Oracle XE is running on `localhost:1521/XEPDB1` (or configure via environment variables).
-2. Create the user and grant privileges:
-   ```sql
-   CREATE USER hrgenius IDENTIFIED BY hrgenius;
-   GRANT CONNECT, RESOURCE, DBA TO hrgenius;
-   ALTER USER hrgenius QUOTA UNLIMITED ON USERS;
-   ```
-3. Run with the `dev` profile (Flyway runs all migrations automatically):
-   ```bash
-   cd backend
-   ./mvnw.cmd spring-boot:run -Dspring-boot.run.profiles=dev
-   ```
-
-#### Run Backend Tests:
+To run with Oracle XE:
 ```bash
-cd backend
-./mvnw.cmd test
+$env:SPRING_PROFILES_ACTIVE="dev"
+.\mvnw.cmd spring-boot:run
 ```
 
----
+### 2. Frontend (Angular 21)
+```bash
+cd frontend
+npm start
+```
+- Available at **`http://localhost:4200`**
 
-### 3. Frontend Setup & Run
-
-1. Open a new terminal in the `frontend/` directory:
-   ```bash
-   cd frontend
-   npm install --legacy-peer-deps
-   ```
-2. Start the Angular development server:
-   ```bash
-   npm start
-   ```
-3. Open your browser and navigate to:
-   ```
-   http://localhost:4200
-   ```
-
----
-
-## 🔑 Default Credentials
-
-| Username | Password | Role | Permissions |
+### 3. Default Demo Accounts
+| Username | Password | Role | Description |
 | :--- | :--- | :--- | :--- |
-| **`admin`** | **`Admin@123`** | `ROLE_ADMIN` | Full permissions (Employees, Departments, Designations, Deletion) |
-
-*The login page also provides a one-click button to automatically fill the demo admin credentials.*
+| `admin` | `Admin@123` | `ADMIN`, `HR_MANAGER` | Full enterprise control across all modules |
 
 ---
 
-## 📖 API Documentation (Swagger / OpenAPI)
-
-Once the backend is running, explore and test the interactive API documentation at:
-- **Swagger UI:** [http://localhost:8080/api/swagger-ui/index.html](http://localhost:8080/api/swagger-ui/index.html)
-- **OpenAPI JSON:** [http://localhost:8080/api/v3/api-docs](http://localhost:8080/api/v3/api-docs)
-
----
-
-## 🧪 Verification Walkthrough
-
-1. **Sign In:**
-   - Go to `http://localhost:4200/auth/login`.
-   - Click **"Use Admin Credentials"** (or enter `admin` / `Admin@123`) and click **Sign In**.
-2. **Explore Employees:**
-   - The Employee list shows all active personnel records.
-   - Use the search bar to filter by name, or filter by Department or Status (`ACTIVE`, `ON_NOTICE`, `EXITED`).
-3. **Create Employee:**
-   - Click **"Add Employee"** to open the onboarding form.
-   - Fill in personal info, department, designation, residential address, and emergency contact.
-   - Submitting generates a unique `EMP000X` code and redirects to the full profile view.
-4. **Upload Documents:**
-   - On the Employee Profile page, navigate to the **"Documents"** tab.
-   - Select a document type (`ID_PROOF`, `OFFER_LETTER`, `RESUME`) and upload a local file.
-   - Files are securely stored on disk in `backend/uploads/` with metadata recorded in the database, and can be downloaded anytime.
-5. **Manage Departments & Designations:**
-   - Use the left sidebar to navigate to **Departments** and **Designations** to create, edit, or delete organizational structures.
+## 🧪 Automated Testing
+Backend tests cover unit and integration testing including Indian payroll calculations, mid-month joiners, and leave balance quota enforcement:
+```bash
+cd backend
+.\mvnw.cmd test
+```
+*All 21 unit and integration tests passing.*

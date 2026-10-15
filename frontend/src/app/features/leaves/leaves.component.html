@@ -1,0 +1,220 @@
+<div class="page-container">
+  <div class="page-header">
+    <div class="header-titles">
+      <h1 class="page-title">Leave Management & Time Off</h1>
+      <p class="page-subtitle">View annual leave quotas, apply for time off, and approve direct report leave applications</p>
+    </div>
+    <div class="header-actions">
+      <button mat-raised-button color="primary" (click)="openApplyModal()">
+        <mat-icon>add_circle</mat-icon> Apply for Leave
+      </button>
+    </div>
+  </div>
+
+  <!-- Leave Balance Cards -->
+  @if (balance(); as b) {
+    <div class="balance-grid">
+      <mat-card class="balance-card casual">
+        <div class="card-icon"><mat-icon>beach_access</mat-icon></div>
+        <div class="card-details">
+          <span class="card-type">Casual Leave</span>
+          <div class="balance-numbers">
+            <span class="remaining">{{ b.casualRemaining }}</span>
+            <span class="quota">/ {{ b.casualQuota }} days left</span>
+          </div>
+          <span class="used-text">{{ b.casualUsed }} days consumed</span>
+        </div>
+      </mat-card>
+
+      <mat-card class="balance-card sick">
+        <div class="card-icon"><mat-icon>healing</mat-icon></div>
+        <div class="card-details">
+          <span class="card-type">Sick Leave</span>
+          <div class="balance-numbers">
+            <span class="remaining">{{ b.sickRemaining }}</span>
+            <span class="quota">/ {{ b.sickQuota }} days left</span>
+          </div>
+          <span class="used-text">{{ b.sickUsed }} days consumed</span>
+        </div>
+      </mat-card>
+
+      <mat-card class="balance-card earned">
+        <div class="card-icon"><mat-icon>flight_takeoff</mat-icon></div>
+        <div class="card-details">
+          <span class="card-type">Earned Leave</span>
+          <div class="balance-numbers">
+            <span class="remaining">{{ b.earnedRemaining }}</span>
+            <span class="quota">/ {{ b.earnedQuota }} days left</span>
+          </div>
+          <span class="used-text">{{ b.earnedUsed }} days consumed</span>
+        </div>
+      </mat-card>
+
+      <mat-card class="balance-card unpaid">
+        <div class="card-icon"><mat-icon>money_off</mat-icon></div>
+        <div class="card-details">
+          <span class="card-type">Loss of Pay (Unpaid)</span>
+          <div class="balance-numbers">
+            <span class="remaining">Unlimited</span>
+          </div>
+          <span class="used-text">Deducted from monthly payroll</span>
+        </div>
+      </mat-card>
+    </div>
+  }
+
+  <mat-tab-group class="custom-tabs">
+    <!-- Tab 1: My Leaves -->
+    <mat-tab label="My Leave History">
+      <div class="tab-content">
+        <mat-card class="table-card">
+          <table mat-table [dataSource]="myLeaves()" class="custom-table">
+            <ng-container matColumnDef="leaveType">
+              <th mat-header-cell *matHeaderCellDef>Type</th>
+              <td mat-cell *matCellDef="let l">
+                <span class="badge badge-secondary">{{ l.leaveType }}</span>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="dates">
+              <th mat-header-cell *matHeaderCellDef>Duration</th>
+              <td mat-cell *matCellDef="let l">{{ l.startDate }} to {{ l.endDate }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="days">
+              <th mat-header-cell *matHeaderCellDef>Days</th>
+              <td mat-cell *matCellDef="let l"><b>{{ l.numberOfDays }}</b></td>
+            </ng-container>
+
+            <ng-container matColumnDef="reason">
+              <th mat-header-cell *matHeaderCellDef>Reason</th>
+              <td mat-cell *matCellDef="let l">{{ l.reason }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="status">
+              <th mat-header-cell *matHeaderCellDef>Status</th>
+              <td mat-cell *matCellDef="let l">
+                <span class="status-chip" [class]="l.status.toLowerCase()">{{ l.status }}</span>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="approvedBy">
+              <th mat-header-cell *matHeaderCellDef>Reviewer</th>
+              <td mat-cell *matCellDef="let l">{{ l.approvedByName || '-' }}</td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="myColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: myColumns;"></tr>
+          </table>
+          @if (myLeaves().length === 0) {
+            <div class="empty-state">No leave applications submitted yet.</div>
+          }
+        </mat-card>
+      </div>
+    </mat-tab>
+
+    <!-- Tab 2: Manager Approvals Inbox -->
+    @if (isManagerOrAdmin) {
+      <mat-tab label="Manager Approval Inbox ({{ pendingApprovals().length }})">
+        <div class="tab-content">
+          <mat-card class="table-card">
+            <table mat-table [dataSource]="pendingApprovals()" class="custom-table">
+              <ng-container matColumnDef="employee">
+                <th mat-header-cell *matHeaderCellDef>Employee</th>
+                <td mat-cell *matCellDef="let l"><b>{{ l.employeeName }}</b> ({{ l.employeeCode }})</td>
+              </ng-container>
+
+              <ng-container matColumnDef="leaveType">
+                <th mat-header-cell *matHeaderCellDef>Type</th>
+                <td mat-cell *matCellDef="let l"><span class="badge badge-secondary">{{ l.leaveType }}</span></td>
+              </ng-container>
+
+              <ng-container matColumnDef="dates">
+                <th mat-header-cell *matHeaderCellDef>Dates</th>
+                <td mat-cell *matCellDef="let l">{{ l.startDate }} to {{ l.endDate }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="days">
+                <th mat-header-cell *matHeaderCellDef>Days</th>
+                <td mat-cell *matCellDef="let l"><b>{{ l.numberOfDays }}</b></td>
+              </ng-container>
+
+              <ng-container matColumnDef="reason">
+                <th mat-header-cell *matHeaderCellDef>Reason</th>
+                <td mat-cell *matCellDef="let l">{{ l.reason }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef>Actions</th>
+                <td mat-cell *matCellDef="let l" class="action-buttons">
+                  <button mat-raised-button color="primary" (click)="actionLeave(l, true)">
+                    <mat-icon>check</mat-icon> Approve
+                  </button>
+                  <button mat-stroked-button color="warn" (click)="actionLeave(l, false)">
+                    <mat-icon>close</mat-icon> Reject
+                  </button>
+                </td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="approvalColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: approvalColumns;"></tr>
+            </table>
+            @if (pendingApprovals().length === 0) {
+              <div class="empty-state">No pending approvals waiting in your inbox.</div>
+            }
+          </mat-card>
+        </div>
+      </mat-tab>
+    }
+  </mat-tab-group>
+</div>
+
+<!-- Apply Leave Modal -->
+@if (showApplyModal) {
+  <div class="modal-backdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2>Apply for Leave</h2>
+        <button mat-icon-button (click)="closeApplyModal()"><mat-icon>close</mat-icon></button>
+      </div>
+      <form [formGroup]="applyForm" (ngSubmit)="submitApplication()" class="modal-form">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Leave Type</mat-label>
+          <mat-select formControlName="leaveType">
+            <mat-option value="CASUAL">Casual Leave (Remaining: {{ balance()?.casualRemaining || 0 }})</mat-option>
+            <mat-option value="SICK">Sick Leave (Remaining: {{ balance()?.sickRemaining || 0 }})</mat-option>
+            <mat-option value="EARNED">Earned Leave (Remaining: {{ balance()?.earnedRemaining || 0 }})</mat-option>
+            <mat-option value="UNPAID">Loss of Pay / Unpaid</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline">
+            <mat-label>Start Date</mat-label>
+            <input matInput type="date" formControlName="startDate" />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>End Date</mat-label>
+            <input matInput type="date" formControlName="endDate" />
+          </mat-form-field>
+        </div>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Number of Days</mat-label>
+          <input matInput type="number" step="0.5" min="0.5" formControlName="numberOfDays" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Reason for Leave</mat-label>
+          <textarea matInput rows="3" formControlName="reason" placeholder="Explain the reason for absence"></textarea>
+        </mat-form-field>
+
+        <div class="modal-actions">
+          <button type="button" mat-button (click)="closeApplyModal()">Cancel</button>
+          <button type="submit" mat-raised-button color="primary" [disabled]="applyForm.invalid">Submit Leave Request</button>
+        </div>
+      </form>
+    </div>
+  </div>
+}

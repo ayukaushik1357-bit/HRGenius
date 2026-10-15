@@ -1,0 +1,477 @@
+<div class="page-container">
+  <div class="page-header">
+    <div class="header-titles">
+      <h1 class="page-title">Talent Acquisition & Recruitment</h1>
+      <p class="page-subtitle">Manage open requisitions, review candidate applications, schedule interviews, and generate offers</p>
+    </div>
+    <div class="header-actions">
+      <button mat-stroked-button color="primary" (click)="openCandidateModal()">
+        <mat-icon>person_add</mat-icon> Add Candidate
+      </button>
+      <button mat-raised-button color="primary" (click)="openJobModal()">
+        <mat-icon>add</mat-icon> New Job Posting
+      </button>
+    </div>
+  </div>
+
+  <mat-tab-group animationDuration="200ms" class="custom-tabs">
+    <!-- Tab 1: Kanban Pipeline -->
+    <mat-tab label="Candidate Pipeline (Kanban)">
+      <div class="tab-content">
+        <!-- Filter bar -->
+        <div class="pipeline-filter-bar">
+          <span class="filter-label">Filter by Job Posting:</span>
+          <button mat-stroked-button [class.active-filter]="selectedJobId() === null" (click)="filterByJob(null)">
+            All Roles ({{ applications().length }})
+          </button>
+          @for (jp of jobPostings(); track jp.id) {
+            <button mat-stroked-button [class.active-filter]="selectedJobId() === jp.id" (click)="filterByJob(jp.id)">
+              {{ jp.title }}
+            </button>
+          }
+        </div>
+
+        <!-- Kanban Board Columns -->
+        <div class="kanban-board">
+          @for (stg of stages; track stg) {
+            <div class="kanban-column" [class]="'stage-' + stg.toLowerCase()">
+              <div class="column-header">
+                <span class="column-title">{{ stg }}</span>
+                <span class="column-count">{{ getStageApplications(stg).length }}</span>
+              </div>
+
+              <div class="column-cards">
+                @for (app of getStageApplications(stg); track app.id) {
+                  <mat-card class="candidate-card">
+                    <mat-card-header>
+                      <div mat-card-avatar class="candidate-avatar">
+                        {{ app.candidateName.charAt(0).toUpperCase() }}
+                      </div>
+                      <mat-card-title>{{ app.candidateName }}</mat-card-title>
+                      <mat-card-subtitle>{{ app.jobPostingTitle }}</mat-card-subtitle>
+                    </mat-card-header>
+
+                    <mat-card-content>
+                      <div class="card-meta">
+                        <div class="meta-item">
+                          <mat-icon>mail</mat-icon> <span>{{ app.candidateEmail }}</span>
+                        </div>
+                        @if (app.candidatePhone) {
+                          <div class="meta-item">
+                            <mat-icon>phone</mat-icon> <span>{{ app.candidatePhone }}</span>
+                          </div>
+                        }
+                        @if (app.notes) {
+                          <div class="meta-notes">"{{ app.notes }}"</div>
+                        }
+                      </div>
+                    </mat-card-content>
+
+                    <mat-card-actions class="card-actions">
+                      <!-- Workflow actions -->
+                      @if (stg === 'APPLIED') {
+                        <button mat-button color="primary" (click)="moveStage(app, 'SCREENING')">Screen</button>
+                        <button mat-button color="warn" (click)="moveStage(app, 'REJECTED')">Reject</button>
+                      }
+                      @if (stg === 'SCREENING') {
+                        <button mat-button color="primary" (click)="openInterviewModal(app)">Schedule Interview</button>
+                        <button mat-button color="warn" (click)="moveStage(app, 'REJECTED')">Reject</button>
+                      }
+                      @if (stg === 'INTERVIEW') {
+                        <button mat-button (click)="openInterviewModal(app)">Interviews</button>
+                        <button mat-button color="primary" (click)="openOfferModal(app)">Make Offer</button>
+                        <button mat-button color="warn" (click)="moveStage(app, 'REJECTED')">Reject</button>
+                      }
+                      @if (stg === 'OFFERED') {
+                        <button mat-raised-button color="accent" (click)="openHireModal(app)">
+                          <mat-icon>how_to_reg</mat-icon> Convert to Employee
+                        </button>
+                      }
+                      @if (stg === 'HIRED') {
+                        <span class="badge badge-success">Onboarded</span>
+                      }
+                      @if (stg === 'REJECTED') {
+                        <button mat-button (click)="moveStage(app, 'SCREENING')">Reconsider</button>
+                      }
+                    </mat-card-actions>
+                  </mat-card>
+                }
+                @if (getStageApplications(stg).length === 0) {
+                  <div class="empty-column-state">No candidates</div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    </mat-tab>
+
+    <!-- Tab 2: Job Postings List -->
+    <mat-tab label="Open Requisitions">
+      <div class="tab-content">
+        <div class="job-postings-grid">
+          @for (jp of jobPostings(); track jp.id) {
+            <mat-card class="job-card">
+              <mat-card-header>
+                <mat-card-title>{{ jp.title }}</mat-card-title>
+                <mat-card-subtitle>{{ jp.departmentName }} • {{ jp.location }}</mat-card-subtitle>
+              </mat-card-header>
+              <mat-card-content>
+                <div class="job-badges">
+                  <span class="badge" [class.badge-success]="jp.status === 'OPEN'" [class.badge-warning]="jp.status === 'DRAFT'">
+                    {{ jp.status }}
+                  </span>
+                  <span class="badge badge-secondary">{{ jp.openings }} Openings</span>
+                  <span class="badge badge-secondary">{{ jp.minExperienceYears }} - {{ jp.maxExperienceYears }} Yrs Exp</span>
+                </div>
+                <p class="job-desc">{{ jp.description }}</p>
+                <div class="job-requirements">
+                  <strong>Requirements:</strong> {{ jp.requirements }}
+                </div>
+              </mat-card-content>
+              <mat-card-actions>
+                <button mat-stroked-button color="primary" (click)="filterByJob(jp.id)">
+                  View Candidates
+                </button>
+              </mat-card-actions>
+            </mat-card>
+          }
+        </div>
+      </div>
+    </mat-tab>
+  </mat-tab-group>
+</div>
+
+<!-- Job Posting Modal -->
+@if (showJobModal) {
+  <div class="modal-backdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2>Create Job Requisition</h2>
+        <button mat-icon-button (click)="closeJobModal()"><mat-icon>close</mat-icon></button>
+      </div>
+      <form [formGroup]="jobForm" (ngSubmit)="submitJob()" class="modal-form">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Job Title</mat-label>
+          <input matInput formControlName="title" placeholder="e.g. Senior Frontend Engineer" />
+        </mat-form-field>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline">
+            <mat-label>Department</mat-label>
+            <mat-select formControlName="departmentId">
+              @for (d of departments(); track d.id) {
+                <mat-option [value]="d.id">{{ d.name }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Designation</mat-label>
+            <mat-select formControlName="designationId">
+              @for (ds of designations(); track ds.id) {
+                <mat-option [value]="ds.id">{{ ds.title }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline">
+            <mat-label>Location</mat-label>
+            <input matInput formControlName="location" />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Openings</mat-label>
+            <input matInput type="number" formControlName="openings" />
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline">
+            <mat-label>Min Experience (Years)</mat-label>
+            <input matInput type="number" formControlName="minExperienceYears" />
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Max Experience (Years)</mat-label>
+            <input matInput type="number" formControlName="maxExperienceYears" />
+          </mat-form-field>
+        </div>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Description</mat-label>
+          <textarea matInput rows="3" formControlName="description"></textarea>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Requirements</mat-label>
+          <textarea matInput rows="2" formControlName="requirements"></textarea>
+        </mat-form-field>
+
+        <div class="modal-actions">
+          <button type="button" mat-button (click)="closeJobModal()">Cancel</button>
+          <button type="submit" mat-raised-button color="primary" [disabled]="jobForm.invalid">Create Job</button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- Add Candidate Modal -->
+@if (showCandidateModal) {
+  <div class="modal-backdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2>Add Candidate to Pipeline</h2>
+        <button mat-icon-button (click)="closeCandidateModal()"><mat-icon>close</mat-icon></button>
+      </div>
+      <form [formGroup]="candidateForm" (ngSubmit)="submitCandidate()" class="modal-form">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Select Job Requisition</mat-label>
+          <mat-select formControlName="jobPostingId">
+            @for (jp of jobPostings(); track jp.id) {
+              <mat-option [value]="jp.id">{{ jp.title }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline">
+            <mat-label>First Name</mat-label>
+            <input matInput formControlName="firstName" />
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Last Name</mat-label>
+            <input matInput formControlName="lastName" />
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline">
+            <mat-label>Email</mat-label>
+            <input matInput type="email" formControlName="email" />
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Phone</mat-label>
+            <input matInput formControlName="phone" />
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline">
+            <mat-label>Years of Experience</mat-label>
+            <input matInput type="number" formControlName="experienceYears" />
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Expected CTC (INR)</mat-label>
+            <input matInput type="number" formControlName="expectedSalaryCTC" />
+          </mat-form-field>
+        </div>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Current Company</mat-label>
+          <input matInput formControlName="currentCompany" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Notes / Candidate Background</mat-label>
+          <textarea matInput rows="2" formControlName="notes"></textarea>
+        </mat-form-field>
+
+        <div class="modal-actions">
+          <button type="button" mat-button (click)="closeCandidateModal()">Cancel</button>
+          <button type="submit" mat-raised-button color="primary" [disabled]="candidateForm.invalid">Add Candidate</button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- Schedule Interview Modal -->
+@if (showInterviewModal) {
+  <div class="modal-backdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2>Schedule Interview: {{ activeApplication?.candidateName }}</h2>
+        <button mat-icon-button (click)="closeInterviewModal()"><mat-icon>close</mat-icon></button>
+      </div>
+
+      <!-- Existing Interviews for candidate -->
+      @if (activeInterviews.length > 0) {
+        <div class="existing-interviews">
+          <h4>Past Rounds</h4>
+          @for (iv of activeInterviews; track iv.id) {
+            <div class="interview-item">
+              <div><strong>{{ iv.roundName }}</strong> ({{ iv.scheduledAt | date:'medium' }})</div>
+              <div>Rating: {{ iv.rating || '-' }}/5 • {{ iv.feedback || 'No feedback' }}</div>
+            </div>
+          }
+        </div>
+      }
+
+      <form [formGroup]="interviewForm" (ngSubmit)="scheduleInterview()" class="modal-form">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Round Name</mat-label>
+          <input matInput formControlName="roundName" placeholder="e.g. Technical System Design" />
+        </mat-form-field>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline">
+            <mat-label>Date & Time</mat-label>
+            <input matInput type="datetime-local" formControlName="scheduledAt" />
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Rating (1-5)</mat-label>
+            <input matInput type="number" min="1" max="5" formControlName="rating" />
+          </mat-form-field>
+        </div>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Feedback & Evaluation Notes</mat-label>
+          <textarea matInput rows="3" formControlName="feedback"></textarea>
+        </mat-form-field>
+
+        <div class="modal-actions">
+          <button type="button" mat-button (click)="closeInterviewModal()">Cancel</button>
+          <button type="submit" mat-raised-button color="primary" [disabled]="interviewForm.invalid">Schedule Round</button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- Make Offer Modal -->
+@if (showOfferModal) {
+  <div class="modal-backdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2>Generate Job Offer: {{ activeApplication?.candidateName }}</h2>
+        <button mat-icon-button (click)="closeOfferModal()"><mat-icon>close</mat-icon></button>
+      </div>
+      <form [formGroup]="offerForm" (ngSubmit)="saveOffer()" class="modal-form">
+        <div class="form-row">
+          <mat-form-field appearance="outline">
+            <mat-label>Offer Date</mat-label>
+            <input matInput type="date" formControlName="offerDate" />
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Joining Date</mat-label>
+            <input matInput type="date" formControlName="joiningDate" />
+          </mat-form-field>
+        </div>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Offered Salary CTC (INR Annual)</mat-label>
+          <input matInput type="number" formControlName="offeredSalaryCTC" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Remarks / Special Terms</mat-label>
+          <textarea matInput rows="2" formControlName="remarks"></textarea>
+        </mat-form-field>
+
+        <div class="modal-actions">
+          <button type="button" mat-button (click)="closeOfferModal()">Cancel</button>
+          <button type="submit" mat-raised-button color="primary" [disabled]="offerForm.invalid">Save & Send Offer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- Convert to Employee (Hire) Modal -->
+@if (showHireModal) {
+  <div class="modal-backdrop">
+    <div class="modal-card modal-large">
+      <div class="modal-header">
+        <h2>Onboard & Hire: {{ activeApplication?.candidateName }}</h2>
+        <button mat-icon-button (click)="closeHireModal()"><mat-icon>close</mat-icon></button>
+      </div>
+      <form [formGroup]="hireForm" (ngSubmit)="submitHire()" class="modal-form">
+        <p class="modal-hint">This action creates an Employee profile, provisions a user account, assigns the initial salary structure, and launches the onboarding checklist.</p>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline">
+            <mat-label>Employee Code</mat-label>
+            <input matInput formControlName="employeeCode" />
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Official Email</mat-label>
+            <input matInput type="email" formControlName="officialEmail" />
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline">
+            <mat-label>Initial Temporary Password</mat-label>
+            <input matInput formControlName="initialPassword" />
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Joining Date</mat-label>
+            <input matInput type="date" formControlName="joiningDate" />
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline">
+            <mat-label>Department</mat-label>
+            <mat-select formControlName="departmentId">
+              @for (d of departments(); track d.id) {
+                <mat-option [value]="d.id">{{ d.name }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Designation</mat-label>
+            <mat-select formControlName="designationId">
+              @for (ds of designations(); track ds.id) {
+                <mat-option [value]="ds.id">{{ ds.title }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        </div>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Auto-Assign Onboarding Checklist</mat-label>
+          <mat-select formControlName="onboardingTemplateId">
+            @for (t of onboardingTemplates(); track t.id) {
+              <mat-option [value]="t.id">{{ t.name }} ({{ t.tasks.length || 0 }} tasks)</mat-option>
+            }
+
+          </mat-select>
+        </mat-form-field>
+
+        <h4 class="form-subtitle">Initial Monthly Salary Components (INR)</h4>
+        <div class="form-row">
+          <mat-form-field appearance="outline">
+            <mat-label>Basic Salary</mat-label>
+            <input matInput type="number" formControlName="basicSalary" />
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>HRA</mat-label>
+            <input matInput type="number" formControlName="hra" />
+          </mat-form-field>
+        </div>
+        <div class="form-row">
+          <mat-form-field appearance="outline">
+            <mat-label>Special Allowance</mat-label>
+            <input matInput type="number" formControlName="specialAllowance" />
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Other Allowances</mat-label>
+            <input matInput type="number" formControlName="otherAllowances" />
+          </mat-form-field>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" mat-button (click)="closeHireModal()">Cancel</button>
+          <button type="submit" mat-raised-button color="accent" [disabled]="hireForm.invalid">
+            <mat-icon>check_circle</mat-icon> Complete Hire & Launch Onboarding
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}

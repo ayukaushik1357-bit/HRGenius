@@ -49,6 +49,26 @@ export const routes: Routes = [
         loadComponent: () => import('./features/designations/designation-list/designation-list.component').then(m => m.DesignationListComponent),
         canActivate: [roleGuard],
         data: { roles: ['ADMIN', 'HR_MANAGER'] }
+      },
+      {
+        path: 'recruitment',
+        loadComponent: () => import('./features/recruitment/recruitment.component').then(m => m.RecruitmentComponent)
+      },
+      {
+        path: 'onboarding',
+        loadComponent: () => import('./features/onboarding/onboarding.component').then(m => m.OnboardingComponent)
+      },
+      {
+        path: 'attendance',
+        loadComponent: () => import('./features/attendance/attendance.component').then(m => m.AttendanceComponent)
+      },
+      {
+        path: 'leaves',
+        loadComponent: () => import('./features/leaves/leaves.component').then(m => m.LeavesComponent)
+      },
+      {
+        path: 'payroll',
+        loadComponent: () => import('./features/payroll/payroll.component').then(m => m.PayrollComponent)
       }
     ]
   },
