@@ -16,7 +16,15 @@ export const routes: Routes = [
       {
         path: '',
         pathMatch: 'full',
-        redirectTo: 'employees'
+        redirectTo: 'portal'
+      },
+      {
+        path: 'portal',
+        loadComponent: () => import('./features/portal/portal.component').then(m => m.PortalComponent)
+      },
+      {
+        path: 'analytics',
+        loadComponent: () => import('./features/analytics/analytics.component').then(m => m.AnalyticsComponent)
       },
       {
         path: 'employees',
@@ -67,13 +75,27 @@ export const routes: Routes = [
         loadComponent: () => import('./features/leaves/leaves.component').then(m => m.LeavesComponent)
       },
       {
+        path: 'performance',
+        loadComponent: () => import('./features/performance/performance.component').then(m => m.PerformanceComponent)
+      },
+      {
         path: 'payroll',
         loadComponent: () => import('./features/payroll/payroll.component').then(m => m.PayrollComponent)
+      },
+      {
+        path: 'offboarding',
+        loadComponent: () => import('./features/offboarding/offboarding.component').then(m => m.OffboardingComponent)
+      },
+      {
+        path: 'audit',
+        loadComponent: () => import('./features/audit/audit.component').then(m => m.AuditComponent),
+        canActivate: [roleGuard],
+        data: { roles: ['ADMIN'] }
       }
     ]
   },
   {
     path: '**',
-    redirectTo: 'employees'
+    redirectTo: 'portal'
   }
 ];

@@ -1,0 +1,221 @@
+<div class="portal-container">
+  @if (dashboard) {
+    <!-- Welcome Banner -->
+    <div class="welcome-banner card-elevated">
+      <div class="user-greeting">
+        <div class="user-avatar-large">
+          {{ dashboard.profile.firstName.charAt(0) }}{{ dashboard.profile.lastName.charAt(0) }}
+        </div>
+        <div class="greeting-text">
+          <h1>Welcome back, {{ dashboard.profile.firstName }}!</h1>
+          <p class="role-desc">
+            {{ dashboard.profile.designationTitle || 'Staff Member' }} &bull; {{ dashboard.profile.departmentName || 'General' }} &bull; ID: {{ dashboard.profile.employeeCode }}
+          </p>
+        </div>
+      </div>
+
+      <!-- Quick Punch Action -->
+      <div class="punch-widget">
+        <div class="punch-info">
+          <span class="punch-label">Today's Punch</span>
+          <b class="punch-time">
+            {{ dashboard.todayAttendance?.checkInTime ? ('In: ' + (dashboard.todayAttendance?.checkInTime | slice:11:16)) : 'Not Punched In' }}
+          </b>
+        </div>
+        @if (!dashboard.todayAttendance?.checkInTime) {
+          <button mat-raised-button color="primary" (click)="punchIn()">
+            <mat-icon>login</mat-icon> Clock In
+          </button>
+        } @else if (!dashboard.todayAttendance?.checkOutTime) {
+          <button mat-raised-button color="accent" (click)="punchOut()">
+            <mat-icon>logout</mat-icon> Clock Out
+          </button>
+        } @else {
+          <span class="badge badge-success">Completed ({{ dashboard.todayAttendance?.workingHours }}h)</span>
+        }
+      </div>
+    </div>
+
+    <!-- 4 Quick Glance Summary Cards -->
+    <div class="glance-grid">
+      <!-- Leave Balance Card -->
+      <div class="glance-card card-elevated">
+        <div class="card-top">
+          <mat-icon class="icon-leave">event_available</mat-icon>
+          <h3>Leave Balances</h3>
+        </div>
+        <div class="leave-pills">
+          <div class="leave-pill">
+            <span class="leave-type">Casual</span>
+            <span class="leave-val">{{ dashboard.leaveBalance?.casualRemaining || 0 }}</span>
+          </div>
+          <div class="leave-pill">
+            <span class="leave-type">Sick</span>
+            <span class="leave-val">{{ dashboard.leaveBalance?.sickRemaining || 0 }}</span>
+          </div>
+          <div class="leave-pill">
+            <span class="leave-type">Earned</span>
+            <span class="leave-val">{{ dashboard.leaveBalance?.earnedRemaining || 0 }}</span>
+          </div>
+        </div>
+        <a mat-button color="primary" routerLink="/leaves" class="action-link">Apply Leave &rarr;</a>
+      </div>
+
+      <!-- Latest Payslip Card -->
+      <div class="glance-card card-elevated">
+        <div class="card-top">
+          <mat-icon class="icon-pay">receipt_long</mat-icon>
+          <h3>Latest Payslip</h3>
+        </div>
+        @if (dashboard.latestPayslip) {
+          <div class="payslip-preview">
+            <div class="ps-month">{{ dashboard.latestPayslip.month }}/{{ dashboard.latestPayslip.year }}</div>
+            <div class="ps-amount">₹{{ dashboard.latestPayslip.netSalary | number:'1.2-2' }}</div>
+            <span class="badge badge-success">Net Paid</span>
+          </div>
+          <button mat-stroked-button color="primary" (click)="downloadLatestPayslip()" class="action-link">
+            <mat-icon>download</mat-icon> Download PDF
+          </button>
+        } @else {
+          <p class="empty-sub">No payslip generated yet.</p>
+        }
+      </div>
+
+      <!-- Pending Tasks Card -->
+      <div class="glance-card card-elevated">
+        <div class="card-top">
+          <mat-icon class="icon-task">task_alt</mat-icon>
+          <h3>Pending Action Items</h3>
+        </div>
+        <div class="task-count-box">
+          <span class="count-num">{{ dashboard.pendingTasksCount }}</span>
+          <span class="count-sub">Onboarding & Appraisals</span>
+        </div>
+        <a mat-button color="primary" routerLink="/performance" class="action-link">View Tasks &rarr;</a>
+      </div>
+
+      <!-- Profile Update Request Card -->
+      <div class="glance-card card-elevated">
+        <div class="card-top">
+          <mat-icon class="icon-profile">manage_accounts</mat-icon>
+          <h3>Profile Details</h3>
+        </div>
+        <p class="profile-meta">
+          Phone: {{ dashboard.profile.phone || 'Not added' }}<br>
+          Bank: {{ dashboard.profile.bankAccountNumber ? 'Connected' : 'Missing' }}
+        </p>
+        <button mat-stroked-button color="primary" (click)="openUpdateModal()" class="action-link">
+          Request Changes
+        </button>
+      </div>
+    </div>
+
+    <!-- Upcoming Holidays & Profile Updates Grid -->
+    <div class="lower-grid">
+      <!-- Upcoming Holidays -->
+      <div class="holidays-card card-elevated">
+        <div class="card-header">
+          <div class="title-wrap">
+            <mat-icon>celebration</mat-icon>
+            <h3>Upcoming Public Holidays</h3>
+          </div>
+        </div>
+        <div class="holiday-list">
+          @for (h of dashboard.upcomingHolidays; track h.id) {
+            <div class="holiday-item">
+              <div class="h-date-box">
+                <span class="h-day">{{ h.holidayDate | slice:8:10 }}</span>
+                <span class="h-month">{{ h.holidayDate | slice:5:7 }}</span>
+              </div>
+              <div class="h-info">
+                <h4>{{ h.name }}</h4>
+                <p>{{ h.description }}</p>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Pending Profile Approvals (Admin/HR) or My Requests (Employee) -->
+      <div class="requests-card card-elevated">
+        <div class="card-header">
+          <div class="title-wrap">
+            <mat-icon>pending_actions</mat-icon>
+            <h3>{{ isAdminOrHr ? 'Profile Change Requests (HR)' : 'My Change Requests' }}</h3>
+          </div>
+        </div>
+
+        @if (isAdminOrHr && pendingAdminRequests.length > 0) {
+          <div class="requests-list">
+            @for (req of pendingAdminRequests; track req.id) {
+              <div class="req-item">
+                <div class="req-details">
+                  <b>{{ req.employeeName }}</b> ({{ req.employeeCode }})
+                  <pre class="changes-json">{{ req.requestedChanges }}</pre>
+                </div>
+                <div class="req-actions">
+                  <button mat-raised-button color="primary" (click)="reviewRequest(req, true)">Approve</button>
+                  <button mat-button color="warn" (click)="reviewRequest(req, false)">Reject</button>
+                </div>
+              </div>
+            }
+          </div>
+        } @else if (myRequests.length > 0) {
+          <div class="requests-list">
+            @for (req of myRequests; track req.id) {
+              <div class="req-item">
+                <div class="req-details">
+                  <span class="badge" [class.badge-pending]="req.status === 'PENDING'" [class.badge-success]="req.status === 'APPROVED'">
+                    {{ req.status }}
+                  </span>
+                  <div class="sub-text">Submitted on: {{ req.createdAt | date:'short' }}</div>
+                  <pre class="changes-json">{{ req.requestedChanges }}</pre>
+                </div>
+              </div>
+            }
+          </div>
+        } @else {
+          <div class="empty-requests">
+            <mat-icon>check_circle_outline</mat-icon>
+            <p>No pending profile change requests.</p>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- Modal: Request Profile Update -->
+  @if (showUpdateModal) {
+    <div class="modal-backdrop">
+      <div class="modal-content card-elevated">
+        <h2>Request Profile Updates</h2>
+        <p class="sub-text">Proposed updates will be routed to HR for compliance verification.</p>
+
+        <mat-form-field appearance="outline" class="w-full">
+          <mat-label>Mobile Phone</mat-label>
+          <input matInput [(ngModel)]="updateForm.phone">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="w-full">
+          <mat-label>Bank Account Number</mat-label>
+          <input matInput [(ngModel)]="updateForm.bankAccountNumber">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="w-full">
+          <mat-label>Bank IFSC Code</mat-label>
+          <input matInput [(ngModel)]="updateForm.bankIfscCode">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="w-full">
+          <mat-label>Bank Name</mat-label>
+          <input matInput [(ngModel)]="updateForm.bankName">
+        </mat-form-field>
+
+        <div class="modal-actions">
+          <button mat-button (click)="showUpdateModal = false">Cancel</button>
+          <button mat-raised-button color="primary" (click)="submitUpdateRequest()">Submit to HR</button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

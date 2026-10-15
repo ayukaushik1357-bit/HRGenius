@@ -20,7 +20,14 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Service;
 
+import com.hrgenius.entity.User;
+import com.hrgenius.repository.UserRepository;
+import org.springframework.security.authentication.BadCredentialsException;
+
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -33,14 +40,58 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider tokenProvider;
     private final UserDetailsService userDetailsService;
+    private final UserRepository userRepository;
 
     public AuthResponse login(LoginRequest loginRequest, HttpServletResponse response) {
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        loginRequest.getUsername(),
-                        loginRequest.getPassword()
-                )
-        );
+        Optional<User> userOpt = userRepository.findByUsername(loginRequest.getUsername());
+        if (userOpt.isPresent()) {
+            User user = userOpt.get();
+            if (user.getLockoutTime() != null) {
+                if (user.getLockoutTime().isAfter(LocalDateTime.now())) {
+                    String unlockTime = user.getLockoutTime().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
+                    throw new BadRequestException("Account is locked due to repeated failed login attempts. Try again after " + unlockTime);
+                } else {
+                    user.setLockoutTime(null);
+                    user.setFailedAttempts(0);
+                    userRepository.save(user);
+                }
+            }
+        }
+
+        Authentication authentication;
+        try {
+            authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            loginRequest.getUsername(),
+                            loginRequest.getPassword()
+                    )
+            );
+        } catch (BadCredentialsException ex) {
+            if (userOpt.isPresent()) {
+                User user = userOpt.get();
+                int attempts = user.getFailedAttempts() + 1;
+                user.setFailedAttempts(attempts);
+                if (attempts >= 5) {
+                    user.setLockoutTime(LocalDateTime.now().plusMinutes(15));
+                    userRepository.save(user);
+                    throw new BadRequestException("Account locked for 15 minutes due to 5 consecutive failed login attempts.");
+                } else {
+                    userRepository.save(user);
+                    throw new BadRequestException("Invalid credentials. Remaining attempts before account lockout: " + (5 - attempts));
+                }
+            }
+            throw new BadRequestException("Invalid username or password");
+        }
+
+        // Reset failed attempts on successful login
+        if (userOpt.isPresent()) {
+            User user = userOpt.get();
+            if (user.getFailedAttempts() > 0 || user.getLockoutTime() != null) {
+                user.setFailedAttempts(0);
+                user.setLockoutTime(null);
+                userRepository.save(user);
+            }
+        }
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
 

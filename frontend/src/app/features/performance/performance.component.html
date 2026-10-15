@@ -1,0 +1,278 @@
+<div class="performance-container">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-left">
+      <h1 class="page-title">Performance & Goals</h1>
+      <p class="page-subtitle">Track key results, self-evaluations, manager reviews, and 360 peer feedback</p>
+    </div>
+    <div class="header-actions">
+      @if (isAdminOrHr) {
+        <button mat-stroked-button color="primary" (click)="openCreateCycle()">
+          <mat-icon>add_circle_outline</mat-icon>
+          New Review Cycle
+        </button>
+      }
+      <button mat-raised-button color="primary" (click)="openCreateGoal()">
+        <mat-icon>flag</mat-icon>
+        Add Goal / KRA
+      </button>
+    </div>
+  </div>
+
+  <!-- Cycle Selector Toolbar -->
+  <div class="cycle-toolbar card-elevated">
+    <div class="cycle-select-wrap">
+      <mat-icon class="icon-accent">event_repeat</mat-icon>
+      <mat-form-field appearance="outline" class="cycle-field">
+        <mat-label>Select Active Review Cycle</mat-label>
+        <mat-select [(ngModel)]="selectedCycleId" (selectionChange)="onCycleChange()">
+          @for (c of cycles; track c.id) {
+            <mat-option [value]="c.id">{{ c.name }} ({{ c.startDate }} to {{ c.endDate }})</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    @if (myReview) {
+      <div class="my-status-pill" [class]="myReview.status ? myReview.status.toLowerCase() : ''">
+        <span>Appraisal Status:</span>
+        <b>{{ myReview.status }}</b>
+        @if (myReview.finalRating) {
+          <span class="rating-badge">★ {{ myReview.finalRating }} / 5.0</span>
+        }
+      </div>
+    }
+  </div>
+
+  <!-- Tabs Navigation -->
+  <mat-tab-group animationDuration="200ms" class="content-tabs card-elevated">
+    <!-- Tab 1: My Goals / KRAs -->
+    <mat-tab label="My Goals & KRAs">
+      <div class="tab-body">
+        <div class="goals-list">
+          @for (goal of goals; track goal.id) {
+            <div class="goal-item card-sub">
+              <div class="goal-header">
+                <div class="goal-title-wrap">
+                  <mat-icon class="goal-icon">task_alt</mat-icon>
+                  <div>
+                    <h3 class="goal-title">{{ goal.title }}</h3>
+                    <p class="goal-desc">{{ goal.description }}</p>
+                  </div>
+                </div>
+                <div class="weightage-badge">Weight: {{ goal.weightage }}%</div>
+              </div>
+
+              <div class="progress-section">
+                <div class="progress-meta">
+                  <span>Current Progress</span>
+                  <b>{{ goal.progressPercentage }}%</b>
+                </div>
+                <mat-progress-bar mode="determinate" [value]="goal.progressPercentage" class="goal-bar"></mat-progress-bar>
+                <div class="slider-controls">
+                  <mat-slider min="0" max="100" step="5" class="goal-slider">
+                    <input matSliderThumb [ngModel]="goal.progressPercentage" (ngModelChange)="updateGoalProgress(goal, $event)">
+                  </mat-slider>
+                </div>
+              </div>
+            </div>
+          }
+          @if (goals.length === 0) {
+            <div class="empty-state">
+              <mat-icon>flag</mat-icon>
+              <p>No goals set for this cycle yet. Click "+ Add Goal / KRA" above.</p>
+            </div>
+          }
+        </div>
+      </div>
+    </mat-tab>
+
+    <!-- Tab 2: My Appraisal -->
+    <mat-tab label="My Appraisal">
+      <div class="tab-body">
+        @if (myReview) {
+          <div class="appraisal-card card-sub">
+            <div class="appraisal-steps">
+              <div class="step" [class.done]="myReview.status !== 'NOT_STARTED'">
+                <div class="step-num">1</div>
+                <div class="step-label">Goals Setting</div>
+              </div>
+              <div class="step-line" [class.done]="myReview.status === 'MANAGER_REVIEW' || myReview.status === 'COMPLETED'"></div>
+              <div class="step" [class.done]="myReview.status === 'MANAGER_REVIEW' || myReview.status === 'COMPLETED'">
+                <div class="step-num">2</div>
+                <div class="step-label">Self Review</div>
+              </div>
+              <div class="step-line" [class.done]="myReview.status === 'COMPLETED'"></div>
+              <div class="step" [class.done]="myReview.status === 'COMPLETED'">
+                <div class="step-num">3</div>
+                <div class="step-label">Manager Review</div>
+              </div>
+            </div>
+
+            <div class="review-details-grid">
+              <div class="detail-box">
+                <h4>Employee Self-Appraisal</h4>
+                <p><b>Self Rating:</b> {{ myReview.selfRating ? (myReview.selfRating + ' / 5.0') : 'Pending' }}</p>
+                <p><b>Self Comments:</b> {{ myReview.selfComments || 'Not submitted yet.' }}</p>
+                @if (myReview.status === 'NOT_STARTED' || myReview.status === 'SELF_REVIEW') {
+                  <button mat-stroked-button color="primary" (click)="openAppraisalModal(myReview, 'SELF')">
+                    <mat-icon>edit_note</mat-icon>
+                    Submit Self Review
+                  </button>
+                }
+              </div>
+
+              <div class="detail-box">
+                <h4>Manager Evaluation & Final Score</h4>
+                <p><b>Manager:</b> {{ myReview.managerName || 'Assigned Lead' }}</p>
+                <p><b>Manager Rating:</b> {{ myReview.managerRating ? (myReview.managerRating + ' / 5.0') : 'Awaiting' }}</p>
+                <p><b>Manager Comments:</b> {{ myReview.managerComments || 'Awaiting self-review submission.' }}</p>
+                @if (myReview.finalRating) {
+                  <div class="final-score-callout">
+                    <span>Weighted Final Rating</span>
+                    <h3>★ {{ myReview.finalRating }} / 5.0</h3>
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+        } @else {
+          <div class="empty-state">
+            <p>Appraisal record not initialized for this cycle.</p>
+          </div>
+        }
+      </div>
+    </mat-tab>
+
+    <!-- Tab 3: Team Appraisals (Manager / HR only) -->
+    @if (isManager) {
+      <mat-tab label="Team Appraisals (Manager)">
+        <div class="tab-body">
+          <table mat-table [dataSource]="teamReviews" class="w-full">
+            <ng-container matColumnDef="employee">
+              <th mat-header-cell *matHeaderCellDef>Employee</th>
+              <td mat-cell *matCellDef="let r">
+                <b>{{ r.employeeName }}</b> ({{ r.employeeCode }})
+                <div class="sub-text">{{ r.designationTitle }}</div>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="status">
+              <th mat-header-cell *matHeaderCellDef>Stage</th>
+              <td mat-cell *matCellDef="let r">
+                <span class="badge" [class.badge-pending]="r.status === 'MANAGER_REVIEW'" [class.badge-success]="r.status === 'COMPLETED'">
+                  {{ r.status }}
+                </span>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="selfRating">
+              <th mat-header-cell *matHeaderCellDef>Self Rating</th>
+              <td mat-cell *matCellDef="let r">{{ r.selfRating ? (r.selfRating + ' ★') : '-' }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="finalRating">
+              <th mat-header-cell *matHeaderCellDef>Final Score</th>
+              <td mat-cell *matCellDef="let r">
+                <b>{{ r.finalRating ? (r.finalRating + ' / 5.0') : '-' }}</b>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="actions">
+              <th mat-header-cell *matHeaderCellDef>Action</th>
+              <td mat-cell *matCellDef="let r">
+                @if (r.status === 'MANAGER_REVIEW') {
+                  <button mat-raised-button color="primary" (click)="openAppraisalModal(r, 'MANAGER')">
+                    Evaluate
+                  </button>
+                } @else if (r.status === 'COMPLETED') {
+                  <button mat-button color="accent" (click)="openAppraisalModal(r, 'PEER')">
+                    + 360 Feedback
+                  </button>
+                }
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="['employee', 'status', 'selfRating', 'finalRating', 'actions']"></tr>
+            <tr mat-row *matRowDef="let row; columns: ['employee', 'status', 'selfRating', 'finalRating', 'actions'];"></tr>
+          </table>
+        </div>
+      </mat-tab>
+    }
+  </mat-tab-group>
+
+  <!-- Modal 1: Add Goal -->
+  @if (showNewGoalModal) {
+    <div class="modal-backdrop">
+      <div class="modal-content card-elevated">
+        <h2>Add Goal / KRA</h2>
+        <mat-form-field appearance="outline" class="w-full">
+          <mat-label>Goal Title</mat-label>
+          <input matInput [(ngModel)]="newGoal.title" placeholder="e.g. Deliver Microservice Architecture">
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="w-full">
+          <mat-label>Description</mat-label>
+          <textarea matInput [(ngModel)]="newGoal.description" rows="3"></textarea>
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="w-full">
+          <mat-label>Weightage (%)</mat-label>
+          <input matInput type="number" [(ngModel)]="newGoal.weightage">
+        </mat-form-field>
+        <div class="modal-actions">
+          <button mat-button (click)="showNewGoalModal = false">Cancel</button>
+          <button mat-raised-button color="primary" (click)="saveGoal()">Save Goal</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Modal 2: Create Review Cycle -->
+  @if (showNewCycleModal) {
+    <div class="modal-backdrop">
+      <div class="modal-content card-elevated">
+        <h2>Create Appraisal Review Cycle</h2>
+        <mat-form-field appearance="outline" class="w-full">
+          <mat-label>Cycle Name</mat-label>
+          <input matInput [(ngModel)]="newCycle.name" placeholder="e.g. Q3 2025 Performance Review">
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="w-full">
+          <mat-label>Start Date</mat-label>
+          <input matInput type="date" [(ngModel)]="newCycle.startDate">
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="w-full">
+          <mat-label>End Date</mat-label>
+          <input matInput type="date" [(ngModel)]="newCycle.endDate">
+        </mat-form-field>
+        <div class="modal-actions">
+          <button mat-button (click)="showNewCycleModal = false">Cancel</button>
+          <button mat-raised-button color="primary" (click)="saveCycle()">Create & Initialize</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Modal 3: Appraisal / Feedback -->
+  @if (selectedReviewForAction) {
+    <div class="modal-backdrop">
+      <div class="modal-content card-elevated">
+        <h2>{{ appraisalMode === 'SELF' ? 'Self-Appraisal' : appraisalMode === 'MANAGER' ? 'Manager Review & Rating' : '360 Peer Feedback' }}</h2>
+        <p class="sub-text">Evaluating: {{ selectedReviewForAction.employeeName }}</p>
+
+        <mat-form-field appearance="outline" class="w-full">
+          <mat-label>Rating (1.0 to 5.0)</mat-label>
+          <input matInput type="number" min="1.0" max="5.0" step="0.1" [(ngModel)]="appraisalRating">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="w-full">
+          <mat-label>Comments & Accomplishments</mat-label>
+          <textarea matInput [(ngModel)]="appraisalComments" rows="4"></textarea>
+        </mat-form-field>
+
+        <div class="modal-actions">
+          <button mat-button (click)="selectedReviewForAction = null">Cancel</button>
+          <button mat-raised-button color="primary" (click)="submitAppraisal()">Submit Evaluation</button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

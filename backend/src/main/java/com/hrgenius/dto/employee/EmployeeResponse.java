@@ -36,6 +36,12 @@ public class EmployeeResponse {
     private String status;
     private BigDecimal salaryCTC;
 
+    private String panNumber;
+    private String aadhaarNumber;
+    private String bankAccountNumber;
+    private String bankIfscCode;
+    private String bankName;
+
     private List<AddressDto> addresses;
     private List<EmergencyContactDto> emergencyContacts;
     private List<DocumentDto> documents;

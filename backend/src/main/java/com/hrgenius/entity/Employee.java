@@ -86,6 +86,21 @@ public class Employee extends BaseEntity {
     @Column(name = "salary_ctc", precision = 15, scale = 2)
     private BigDecimal salaryCTC;
 
+    @Column(name = "pan_number", length = 20)
+    private String panNumber;
+
+    @Column(name = "aadhaar_number", length = 20)
+    private String aadhaarNumber;
+
+    @Column(name = "bank_account_number", length = 30)
+    private String bankAccountNumber;
+
+    @Column(name = "bank_ifsc_code", length = 20)
+    private String bankIfscCode;
+
+    @Column(name = "bank_name", length = 100)
+    private String bankName;
+
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;

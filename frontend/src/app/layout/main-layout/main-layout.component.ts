@@ -30,6 +30,10 @@ export class MainLayoutComponent implements OnInit {
     return 'User';
   }
 
+  get isAdmin(): boolean {
+    return this.authService.hasRole('ADMIN');
+  }
+
   get isAdminOrHr(): boolean {
     return this.authService.hasAnyRole(['ADMIN', 'HR_MANAGER']);
   }

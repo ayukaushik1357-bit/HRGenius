@@ -1,0 +1,181 @@
+<div class="analytics-container">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-left">
+      <h1 class="page-title">HR & Workforce Analytics</h1>
+      <p class="page-subtitle">Real-time organizational insights, talent pipeline, attrition, and payroll metrics</p>
+    </div>
+    <div class="header-actions">
+      <button mat-stroked-button color="primary" (click)="exportExcel()" [disabled]="exportingExcel">
+        <mat-icon>table_chart</mat-icon>
+        {{ exportingExcel ? 'Exporting...' : 'Export Excel' }}
+      </button>
+      <button mat-raised-button color="primary" (click)="exportPdf()" [disabled]="exportingPdf">
+        <mat-icon>picture_as_pdf</mat-icon>
+        {{ exportingPdf ? 'Generating...' : 'Export PDF' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Filters Toolbar -->
+  <div class="filter-toolbar card-elevated">
+    <div class="filter-group">
+      <mat-form-field appearance="outline" class="filter-field">
+        <mat-label>View Perspective</mat-label>
+        <mat-select [(ngModel)]="selectedRole" (selectionChange)="onFilterChange()">
+          <mat-option value="HR_MANAGER">HR / Executive (Company-wide)</mat-option>
+          <mat-option value="MANAGER">Manager (Team View)</mat-option>
+          <mat-option value="EMPLOYEE">Individual Contributor</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="filter-field">
+        <mat-label>Department</mat-label>
+        <mat-select [(ngModel)]="selectedDepartmentId" (selectionChange)="onFilterChange()">
+          <mat-option [value]="undefined">All Departments</mat-option>
+          @for (dept of departments; track dept.id) {
+            <mat-option [value]="dept.id">{{ dept.name }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    <div class="last-refreshed">
+      <mat-icon>sync</mat-icon>
+      <span>Live DB Aggregation</span>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  @if (loading) {
+    <div class="loading-shade">
+      <mat-spinner diameter="44"></mat-spinner>
+      <p>Crunching workforce data...</p>
+    </div>
+  } @else if (dashboardData) {
+    <!-- KPI Summary Grid -->
+    <div class="kpi-grid">
+      <div class="kpi-card blue">
+        <div class="kpi-icon-wrap"><mat-icon>groups</mat-icon></div>
+        <div class="kpi-info">
+          <span class="kpi-label">Active Headcount</span>
+          <span class="kpi-value">{{ dashboardData.activeEmployees }}</span>
+          <span class="kpi-sub">Total: {{ dashboardData.totalHeadcount }} employees</span>
+        </div>
+      </div>
+
+      <div class="kpi-card red">
+        <div class="kpi-icon-wrap"><mat-icon>trending_down</mat-icon></div>
+        <div class="kpi-info">
+          <span class="kpi-label">Attrition Rate</span>
+          <span class="kpi-value">{{ dashboardData.attritionRate }}%</span>
+          <span class="kpi-sub">Past 12 months rolling</span>
+        </div>
+      </div>
+
+      <div class="kpi-card teal">
+        <div class="kpi-icon-wrap"><mat-icon>hourglass_bottom</mat-icon></div>
+        <div class="kpi-info">
+          <span class="kpi-label">Average Tenure</span>
+          <span class="kpi-value">{{ dashboardData.averageTenureYears }} Yrs</span>
+          <span class="kpi-sub">Retention strength</span>
+        </div>
+      </div>
+
+      <div class="kpi-card purple">
+        <div class="kpi-icon-wrap"><mat-icon>payments</mat-icon></div>
+        <div class="kpi-info">
+          <span class="kpi-label">Monthly Gross Payroll</span>
+          <span class="kpi-value">₹{{ dashboardData.monthlyPayrollTotal | number:'1.0-0' }}</span>
+          <span class="kpi-sub">Current pay run</span>
+        </div>
+      </div>
+
+      <div class="kpi-card amber">
+        <div class="kpi-icon-wrap"><mat-icon>work_outline</mat-icon></div>
+        <div class="kpi-info">
+          <span class="kpi-label">Open Requisitions</span>
+          <span class="kpi-value">{{ dashboardData.openRequisitions }}</span>
+          <span class="kpi-sub">Active talent pipelines</span>
+        </div>
+      </div>
+
+      <div class="kpi-card green">
+        <div class="kpi-icon-wrap"><mat-icon>grade</mat-icon></div>
+        <div class="kpi-info">
+          <span class="kpi-label">Average Appraisal</span>
+          <span class="kpi-value">{{ dashboardData.averagePerformanceRating }} / 5.0</span>
+          <span class="kpi-sub">Weighted goal score</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts Row 1 -->
+    <div class="charts-grid-2">
+      <div class="chart-card card-elevated">
+        <div class="chart-header">
+          <div class="chart-title-wrap">
+            <mat-icon>domain</mat-icon>
+            <h3>Headcount by Department</h3>
+          </div>
+          <span class="chart-badge">Active Staff</span>
+        </div>
+        <div class="canvas-wrapper">
+          <canvas #headcountCanvas></canvas>
+        </div>
+      </div>
+
+      <div class="chart-card card-elevated">
+        <div class="chart-header">
+          <div class="chart-title-wrap">
+            <mat-icon>timeline</mat-icon>
+            <h3>Joining vs Exit Trend (6 Months)</h3>
+          </div>
+          <span class="chart-badge">Movement</span>
+        </div>
+        <div class="canvas-wrapper">
+          <canvas #trendCanvas></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts Row 2 -->
+    <div class="charts-grid-3">
+      <div class="chart-card card-elevated">
+        <div class="chart-header">
+          <div class="chart-title-wrap">
+            <mat-icon>pie_chart</mat-icon>
+            <h3>Gender Diversity</h3>
+          </div>
+        </div>
+        <div class="canvas-wrapper">
+          <canvas #genderCanvas></canvas>
+        </div>
+      </div>
+
+      <div class="chart-card card-elevated">
+        <div class="chart-header">
+          <div class="chart-title-wrap">
+            <mat-icon>filter_alt</mat-icon>
+            <h3>Recruitment Pipeline</h3>
+          </div>
+        </div>
+        <div class="canvas-wrapper">
+          <canvas #funnelCanvas></canvas>
+        </div>
+      </div>
+
+      <div class="chart-card card-elevated">
+        <div class="chart-header">
+          <div class="chart-title-wrap">
+            <mat-icon>stars</mat-icon>
+            <h3>Performance Distribution</h3>
+          </div>
+        </div>
+        <div class="canvas-wrapper">
+          <canvas #ratingCanvas></canvas>
+        </div>
+      </div>
+    </div>
+  }
+</div>

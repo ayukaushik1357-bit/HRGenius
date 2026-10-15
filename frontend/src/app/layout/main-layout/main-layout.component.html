@@ -12,8 +12,22 @@
     </div>
 
     <nav class="nav-links">
-      <!-- Section 1: People & Organization -->
-      <div class="nav-section-label">PEOPLE & ORGANIZATION</div>
+      <!-- Section 1: Self Service -->
+      <div class="nav-section-label">MY WORKSPACE</div>
+      <a mat-list-item routerLink="/portal" routerLinkActive="active" class="nav-item">
+        <mat-icon>dashboard_customize</mat-icon>
+        <span class="nav-text">My Portal</span>
+      </a>
+
+      <!-- Section 2: Analytics & Insights -->
+      <div class="nav-section-label">INTELLIGENCE</div>
+      <a mat-list-item routerLink="/analytics" routerLinkActive="active" class="nav-item">
+        <mat-icon>insights</mat-icon>
+        <span class="nav-text">HR Analytics</span>
+      </a>
+
+      <!-- Section 3: People & Organization -->
+      <div class="nav-section-label">PEOPLE & ORG</div>
       <a mat-list-item routerLink="/employees" routerLinkActive="active" class="nav-item">
         <mat-icon>people_alt</mat-icon>
         <span class="nav-text">Employees</span>
@@ -31,7 +45,7 @@
         </a>
       }
 
-      <!-- Section 2: Talent Acquisition -->
+      <!-- Section 4: Talent Acquisition -->
       <div class="nav-section-label">TALENT ACQUISITION</div>
       <a mat-list-item routerLink="/recruitment" routerLinkActive="active" class="nav-item">
         <mat-icon>view_kanban</mat-icon>
@@ -42,7 +56,7 @@
         <span class="nav-text">Onboarding</span>
       </a>
 
-      <!-- Section 3: Time & Attendance -->
+      <!-- Section 5: Time & Leave -->
       <div class="nav-section-label">TIME & LEAVE</div>
       <a mat-list-item routerLink="/attendance" routerLinkActive="active" class="nav-item">
         <mat-icon>schedule</mat-icon>
@@ -53,12 +67,32 @@
         <span class="nav-text">Leaves & Approvals</span>
       </a>
 
-      <!-- Section 4: Compensation -->
-      <div class="nav-section-label">COMPENSATION</div>
+      <!-- Section 6: Performance Management -->
+      <div class="nav-section-label">PERFORMANCE</div>
+      <a mat-list-item routerLink="/performance" routerLinkActive="active" class="nav-item">
+        <mat-icon>trending_up</mat-icon>
+        <span class="nav-text">Goals & Reviews</span>
+      </a>
+
+      <!-- Section 7: Compensation & Exit -->
+      <div class="nav-section-label">COMPENSATION & EXIT</div>
       <a mat-list-item routerLink="/payroll" routerLinkActive="active" class="nav-item">
         <mat-icon>account_balance_wallet</mat-icon>
         <span class="nav-text">Payroll & Payslips</span>
       </a>
+      <a mat-list-item routerLink="/offboarding" routerLinkActive="active" class="nav-item">
+        <mat-icon>exit_to_app</mat-icon>
+        <span class="nav-text">Offboarding & FnF</span>
+      </a>
+
+      <!-- Section 8: Compliance & Security -->
+      @if (isAdmin) {
+        <div class="nav-section-label">COMPLIANCE & SECURITY</div>
+        <a mat-list-item routerLink="/audit" routerLinkActive="active" class="nav-item">
+          <mat-icon>security</mat-icon>
+          <span class="nav-text">Audit Logs</span>
+        </a>
+      }
     </nav>
 
     <div class="sidebar-footer">

@@ -10,5 +10,6 @@ import java.util.Optional;
 public interface HolidayRepository extends JpaRepository<Holiday, Long> {
     Optional<Holiday> findByHolidayDate(LocalDate holidayDate);
     List<Holiday> findByHolidayDateBetweenOrderByHolidayDateAsc(LocalDate startDate, LocalDate endDate);
+    List<Holiday> findByHolidayDateGreaterThanEqualOrderByHolidayDateAsc(LocalDate holidayDate);
     boolean existsByHolidayDate(LocalDate holidayDate);
 }

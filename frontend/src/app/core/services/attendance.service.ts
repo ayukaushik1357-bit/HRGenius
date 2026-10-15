@@ -16,8 +16,16 @@ export class AttendanceService {
     return this.http.post<AttendanceRecord>(`${this.baseUrl}/check-in`, { notes });
   }
 
+  punchIn(notes?: string): Observable<AttendanceRecord> {
+    return this.checkIn(notes);
+  }
+
   checkOut(): Observable<AttendanceRecord> {
     return this.http.post<AttendanceRecord>(`${this.baseUrl}/check-out`, {});
+  }
+
+  punchOut(): Observable<AttendanceRecord> {
+    return this.checkOut();
   }
 
   getTodayAttendance(): Observable<AttendanceRecord> {

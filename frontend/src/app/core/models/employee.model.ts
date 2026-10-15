@@ -44,6 +44,11 @@ export interface Employee {
   employmentType: 'FULL_TIME' | 'PART_TIME' | 'CONTRACT' | 'INTERN';
   status: 'ACTIVE' | 'ON_NOTICE' | 'EXITED';
   salaryCTC?: number;
+  panNumber?: string;
+  aadhaarNumber?: string;
+  bankAccountNumber?: string;
+  bankIfscCode?: string;
+  bankName?: string;
   addresses?: Address[];
   emergencyContacts?: EmergencyContact[];
   documents?: DocumentMetadata[];
@@ -67,6 +72,11 @@ export interface EmployeeRequest {
   employmentType: 'FULL_TIME' | 'PART_TIME' | 'CONTRACT' | 'INTERN';
   status: 'ACTIVE' | 'ON_NOTICE' | 'EXITED';
   salaryCTC?: number;
+  panNumber?: string;
+  aadhaarNumber?: string;
+  bankAccountNumber?: string;
+  bankIfscCode?: string;
+  bankName?: string;
   addresses?: Address[];
   emergencyContacts?: EmergencyContact[];
 }

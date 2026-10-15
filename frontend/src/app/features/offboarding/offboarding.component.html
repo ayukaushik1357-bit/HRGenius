@@ -1,0 +1,223 @@
+<div class="offboarding-container">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-left">
+      <h1 class="page-title">Offboarding & Clearance</h1>
+      <p class="page-subtitle">Manage resignation workflow, departmental clearance, and Full & Final settlements</p>
+    </div>
+    <div class="header-actions">
+      <button mat-raised-button color="warn" (click)="showResignationModal = true">
+        <mat-icon>exit_to_app</mat-icon>
+        Submit Resignation
+      </button>
+    </div>
+  </div>
+
+  <mat-tab-group animationDuration="200ms" class="content-tabs card-elevated">
+    <!-- Tab 1: My Exit Status -->
+    <mat-tab label="My Resignation & Clearance">
+      <div class="tab-body">
+        @if (selectedRequest) {
+          <div class="exit-summary-grid">
+            <!-- Left: Request Details -->
+            <div class="card-sub">
+              <div class="sub-header">
+                <h3>Resignation Details</h3>
+                <span class="badge" [class.badge-pending]="selectedRequest.status === 'PENDING'" [class.badge-success]="selectedRequest.status === 'APPROVED' || selectedRequest.status === 'COMPLETED'">
+                  {{ selectedRequest.status }}
+                </span>
+              </div>
+              <p><b>Employee:</b> {{ selectedRequest.employeeName }} ({{ selectedRequest.employeeCode }})</p>
+              <p><b>Resignation Date:</b> {{ selectedRequest.resignationDate }}</p>
+              <p><b>Notice Period:</b> {{ selectedRequest.noticePeriodDays }} Days</p>
+              <p><b>Last Working Day:</b> {{ selectedRequest.lastWorkingDay }}</p>
+              <p><b>Reason:</b> {{ selectedRequest.reason }}</p>
+              @if (selectedRequest.remarks) {
+                <p><b>HR / Lead Remarks:</b> {{ selectedRequest.remarks }}</p>
+              }
+            </div>
+
+            <!-- Right: FnF Breakdown -->
+            @if (selectedRequest.settlement) {
+              <div class="card-sub fnf-card">
+                <div class="sub-header">
+                  <h3>Full & Final (FnF) Breakdown</h3>
+                  <span class="badge badge-info">{{ selectedRequest.settlement.status }}</span>
+                </div>
+                <div class="fnf-grid">
+                  <div class="fnf-row">
+                    <span>Payable Days Salary ({{ selectedRequest.settlement.payableDays }} days)</span>
+                    <b>₹{{ selectedRequest.settlement.salaryPayable | number:'1.2-2' }}</b>
+                  </div>
+                  <div class="fnf-row">
+                    <span>Leave Encashment ({{ selectedRequest.settlement.leaveEncashmentDays }} days)</span>
+                    <b>+ ₹{{ selectedRequest.settlement.leaveEncashmentAmount | number:'1.2-2' }}</b>
+                  </div>
+                  <div class="fnf-row">
+                    <span>Gratuity (Tenure >= 5 Yrs)</span>
+                    <b>+ ₹{{ selectedRequest.settlement.gratuityAmount | number:'1.2-2' }}</b>
+                  </div>
+                  <div class="fnf-row">
+                    <span>Total Deductions</span>
+                    <b>- ₹{{ selectedRequest.settlement.deductionsAmount | number:'1.2-2' }}</b>
+                  </div>
+                  <div class="fnf-total">
+                    <span>Net Settlement Payable</span>
+                    <h3>₹{{ selectedRequest.settlement.netPayableAmount | number:'1.2-2' }}</h3>
+                  </div>
+                </div>
+
+                @if (isAdminOrHr && selectedRequest.settlement.status !== 'PAID') {
+                  <button mat-raised-button color="primary" class="w-full mt-3" (click)="finalizeSettlement(selectedRequest.settlement.id)">
+                    <mat-icon>verified</mat-icon>
+                    Finalize Settlement & Exit
+                  </button>
+                }
+              </div>
+            }
+          </div>
+
+          <!-- Clearance Checklist Section -->
+          @if (selectedRequest.clearanceItems && selectedRequest.clearanceItems.length > 0) {
+            <div class="clearance-section mt-4">
+              <h3>Departmental Clearance Checklist</h3>
+              <div class="checklist-grid">
+                @for (item of selectedRequest.clearanceItems; track item.id) {
+                  <div class="checklist-item card-sub" [class.cleared]="item.status === 'CLEARED'">
+                    <div class="item-meta">
+                      <span class="dept-badge">{{ item.departmentType }}</span>
+                      <h4>{{ item.title }}</h4>
+                      <p class="status-text">Status: <b>{{ item.status }}</b></p>
+                    </div>
+                    @if (isAdminOrHr && item.status === 'PENDING') {
+                      <div class="item-actions">
+                        <button mat-stroked-button color="primary" (click)="updateClearanceStatus(item, 'CLEARED')">
+                          <mat-icon>check</mat-icon> Clear
+                        </button>
+                        <button mat-button (click)="updateClearanceStatus(item, 'WAIVED')">Waive</button>
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        } @else {
+          <div class="empty-state">
+            <mat-icon>task_alt</mat-icon>
+            <p>You have no active resignation requests. You are in good standing!</p>
+          </div>
+        }
+      </div>
+    </mat-tab>
+
+    <!-- Tab 2: All Company Requests (Admin/HR) -->
+    @if (isAdminOrHr) {
+      <mat-tab label="All Exit Requests (HR Management)">
+        <div class="tab-body">
+          <table mat-table [dataSource]="allRequests" class="w-full">
+            <ng-container matColumnDef="employee">
+              <th mat-header-cell *matHeaderCellDef>Employee</th>
+              <td mat-cell *matCellDef="let r">
+                <b>{{ r.employeeName }}</b> ({{ r.employeeCode }})
+                <div class="sub-text">{{ r.departmentName }}</div>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="dates">
+              <th mat-header-cell *matHeaderCellDef>Timeline</th>
+              <td mat-cell *matCellDef="let r">
+                <div>Resigned: {{ r.resignationDate }}</div>
+                <div class="sub-text">Last Day: {{ r.lastWorkingDay }} ({{ r.noticePeriodDays }}d notice)</div>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="status">
+              <th mat-header-cell *matHeaderCellDef>Status</th>
+              <td mat-cell *matCellDef="let r">
+                <span class="badge" [class.badge-pending]="r.status === 'PENDING'" [class.badge-success]="r.status === 'APPROVED' || r.status === 'COMPLETED'">
+                  {{ r.status }}
+                </span>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="actions">
+              <th mat-header-cell *matHeaderCellDef>Action</th>
+              <td mat-cell *matCellDef="let r">
+                <button mat-button color="primary" (click)="viewDetails(r)">View Details</button>
+                @if (r.status === 'PENDING') {
+                  <button mat-raised-button color="accent" (click)="openReviewModal(r)">Review</button>
+                }
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="['employee', 'dates', 'status', 'actions']"></tr>
+            <tr mat-row *matRowDef="let row; columns: ['employee', 'dates', 'status', 'actions'];"></tr>
+          </table>
+        </div>
+      </mat-tab>
+    }
+  </mat-tab-group>
+
+  <!-- Modal: Resignation Form -->
+  @if (showResignationModal) {
+    <div class="modal-backdrop">
+      <div class="modal-content card-elevated">
+        <h2>Submit Resignation</h2>
+        <mat-form-field appearance="outline" class="w-full">
+          <mat-label>Resignation Date</mat-label>
+          <input matInput type="date" [(ngModel)]="resignationForm.resignationDate">
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="w-full">
+          <mat-label>Notice Period (Days)</mat-label>
+          <input matInput type="number" [(ngModel)]="resignationForm.noticePeriodDays">
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="w-full">
+          <mat-label>Requested Last Working Day</mat-label>
+          <input matInput type="date" [(ngModel)]="resignationForm.lastWorkingDay">
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="w-full">
+          <mat-label>Reason for Leaving</mat-label>
+          <textarea matInput [(ngModel)]="resignationForm.reason" rows="3" placeholder="Provide detailed reason..."></textarea>
+        </mat-form-field>
+        <div class="modal-actions">
+          <button mat-button (click)="showResignationModal = false">Cancel</button>
+          <button mat-raised-button color="warn" (click)="submitResignation()">Submit Resignation</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Modal: Review Resignation (Approve/Reject) -->
+  @if (showReviewModal) {
+    <div class="modal-backdrop">
+      <div class="modal-content card-elevated">
+        <h2>Process Resignation Request</h2>
+        <p class="sub-text">Employee: {{ selectedRequest?.employeeName }}</p>
+
+        <mat-form-field appearance="outline" class="w-full">
+          <mat-label>Decision</mat-label>
+          <mat-select [(ngModel)]="reviewAction.approved">
+            <mat-option [value]="true">Approve (Begin Notice & Clearance)</mat-option>
+            <mat-option [value]="false">Reject Resignation</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="w-full">
+          <mat-label>Agreed Last Working Day</mat-label>
+          <input matInput type="date" [(ngModel)]="reviewAction.agreedLastWorkingDay">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="w-full">
+          <mat-label>HR Remarks</mat-label>
+          <textarea matInput [(ngModel)]="reviewAction.remarks" rows="3"></textarea>
+        </mat-form-field>
+
+        <div class="modal-actions">
+          <button mat-button (click)="showReviewModal = false">Cancel</button>
+          <button mat-raised-button color="primary" (click)="submitReviewAction()">Confirm Action</button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

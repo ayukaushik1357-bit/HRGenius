@@ -1,0 +1,215 @@
+.analytics-container {
+  padding: 1.5rem 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+
+    .page-title {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: #1e293b;
+      margin: 0 0 0.25rem 0;
+    }
+
+    .page-subtitle {
+      color: #64748b;
+      margin: 0;
+      font-size: 0.95rem;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 0.75rem;
+    }
+  }
+
+  .card-elevated {
+    background: #ffffff;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  }
+
+  .filter-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1.25rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+
+    .filter-group {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+
+      .filter-field {
+        margin-bottom: -1.25rem;
+        min-width: 220px;
+      }
+    }
+
+    .last-refreshed {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      color: #10b981;
+      font-size: 0.85rem;
+      font-weight: 500;
+
+      mat-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+      }
+    }
+  }
+
+  .loading-shade {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem;
+    color: #64748b;
+  }
+
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 1.5rem;
+
+    .kpi-card {
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+      transition: transform 0.2s, box-shadow 0.2s;
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08);
+      }
+
+      .kpi-icon-wrap {
+        width: 48px;
+        height: 48px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        mat-icon {
+          font-size: 26px;
+          width: 26px;
+          height: 26px;
+        }
+      }
+
+      &.blue .kpi-icon-wrap { background: #eff6ff; color: #2563eb; }
+      &.red .kpi-icon-wrap { background: #fef2f2; color: #dc2626; }
+      &.teal .kpi-icon-wrap { background: #f0fdf4; color: #059669; }
+      &.purple .kpi-icon-wrap { background: #faf5ff; color: #7c3aed; }
+      &.amber .kpi-icon-wrap { background: #fffbeb; color: #d97706; }
+      &.green .kpi-icon-wrap { background: #f0fdfa; color: #0d9488; }
+
+      .kpi-info {
+        display: flex;
+        flex-direction: column;
+
+        .kpi-label {
+          font-size: 0.8rem;
+          font-weight: 600;
+          text-transform: uppercase;
+          color: #64748b;
+        }
+
+        .kpi-value {
+          font-size: 1.4rem;
+          font-weight: 700;
+          color: #0f172a;
+          line-height: 1.3;
+        }
+
+        .kpi-sub {
+          font-size: 0.75rem;
+          color: #94a3b8;
+        }
+      }
+    }
+  }
+
+  .charts-grid-2 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .charts-grid-3 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 1.25rem;
+  }
+
+  .chart-card {
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+
+    .chart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+
+      .chart-title-wrap {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+
+        mat-icon {
+          color: #4f46e5;
+          font-size: 20px;
+          width: 20px;
+          height: 20px;
+        }
+
+        h3 {
+          margin: 0;
+          font-size: 1.05rem;
+          font-weight: 600;
+          color: #1e293b;
+        }
+      }
+
+      .chart-badge {
+        font-size: 0.75rem;
+        background: #f1f5f9;
+        color: #475569;
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        font-weight: 500;
+      }
+    }
+
+    .canvas-wrapper {
+      position: relative;
+      height: 260px;
+      width: 100%;
+    }
+  }
+}

@@ -42,4 +42,16 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long>, JpaSp
 
     @Query("SELECT COALESCE(MAX(CAST(SUBSTRING(e.employeeCode, 4) AS int)), 0) FROM Employee e")
     int findMaxEmployeeCodeNumber();
+
+    @Query("SELECT d.name, COUNT(e) FROM Employee e JOIN e.department d WHERE e.status = 'ACTIVE' GROUP BY d.name")
+    java.util.List<Object[]> getHeadcountByDepartment();
+
+    @Query("SELECT e.gender, COUNT(e) FROM Employee e WHERE e.status = 'ACTIVE' AND e.gender IS NOT NULL GROUP BY e.gender")
+    java.util.List<Object[]> getGenderDistribution();
+
+    long countByStatus(Employee.EmployeeStatus status);
+
+    @Query("SELECT COUNT(e) FROM Employee e WHERE e.reportingManager.id = :managerId AND e.status = 'ACTIVE'")
+    long countDirectReports(@Param("managerId") Long managerId);
 }
+

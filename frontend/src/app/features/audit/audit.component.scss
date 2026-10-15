@@ -1,0 +1,73 @@
+.audit-container {
+  padding: 1.5rem 2rem;
+  max-width: 1300px;
+  margin: 0 auto;
+
+  .page-header {
+    margin-bottom: 1.5rem;
+
+    .page-title {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: #1e293b;
+      margin: 0 0 0.25rem 0;
+    }
+
+    .page-subtitle {
+      color: #64748b;
+      margin: 0;
+      font-size: 0.95rem;
+    }
+  }
+
+  .card-elevated {
+    background: #ffffff;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+  }
+
+  .w-full {
+    width: 100%;
+  }
+
+  .entity-badge {
+    background: #f1f5f9;
+    color: #334155;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  .diff-box {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    font-size: 0.85rem;
+    font-family: monospace;
+
+    .old-val {
+      color: #dc2626;
+      background: #fef2f2;
+      padding: 0.15rem 0.35rem;
+      border-radius: 3px;
+    }
+
+    .new-val {
+      color: #16a34a;
+      background: #f0fdf4;
+      padding: 0.15rem 0.35rem;
+      border-radius: 3px;
+    }
+  }
+
+  .ip-code {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+  }
+}

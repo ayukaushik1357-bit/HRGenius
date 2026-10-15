@@ -1,0 +1,72 @@
+<div class="audit-container">
+  <div class="page-header">
+    <div class="header-left">
+      <h1 class="page-title">Compliance & Security Audit Trail</h1>
+      <p class="page-subtitle">Immutable system log tracking modifications to salaries, employee status, roles, and profiles</p>
+    </div>
+  </div>
+
+  <div class="card-elevated">
+    <table mat-table [dataSource]="logs" class="w-full">
+      <ng-container matColumnDef="changedAt">
+        <th mat-header-cell *matHeaderCellDef>Timestamp</th>
+        <td mat-cell *matCellDef="let log">
+          <div>{{ log.changedAt | date:'medium' }}</div>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="entity">
+        <th mat-header-cell *matHeaderCellDef>Entity Target</th>
+        <td mat-cell *matCellDef="let log">
+          <span class="entity-badge">{{ log.entityName }} #{{ log.entityId }}</span>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="action">
+        <th mat-header-cell *matHeaderCellDef>Action</th>
+        <td mat-cell *matCellDef="let log">
+          <span class="badge badge-info">{{ log.action }}</span>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="changedBy">
+        <th mat-header-cell *matHeaderCellDef>User</th>
+        <td mat-cell *matCellDef="let log">
+          <b>{{ log.changedBy }}</b>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="values">
+        <th mat-header-cell *matHeaderCellDef>Old vs New State</th>
+        <td mat-cell *matCellDef="let log">
+          <div class="diff-box">
+            @if (log.oldValue) {
+              <span class="old-val">&minus; {{ log.oldValue }}</span>
+            }
+            @if (log.newValue) {
+              <span class="new-val">+ {{ log.newValue }}</span>
+            }
+          </div>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="ipAddress">
+        <th mat-header-cell *matHeaderCellDef>Origin IP</th>
+        <td mat-cell *matCellDef="let log">
+          <code class="ip-code">{{ log.ipAddress || '127.0.0.1' }}</code>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+    </table>
+
+    <mat-paginator
+      [length]="totalElements"
+      [pageSize]="pageSize"
+      [pageIndex]="currentPage"
+      [pageSizeOptions]="[10, 20, 50]"
+      (page)="onPageChange($event)">
+    </mat-paginator>
+  </div>
+</div>

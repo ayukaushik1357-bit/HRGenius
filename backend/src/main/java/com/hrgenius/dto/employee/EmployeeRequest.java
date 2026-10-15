@@ -48,6 +48,21 @@ public class EmployeeRequest {
     private Employee.EmployeeStatus status;
     private BigDecimal salaryCTC;
 
+    @Size(max = 20)
+    private String panNumber;
+
+    @Size(max = 20)
+    private String aadhaarNumber;
+
+    @Size(max = 30)
+    private String bankAccountNumber;
+
+    @Size(max = 20)
+    private String bankIfscCode;
+
+    @Size(max = 100)
+    private String bankName;
+
     @Valid
     private List<AddressDto> addresses;
 

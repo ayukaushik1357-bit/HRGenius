@@ -69,6 +69,13 @@ public class NotificationService {
         }
     }
 
+    public void sendNotification(Long userId, String title, String message, String type) {
+        if (userId == null) return;
+        userRepository.findById(userId).ifPresent(user -> {
+            notifyUser(user, title, message, AppNotification.NotificationType.GENERAL, null);
+        });
+    }
+
     @Transactional(readOnly = true)
     public List<NotificationResponse> getMyNotifications(String username) {
         return notificationRepository.findByRecipientUsernameOrderByCreatedAtDesc(username)

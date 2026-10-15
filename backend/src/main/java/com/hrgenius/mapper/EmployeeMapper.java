@@ -15,6 +15,7 @@ import java.util.List;
 public class EmployeeMapper {
 
     public EmployeeResponse toResponse(Employee e) {
+        boolean privileged = isHrOrAdmin();
         return EmployeeResponse.builder()
                 .id(e.getId())
                 .employeeCode(e.getEmployeeCode())
@@ -35,7 +36,12 @@ public class EmployeeMapper {
                         : null)
                 .employmentType(e.getEmploymentType() != null ? e.getEmploymentType().name() : null)
                 .status(e.getStatus() != null ? e.getStatus().name() : null)
-                .salaryCTC(e.getSalaryCTC())
+                .salaryCTC(privileged ? e.getSalaryCTC() : null)
+                .panNumber(privileged ? e.getPanNumber() : maskPan(e.getPanNumber()))
+                .aadhaarNumber(privileged ? e.getAadhaarNumber() : maskAadhaar(e.getAadhaarNumber()))
+                .bankAccountNumber(privileged ? e.getBankAccountNumber() : maskBankAccount(e.getBankAccountNumber()))
+                .bankIfscCode(privileged ? e.getBankIfscCode() : (e.getBankIfscCode() != null ? "XXXX" : null))
+                .bankName(e.getBankName())
                 .addresses(mapAddresses(e.getAddresses()))
                 .emergencyContacts(mapEmergencyContacts(e.getEmergencyContacts()))
                 .documents(mapDocuments(e.getDocuments()))
@@ -93,6 +99,43 @@ public class EmployeeMapper {
         emp.setStatus(req.getStatus() != null
                 ? req.getStatus() : Employee.EmployeeStatus.ACTIVE);
         emp.setSalaryCTC(req.getSalaryCTC());
+        emp.setPanNumber(req.getPanNumber());
+        emp.setAadhaarNumber(req.getAadhaarNumber());
+        emp.setBankAccountNumber(req.getBankAccountNumber());
+        emp.setBankIfscCode(req.getBankIfscCode());
+        emp.setBankName(req.getBankName());
+    }
+
+    private boolean isHrOrAdmin() {
+        var auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null) return false;
+        return auth.getAuthorities().stream().anyMatch(a -> 
+            a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_HR_MANAGER"));
+    }
+
+    private String maskAadhaar(String val) {
+        if (val == null || val.isBlank()) return val;
+        String clean = val.replaceAll("[^0-9]", "");
+        if (clean.length() >= 4) {
+            return "XXXX-XXXX-" + clean.substring(clean.length() - 4);
+        }
+        return "XXXX-XXXX-XXXX";
+    }
+
+    private String maskPan(String val) {
+        if (val == null || val.isBlank()) return val;
+        if (val.length() >= 4) {
+            return "XXXXXX" + val.substring(val.length() - 4);
+        }
+        return "XXXXXXXXXX";
+    }
+
+    private String maskBankAccount(String val) {
+        if (val == null || val.isBlank()) return val;
+        if (val.length() >= 4) {
+            return "XXXXXXXX" + val.substring(val.length() - 4);
+        }
+        return "XXXXXXXXXXXX";
     }
 
     private List<EmployeeResponse.AddressDto> mapAddresses(List<Address> addresses) {
