@@ -5,7 +5,7 @@ import { catchError, switchMap, throwError, BehaviorSubject, filter, take } from
 import { Router } from '@angular/router';
 
 let isRefreshing = false;
-const refreshTokenSubject = new BehaviorSubject<string | null>(null);
+let refreshTokenSubject = new BehaviorSubject<string | null>(null);
 
 export const jwtInterceptor: HttpInterceptorFn = (req: HttpRequest<unknown>, next: HttpHandlerFn) => {
   const authService = inject(AuthService);
@@ -26,7 +26,7 @@ export const jwtInterceptor: HttpInterceptorFn = (req: HttpRequest<unknown>, nex
 
   return next(clonedReq).pipe(
     catchError((error: HttpErrorResponse) => {
-      if (error.status === 401 && !req.url.includes('/auth/login') && !req.url.includes('/auth/refresh')) {
+      if ((error.status === 401 || error.status === 403) && !req.url.includes('/auth/login') && !req.url.includes('/auth/refresh')) {
         return handle401Error(clonedReq, next, authService, router);
       }
       return throwError(() => error);
@@ -56,6 +56,9 @@ function handle401Error(
       }),
       catchError(refreshErr => {
         isRefreshing = false;
+        const failedSubject = refreshTokenSubject;
+        refreshTokenSubject = new BehaviorSubject<string | null>(null);
+        failedSubject.error(refreshErr);
         authService.logout();
         router.navigate(['/auth/login']);
         return throwError(() => refreshErr);
@@ -71,7 +74,8 @@ function handle401Error(
             Authorization: `Bearer ${token}`
           }
         }));
-      })
+      }),
+      catchError(err => throwError(() => err))
     );
   }
 }

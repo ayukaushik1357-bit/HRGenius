@@ -14,9 +14,13 @@
     </div>
   </div>
 
-  <mat-tab-group animationDuration="200ms" class="custom-tabs">
-    <!-- Tab 1: Kanban Pipeline -->
-    <mat-tab label="Candidate Pipeline (Kanban)">
+  @if (isLoading()) {
+    <mat-progress-bar mode="indeterminate" class="header-loader" style="margin-bottom: 1rem; border-radius: 4px;"></mat-progress-bar>
+  }
+
+  <mat-tab-group [(selectedIndex)]="selectedTabIndex" animationDuration="200ms" class="custom-tabs">
+    <!-- Tab 1: Candidate Applied -->
+    <mat-tab label="Candidate Applied">
       <div class="tab-content">
         <!-- Filter bar -->
         <div class="pipeline-filter-bar">
@@ -30,6 +34,15 @@
             </button>
           }
         </div>
+
+        @if (selectedJobId()) {
+          <div class="active-filter-indicator">
+            <span>Filtering candidates for role: <strong>{{ getSelectedJobTitle() }}</strong></span>
+            <button mat-button color="primary" (click)="filterByJob(null)">
+              <mat-icon>clear</mat-icon> Show All Candidates
+            </button>
+          </div>
+        }
 
         <!-- Kanban Board Columns -->
         <div class="kanban-board">
@@ -130,11 +143,21 @@
                 </div>
               </mat-card-content>
               <mat-card-actions>
-                <button mat-stroked-button color="primary" (click)="filterByJob(jp.id)">
-                  View Candidates
+                <button mat-flat-button color="primary" (click)="viewCandidates(jp)">
+                  <mat-icon>people</mat-icon> View Candidates
                 </button>
               </mat-card-actions>
             </mat-card>
+          }
+          @if (jobPostings().length === 0 && !isLoading()) {
+            <div class="empty-column-state" style="padding: 3rem 1rem; text-align: center; grid-column: 1 / -1;">
+              <mat-icon style="font-size: 48px; width: 48px; height: 48px; color: var(--text-tertiary); margin-bottom: 0.5rem;">work_outline</mat-icon>
+              <h3 style="margin: 0.5rem 0; font-weight: 600;">No Open Requisitions Found</h3>
+              <p style="color: var(--text-secondary); margin-bottom: 1rem;">Click below to create a new job requisition and recruit candidates.</p>
+              <button mat-flat-button color="primary" (click)="openJobModal()">
+                <mat-icon>add</mat-icon> Create Job Requisition
+              </button>
+            </div>
           }
         </div>
       </div>

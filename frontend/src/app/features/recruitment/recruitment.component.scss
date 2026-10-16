@@ -53,6 +53,29 @@
   }
 }
 
+.active-filter-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1e40af;
+  padding: 6px 14px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 0.88rem;
+
+  strong {
+    color: #1e3a8a;
+  }
+
+  button {
+    font-size: 0.8rem;
+    height: 32px;
+    line-height: 32px;
+  }
+}
+
 /* Kanban Board Layout */
 .kanban-board {
   display: grid;

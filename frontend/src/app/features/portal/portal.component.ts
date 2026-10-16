@@ -6,6 +6,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
@@ -26,6 +27,7 @@ import { PortalDashboard, ProfileUpdateRequest } from '../../core/models/selfser
     MatIconModule,
     MatButtonModule,
     MatProgressBarModule,
+    MatProgressSpinnerModule,
     MatFormFieldModule,
     MatInputModule,
     MatSnackBarModule
@@ -39,6 +41,8 @@ export class PortalComponent implements OnInit {
   pendingAdminRequests: ProfileUpdateRequest[] = [];
   isAdminOrHr: boolean = false;
   loading: boolean = true;
+  hasError: boolean = false;
+  errorMessage: string = '';
 
   // Profile update request modal
   showUpdateModal: boolean = false;
@@ -67,12 +71,19 @@ export class PortalComponent implements OnInit {
 
   loadDashboard(): void {
     this.loading = true;
+    this.hasError = false;
+    this.errorMessage = '';
     this.selfService.getPortalDashboard().subscribe({
       next: (data: PortalDashboard) => {
         this.dashboard = data;
         this.loading = false;
       },
-      error: () => (this.loading = false)
+      error: (err) => {
+        this.loading = false;
+        this.hasError = true;
+        this.errorMessage = err.error?.message || err.message || 'Failed to connect to the backend server';
+        this.snackBar.open(this.errorMessage, 'Dismiss', { duration: 5000 });
+      }
     });
   }
 

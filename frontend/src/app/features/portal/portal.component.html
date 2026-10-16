@@ -1,15 +1,29 @@
 <div class="portal-container">
-  @if (dashboard) {
+  @if (loading) {
+    <div class="portal-loading">
+      <mat-spinner diameter="48"></mat-spinner>
+      <p>Loading your personal workspace...</p>
+    </div>
+  } @else if (hasError) {
+    <div class="portal-error card-elevated">
+      <mat-icon color="warn" class="error-icon">error_outline</mat-icon>
+      <h2>Unable to Load Portal</h2>
+      <p>{{ errorMessage || 'Could not load your workspace data.' }}</p>
+      <button mat-flat-button color="primary" (click)="loadDashboard()">
+        <mat-icon>refresh</mat-icon> Try Again
+      </button>
+    </div>
+  } @else if (dashboard) {
     <!-- Welcome Banner -->
     <div class="welcome-banner card-elevated">
       <div class="user-greeting">
         <div class="user-avatar-large">
-          {{ dashboard.profile.firstName.charAt(0) }}{{ dashboard.profile.lastName.charAt(0) }}
+          {{ (dashboard.profile?.firstName?.charAt(0) || 'U') }}{{ (dashboard.profile?.lastName?.charAt(0) || '') }}
         </div>
         <div class="greeting-text">
-          <h1>Welcome back, {{ dashboard.profile.firstName }}!</h1>
+          <h1>Welcome back, {{ dashboard.profile?.firstName || 'Colleague' }}!</h1>
           <p class="role-desc">
-            {{ dashboard.profile.designationTitle || 'Staff Member' }} &bull; {{ dashboard.profile.departmentName || 'General' }} &bull; ID: {{ dashboard.profile.employeeCode }}
+            {{ dashboard.profile?.designationTitle || 'Staff Member' }} &bull; {{ dashboard.profile?.departmentName || 'General' }} &bull; ID: {{ dashboard.profile?.employeeCode || 'N/A' }}
           </p>
         </div>
       </div>
@@ -101,8 +115,8 @@
           <h3>Profile Details</h3>
         </div>
         <p class="profile-meta">
-          Phone: {{ dashboard.profile.phone || 'Not added' }}<br>
-          Bank: {{ dashboard.profile.bankAccountNumber ? 'Connected' : 'Missing' }}
+          Phone: {{ dashboard.profile?.phone || 'Not added' }}<br>
+          Bank: {{ dashboard.profile?.bankAccountNumber ? 'Connected' : 'Missing' }}
         </p>
         <button mat-stroked-button color="primary" (click)="openUpdateModal()" class="action-link">
           Request Changes

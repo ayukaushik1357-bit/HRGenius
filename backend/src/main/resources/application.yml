@@ -48,7 +48,7 @@ spring:
 app:
   jwt:
     secret: ${JWT_SECRET:myDefaultDevSecretKeyThatIsAtLeast256BitsLongForHS256Algorithm123456}
-    access-token-expiration-ms: 900000        # 15 minutes
+    access-token-expiration-ms: 86400000       # 24 hours (prevents token expiring mid-session)
     refresh-token-expiration-ms: 604800000    # 7 days
   file:
     upload-dir: ${FILE_UPLOAD_DIR:./uploads}

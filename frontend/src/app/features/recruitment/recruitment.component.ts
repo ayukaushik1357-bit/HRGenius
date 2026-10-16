@@ -51,6 +51,8 @@ export class RecruitmentComponent implements OnInit {
   designations = signal<Designation[]>([]);
   onboardingTemplates = signal<OnboardingTemplate[]>([]);
   selectedJobId = signal<number | null>(null);
+  selectedTabIndex = 0;
+  isLoading = signal<boolean>(false);
 
   // Modal controls
   showJobModal = false;
@@ -143,13 +145,36 @@ export class RecruitmentComponent implements OnInit {
   }
 
   loadData(): void {
-    this.recruitmentService.getJobPostings().subscribe(jobs => this.jobPostings.set(jobs));
-    this.recruitmentService.getApplications().subscribe(apps => this.applications.set(apps));
-    this.departmentService.getAllDepartments().subscribe(depts => this.departments.set(depts));
-    this.designationService.getAllDesignations().subscribe(desigs => this.designations.set(desigs));
-    this.onboardingService.getTemplates().subscribe(templates => this.onboardingTemplates.set(templates));
-  }
+    this.isLoading.set(true);
+    let pending = 5;
+    const dec = () => {
+      pending--;
+      if (pending <= 0) {
+        this.isLoading.set(false);
+      }
+    };
 
+    this.recruitmentService.getJobPostings().subscribe({
+      next: jobs => { this.jobPostings.set(jobs || []); dec(); },
+      error: () => { dec(); }
+    });
+    this.recruitmentService.getApplications().subscribe({
+      next: apps => { this.applications.set(apps || []); dec(); },
+      error: () => { dec(); }
+    });
+    this.departmentService.getAllDepartments().subscribe({
+      next: depts => { this.departments.set(depts || []); dec(); },
+      error: () => { dec(); }
+    });
+    this.designationService.getAllDesignations().subscribe({
+      next: desigs => { this.designations.set(desigs || []); dec(); },
+      error: () => { dec(); }
+    });
+    this.onboardingService.getTemplates().subscribe({
+      next: templates => { this.onboardingTemplates.set(templates || []); dec(); },
+      error: () => { dec(); }
+    });
+  }
 
   getStageApplications(stage: string): Application[] {
     const list = this.applications().filter(a => a.stage === stage);
@@ -164,6 +189,19 @@ export class RecruitmentComponent implements OnInit {
     this.selectedJobId.set(jobId);
   }
 
+  viewCandidates(job: JobPosting): void {
+    this.selectedJobId.set(job.id);
+    this.selectedTabIndex = 0; // Automatically switch to Candidate Applied tab
+    this.notify.info(`Showing candidates for: ${job.title}`);
+  }
+
+  getSelectedJobTitle(): string {
+    const id = this.selectedJobId();
+    if (!id) return '';
+    const job = this.jobPostings().find(j => j.id === id);
+    return job ? job.title : '';
+  }
+
   moveStage(app: Application, newStage: string): void {
     this.recruitmentService.updateStage(app.id, newStage).subscribe({
       next: updated => {
@@ -176,6 +214,12 @@ export class RecruitmentComponent implements OnInit {
 
   // Job Posting CRUD
   openJobModal(): void {
+    if (this.departments().length === 0) {
+      this.departmentService.getAllDepartments().subscribe(depts => this.departments.set(depts || []));
+    }
+    if (this.designations().length === 0) {
+      this.designationService.getAllDesignations().subscribe(desigs => this.designations.set(desigs || []));
+    }
     this.jobForm.reset({
       location: 'Bengaluru, India (Hybrid)',
       minExperienceYears: 2,
@@ -204,10 +248,13 @@ export class RecruitmentComponent implements OnInit {
 
   // Candidate + Application
   openCandidateModal(): void {
+    if (this.jobPostings().length === 0) {
+      this.recruitmentService.getJobPostings().subscribe(jobs => this.jobPostings.set(jobs || []));
+    }
     this.candidateForm.reset({
       experienceYears: 3,
       expectedSalaryCTC: 1200000,
-      jobPostingId: this.jobPostings().length ? this.jobPostings()[0].id : null
+      jobPostingId: this.selectedJobId() || (this.jobPostings().length ? this.jobPostings()[0].id : null)
     });
     this.showCandidateModal = true;
   }

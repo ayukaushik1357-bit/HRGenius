@@ -11,9 +11,11 @@ import { AuthResponse, CurrentUser, LoginRequest } from '../models/auth.model';
 export class AuthService {
   private readonly apiUrl = `${environment.apiUrl}/auth`;
 
-  // Store access token in memory (NOT in localStorage, per user requirement)
-  private accessTokenSignal = signal<string | null>(null);
-  private currentUserSignal = signal<CurrentUser | null>(null);
+  private readonly TOKEN_KEY = 'hrgenius_access_token';
+  private readonly USER_KEY = 'hrgenius_current_user';
+
+  private accessTokenSignal = signal<string | null>(this.getInitialToken());
+  private currentUserSignal = signal<CurrentUser | null>(this.getInitialUser());
 
   readonly accessToken = computed(() => this.accessTokenSignal());
   readonly currentUser = computed(() => this.currentUserSignal());
@@ -23,6 +25,23 @@ export class AuthService {
     private http: HttpClient,
     private router: Router
   ) {}
+
+  private getInitialToken(): string | null {
+    try {
+      return sessionStorage.getItem(this.TOKEN_KEY);
+    } catch {
+      return null;
+    }
+  }
+
+  private getInitialUser(): CurrentUser | null {
+    try {
+      const data = sessionStorage.getItem(this.USER_KEY);
+      return data ? JSON.parse(data) : null;
+    } catch {
+      return null;
+    }
+  }
 
   login(credentials: LoginRequest): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.apiUrl}/login`, credentials, {
@@ -73,16 +92,29 @@ export class AuthService {
   }
 
   private setSession(authResponse: AuthResponse): void {
-    this.accessTokenSignal.set(authResponse.accessToken);
-    this.currentUserSignal.set({
+    const user: CurrentUser = {
       username: authResponse.username,
       email: authResponse.email,
       roles: authResponse.roles
-    });
+    };
+    this.accessTokenSignal.set(authResponse.accessToken);
+    this.currentUserSignal.set(user);
+    try {
+      sessionStorage.setItem(this.TOKEN_KEY, authResponse.accessToken);
+      sessionStorage.setItem(this.USER_KEY, JSON.stringify(user));
+    } catch {
+      // Ignore storage errors in restricted contexts
+    }
   }
 
   private clearSession(): void {
     this.accessTokenSignal.set(null);
     this.currentUserSignal.set(null);
+    try {
+      sessionStorage.removeItem(this.TOKEN_KEY);
+      sessionStorage.removeItem(this.USER_KEY);
+    } catch {
+      // Ignore
+    }
   }
 }
