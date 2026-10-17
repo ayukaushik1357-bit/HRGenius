@@ -47,10 +47,31 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    @Operation(summary = "Logout user and clear refresh token cookie")
-    public ResponseEntity<Map<String, String>> logout(HttpServletResponse response) {
-        authService.logout(response);
+    @Operation(summary = "Logout user, revoke refresh token in DB, and clear refresh token cookie")
+    public ResponseEntity<Map<String, String>> logout(HttpServletRequest request, HttpServletResponse response) {
+        authService.logout(request, response);
         return ResponseEntity.ok(Map.of("message", "Logged out successfully"));
+    }
+
+    @PostMapping("/logout-all")
+    @Operation(summary = "Logout from all devices, revoking all user refresh tokens")
+    public ResponseEntity<Map<String, String>> logoutAll(
+            Authentication authentication,
+            HttpServletRequest request,
+            HttpServletResponse response) {
+        String username = authentication != null ? authentication.getName() : null;
+        if (username == null) {
+            String refreshToken = authService.extractRefreshTokenFromCookie(request);
+            if (org.springframework.util.StringUtils.hasText(refreshToken)) {
+                String tokenHash = AuthService.hashToken(refreshToken);
+                username = authService.getUsernameFromTokenHash(tokenHash);
+            }
+        }
+        if (username == null) {
+            return ResponseEntity.status(401).build();
+        }
+        authService.logoutAll(username, response);
+        return ResponseEntity.ok(Map.of("message", "Logged out from all devices successfully"));
     }
 
     @GetMapping("/me")
