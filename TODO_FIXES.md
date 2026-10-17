@@ -21,7 +21,8 @@
   - Added must_change_password flag, password strength validation, change-password and admin reset-password endpoints, Angular change-password page with guard redirection, and unit/MVC/frontend test coverage.
 - [x] A10. User accounts for employees: when HR creates an employee (or a candidate is hired), create a linked User with role EMPLOYEE and a temporary password (must-change flag on). Add ADMIN endpoints + an Angular "User Management" page to list users, enable/disable accounts, unlock accounts, and assign/remove roles. A disabled user cannot log in or refresh.
   - Linked User accounts created upon employee creation/candidate hire with role EMPLOYEE and temporary password (must_change_password=true), enforced disabled user rejection on login and refresh, added ADMIN user management endpoints in UserController/UserService, and created Angular User Management page with unit/MVC/vitest tests.
-- [ ] A11. /h2-console permitAll and frame options only in the h2 profile; never in dev/prod. Swagger available only in h2/dev profiles (or ADMIN-only in prod).
+- [x] A11. /h2-console permitAll and frame options only in the h2 profile; never in dev/prod. Swagger available only in h2/dev profiles (or ADMIN-only in prod).
+  - Restricted /h2-console and frameOptions SAMEORIGIN strictly to h2 profile, enforced Swagger access restricted to h2/dev (and ADMIN-only in prod), handled NoResourceFoundException, and verified with integration tests.
 
 ## PART B: AUTHORIZATION (role + ownership, enforced on the backend)
 - [ ] B1. Create a central CurrentUserService (or SecurityUtils) that returns the logged-in User, their Employee id, and their roles. Remove duplicated helper code (hasRole, getEmployeeIdForUser) from controllers and use this service.

@@ -17,6 +17,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
+import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
+
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
@@ -24,15 +28,21 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final LoginRateLimitFilter loginRateLimitFilter;
+    private final Environment environment;
 
     public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter,
-                          @Autowired(required = false) LoginRateLimitFilter loginRateLimitFilter) {
+                          @Autowired(required = false) LoginRateLimitFilter loginRateLimitFilter,
+                          @Autowired(required = false) Environment environment) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.loginRateLimitFilter = loginRateLimitFilter;
+        this.environment = environment;
     }
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        boolean isH2 = environment != null && environment.acceptsProfiles(Profiles.of("h2"));
+        boolean isDevOrH2 = environment != null && environment.acceptsProfiles(Profiles.of("h2", "dev"));
+
         http
             .cors(org.springframework.security.config.Customizer.withDefaults())
             .csrf(AbstractHttpConfigurer::disable)
@@ -44,17 +54,35 @@ public class SecurityConfig {
                     response.getWriter().write("{\"status\":401,\"error\":\"Unauthorized\",\"message\":\"Authentication required\"}");
                 })
             )
-            .authorizeHttpRequests(auth -> auth
-                // Public endpoints
-                .requestMatchers("/auth/**").permitAll()
-                .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-                .requestMatchers("/h2-console/**").permitAll()
-                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+            .authorizeHttpRequests(auth -> {
+                // Public auth endpoints
+                auth.requestMatchers("/auth/**").permitAll();
+                auth.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll();
+
+                // H2 console: permitAll and frame options only in h2 profile; never in dev/prod
+                if (isH2) {
+                    auth.requestMatchers("/h2-console/**").permitAll();
+                } else {
+                    auth.requestMatchers("/h2-console/**").denyAll();
+                }
+
+                // Swagger: available only in h2/dev profiles (or ADMIN-only in prod)
+                if (isDevOrH2) {
+                    auth.requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll();
+                } else {
+                    auth.requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").hasRole("ADMIN");
+                }
+
                 // Everything else requires authentication
-                .anyRequest().authenticated()
-            )
-            // Allow H2 console frames
-            .headers(headers -> headers.frameOptions(fo -> fo.sameOrigin()));
+                auth.anyRequest().authenticated();
+            });
+
+        // Frame options: sameOrigin only in h2 profile; deny in dev/prod
+        if (isH2) {
+            http.headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin));
+        } else {
+            http.headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::deny));
+        }
 
         if (loginRateLimitFilter != null) {
             http.addFilterBefore(loginRateLimitFilter, UsernamePasswordAuthenticationFilter.class);
