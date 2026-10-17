@@ -42,6 +42,15 @@ class EmployeeServiceTest {
     @Mock
     private DesignationRepository designationRepository;
 
+    @Mock
+    private com.hrgenius.repository.UserRepository userRepository;
+
+    @Mock
+    private com.hrgenius.repository.RoleRepository roleRepository;
+
+    @Mock
+    private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
+
     @Spy
     private EmployeeMapper employeeMapper;
 
@@ -110,9 +119,21 @@ class EmployeeServiceTest {
     @Test
     void testCreateEmployee_Success() {
         when(employeeRepository.existsByEmail("john.doe@hrgenius.com")).thenReturn(false);
+        when(userRepository.existsByEmail("john.doe@hrgenius.com")).thenReturn(false);
         when(employeeRepository.findMaxEmployeeCodeNumber()).thenReturn(0);
         when(departmentRepository.findById(1L)).thenReturn(Optional.of(department));
         when(designationRepository.findById(1L)).thenReturn(Optional.of(designation));
+
+        com.hrgenius.entity.Role employeeRole = new com.hrgenius.entity.Role(com.hrgenius.entity.Role.RoleName.EMPLOYEE);
+        when(roleRepository.findByName(com.hrgenius.entity.Role.RoleName.EMPLOYEE)).thenReturn(Optional.of(employeeRole));
+        when(userRepository.existsByUsername("emp0001")).thenReturn(false);
+        when(passwordEncoder.encode(any(String.class))).thenReturn("encodedTempPassword");
+        when(userRepository.save(any(com.hrgenius.entity.User.class))).thenAnswer(inv -> {
+            com.hrgenius.entity.User u = inv.getArgument(0);
+            u.setId(10L);
+            return u;
+        });
+
         when(employeeRepository.save(any(Employee.class))).thenAnswer(invocation -> {
             Employee e = invocation.getArgument(0);
             e.setId(5L);
@@ -125,6 +146,13 @@ class EmployeeServiceTest {
         assertEquals("EMP0001", created.getEmployeeCode());
         assertEquals("John", created.getFirstName());
         verify(employeeRepository).save(any(Employee.class));
+        org.mockito.ArgumentCaptor<com.hrgenius.entity.User> userCaptor = org.mockito.ArgumentCaptor.forClass(com.hrgenius.entity.User.class);
+        verify(userRepository).save(userCaptor.capture());
+        com.hrgenius.entity.User capturedUser = userCaptor.getValue();
+        assertEquals("emp0001", capturedUser.getUsername());
+        assertEquals("john.doe@hrgenius.com", capturedUser.getEmail());
+        org.junit.jupiter.api.Assertions.assertTrue(capturedUser.isMustChangePassword());
+        org.junit.jupiter.api.Assertions.assertTrue(capturedUser.isEnabled());
     }
 
     @Test

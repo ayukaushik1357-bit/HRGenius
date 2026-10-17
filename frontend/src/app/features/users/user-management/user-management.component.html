@@ -1,0 +1,192 @@
+<div class="user-mgmt-container">
+  <div class="page-header">
+    <div class="header-left">
+      <h1 class="page-title">Enterprise User & Access Management</h1>
+      <p class="page-subtitle">Centralized administration of identities, RBAC authorities, account security, and temporary credentials</p>
+    </div>
+  </div>
+
+  @if (temporaryPasswordNotice) {
+    <div class="temp-password-banner">
+      <mat-icon class="banner-icon">key</mat-icon>
+      <div class="banner-content">
+        <div class="banner-title">Temporary Password Generated for {{ temporaryPasswordNotice.username }}</div>
+        <div class="banner-body">
+          The user must change this password on next login. Temporary password:
+          <span class="password-token">{{ temporaryPasswordNotice.tempPass }}</span>
+        </div>
+      </div>
+      <button mat-icon-button (click)="closeNotice()" matTooltip="Dismiss">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+  }
+
+  <div class="filter-card card-elevated">
+    <div class="filters-row">
+      <mat-form-field appearance="outline" class="search-field">
+        <mat-label>Search by username or email</mat-label>
+        <input matInput [(ngModel)]="searchQuery" (keyup.enter)="onSearch()" placeholder="e.g. jdoe or john@hrgenius.com" />
+        <mat-icon matPrefix>search</mat-icon>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="status-field">
+        <mat-label>Account Status</mat-label>
+        <mat-select [(ngModel)]="selectedStatus" (selectionChange)="onFilterChange()">
+          <mat-option value="all">All Statuses</mat-option>
+          <mat-option value="true">Active Only</mat-option>
+          <mat-option value="false">Disabled Only</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <div class="filter-actions">
+        <button mat-flat-button color="primary" (click)="onSearch()">
+          <mat-icon>filter_list</mat-icon> Apply Filter
+        </button>
+        <button mat-stroked-button (click)="loadUsers()" [disabled]="loading">
+          <mat-icon>refresh</mat-icon> Refresh
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-card card-elevated">
+    <table mat-table [dataSource]="users" class="w-full">
+      <!-- User Info Column -->
+      <ng-container matColumnDef="user">
+        <th mat-header-cell *matHeaderCellDef>User Identity</th>
+        <td mat-cell *matCellDef="let u">
+          <div class="user-cell">
+            <div class="avatar-circle" [class.avatar-disabled]="!u.enabled">
+              {{ u.username.charAt(0).toUpperCase() }}
+            </div>
+            <div class="user-details">
+              <span class="user-name">{{ u.username }}</span>
+              <span class="user-email">{{ u.email }}</span>
+            </div>
+          </div>
+        </td>
+      </ng-container>
+
+      <!-- Linked Employee Column -->
+      <ng-container matColumnDef="employee">
+        <th mat-header-cell *matHeaderCellDef>Linked Employee</th>
+        <td mat-cell *matCellDef="let u">
+          @if (u.employeeCode) {
+            <div class="employee-cell">
+              <span class="emp-name">{{ u.employeeName }}</span>
+              <span class="emp-code">{{ u.employeeCode }}</span>
+            </div>
+          } @else {
+            <span class="unlinked-tag">System Account</span>
+          }
+        </td>
+      </ng-container>
+
+      <!-- Roles Column -->
+      <ng-container matColumnDef="roles">
+        <th mat-header-cell *matHeaderCellDef>Assigned Roles</th>
+        <td mat-cell *matCellDef="let u">
+          <div class="roles-cell">
+            @for (role of u.roles; track role) {
+              <span class="role-chip" [class]="'role-' + role.toLowerCase().replace('role_', '')">
+                {{ role.replace('ROLE_', '') }}
+              </span>
+            }
+            <button mat-icon-button [matMenuTriggerFor]="rolesMenu" matTooltip="Modify Roles" class="edit-role-btn">
+              <mat-icon>edit</mat-icon>
+            </button>
+            <mat-menu #rolesMenu="matMenu">
+              <div class="menu-title">Select Roles</div>
+              @for (role of availableRoles; track role) {
+                <button mat-menu-item (click)="toggleRole(u, role)">
+                  <mat-icon>{{ hasRole(u, role) ? 'check_box' : 'check_box_outline_blank' }}</mat-icon>
+                  <span>{{ role }}</span>
+                </button>
+              }
+            </mat-menu>
+          </div>
+        </td>
+      </ng-container>
+
+      <!-- Status Column -->
+      <ng-container matColumnDef="status">
+        <th mat-header-cell *matHeaderCellDef>Status</th>
+        <td mat-cell *matCellDef="let u">
+          <div class="status-cell">
+            @if (u.enabled) {
+              <span class="badge badge-success">Active</span>
+            } @else {
+              <span class="badge badge-danger">Disabled</span>
+            }
+            @if (u.locked) {
+              <span class="badge badge-warning">Locked</span>
+            }
+          </div>
+        </td>
+      </ng-container>
+
+      <!-- Security / Must Change Flag -->
+      <ng-container matColumnDef="security">
+        <th mat-header-cell *matHeaderCellDef>Security Flags</th>
+        <td mat-cell *matCellDef="let u">
+          <div class="security-cell">
+            @if (u.mustChangePassword) {
+              <span class="badge badge-notice" matTooltip="User must change password on next login">Must Change Pwd</span>
+            }
+            @if (u.failedAttempts > 0) {
+              <span class="attempts-text">{{ u.failedAttempts }} failed</span>
+            }
+            @if (!u.mustChangePassword && u.failedAttempts === 0) {
+              <span class="text-muted">Standard</span>
+            }
+          </div>
+        </td>
+      </ng-container>
+
+      <!-- Actions Column -->
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef class="text-right">Actions</th>
+        <td mat-cell *matCellDef="let u" class="text-right">
+          <div class="actions-cell">
+            @if (u.locked || u.failedAttempts > 0) {
+              <button mat-icon-button color="warn" (click)="unlockAccount(u)" matTooltip="Unlock Account & Reset Attempts">
+                <mat-icon>lock_open</mat-icon>
+              </button>
+            }
+            <button
+              mat-icon-button
+              [color]="u.enabled ? 'warn' : 'primary'"
+              (click)="toggleStatus(u)"
+              [matTooltip]="u.enabled ? 'Disable Account' : 'Enable Account'"
+            >
+              <mat-icon>{{ u.enabled ? 'person_off' : 'person' }}</mat-icon>
+            </button>
+            <button mat-icon-button (click)="resetPassword(u)" matTooltip="Reset to Temporary Password">
+              <mat-icon>lock_reset</mat-icon>
+            </button>
+          </div>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+
+      <tr class="mat-row" *matNoDataRow>
+        <td class="mat-cell empty-table" [attr.colspan]="displayedColumns.length">
+          <mat-icon>search_off</mat-icon>
+          <p>No user accounts found matching query</p>
+        </td>
+      </tr>
+    </table>
+
+    <mat-paginator
+      [length]="totalElements"
+      [pageSize]="pageSize"
+      [pageIndex]="currentPage"
+      [pageSizeOptions]="[5, 10, 25, 50]"
+      (page)="onPageChange($event)"
+      showFirstLastButtons
+    ></mat-paginator>
+  </div>
+</div>

@@ -199,7 +199,7 @@ public class AuthService {
         }
 
         if (!user.isEnabled()) {
-            throw new BadRequestException("User account is disabled");
+            throw new org.springframework.security.authentication.DisabledException("User account is disabled");
         }
 
         // Token rotation: generate new access & refresh tokens

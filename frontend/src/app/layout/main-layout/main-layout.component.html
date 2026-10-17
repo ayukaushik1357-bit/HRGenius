@@ -88,6 +88,10 @@
       <!-- Section 8: Compliance & Security -->
       @if (isAdmin) {
         <div class="nav-section-label">COMPLIANCE & SECURITY</div>
+        <a mat-list-item routerLink="/users" routerLinkActive="active" class="nav-item">
+          <mat-icon>manage_accounts</mat-icon>
+          <span class="nav-text">User Management</span>
+        </a>
         <a mat-list-item routerLink="/audit" routerLinkActive="active" class="nav-item">
           <mat-icon>security</mat-icon>
           <span class="nav-text">Audit Logs</span>

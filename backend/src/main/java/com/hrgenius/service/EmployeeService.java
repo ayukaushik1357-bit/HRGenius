@@ -11,14 +11,19 @@ import com.hrgenius.entity.Employee;
 import com.hrgenius.exception.DuplicateResourceException;
 import com.hrgenius.exception.ResourceNotFoundException;
 import com.hrgenius.mapper.EmployeeMapper;
+import com.hrgenius.entity.Role;
+import com.hrgenius.entity.User;
 import com.hrgenius.repository.DepartmentRepository;
 import com.hrgenius.repository.DesignationRepository;
 import com.hrgenius.repository.EmployeeRepository;
+import com.hrgenius.repository.RoleRepository;
+import com.hrgenius.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +32,7 @@ import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -37,6 +43,9 @@ public class EmployeeService {
     private final DepartmentRepository departmentRepository;
     private final DesignationRepository designationRepository;
     private final EmployeeMapper employeeMapper;
+    private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Transactional(readOnly = true)
     public PagedResponse<EmployeeResponse> searchEmployees(
@@ -103,9 +112,37 @@ public class EmployeeService {
         if (employeeRepository.existsByEmail(request.getEmail())) {
             throw new DuplicateResourceException("Employee with email '" + request.getEmail() + "' already exists");
         }
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new DuplicateResourceException("User with email '" + request.getEmail() + "' already exists");
+        }
 
         Employee employee = employeeMapper.toEntity(request);
-        employee.setEmployeeCode(generateNextEmployeeCode());
+        String employeeCode = generateNextEmployeeCode();
+        employee.setEmployeeCode(employeeCode);
+
+        // Create linked User with role EMPLOYEE and temporary password (must-change flag on)
+        Role employeeRole = roleRepository.findByName(Role.RoleName.EMPLOYEE)
+                .orElseThrow(() -> new ResourceNotFoundException("Role", "name", Role.RoleName.EMPLOYEE));
+
+        String username = employeeCode.toLowerCase();
+        if (userRepository.existsByUsername(username)) {
+            username = request.getEmail().split("@")[0].toLowerCase();
+            if (userRepository.existsByUsername(username)) {
+                username = employeeCode.toLowerCase() + "_" + (System.currentTimeMillis() % 1000);
+            }
+        }
+        String tempPassword = "Temp@" + employeeCode + "!1";
+
+        User user = new User();
+        user.setUsername(username);
+        user.setEmail(employee.getEmail());
+        user.setPassword(passwordEncoder.encode(tempPassword));
+        user.setEnabled(true);
+        user.setMustChangePassword(true);
+        user.setRoles(Collections.singleton(employeeRole));
+        User savedUser = userRepository.save(user);
+
+        employee.setUser(savedUser);
 
         resolveRelationships(employee, request);
         resolveAddressesAndContacts(employee, request);

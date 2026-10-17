@@ -383,8 +383,12 @@ public class RecruitmentService {
         User user = new User();
         user.setUsername(request.getEmployeeCode().toLowerCase());
         user.setEmail(request.getOfficialEmail());
-        user.setPassword(passwordEncoder.encode(request.getInitialPassword()));
+        String initialPwd = org.springframework.util.StringUtils.hasText(request.getInitialPassword())
+                ? request.getInitialPassword()
+                : "Temp@" + request.getEmployeeCode() + "!1";
+        user.setPassword(passwordEncoder.encode(initialPwd));
         user.setEnabled(true);
+        user.setMustChangePassword(true);
         user.setRoles(Collections.singleton(employeeRole));
         User savedUser = userRepository.save(user);
 

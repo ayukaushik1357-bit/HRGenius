@@ -369,4 +369,26 @@ class AuthServiceLockoutTest {
         verify(refreshTokenRepository).revokeAllByUser(user);
         verify(userRepository).save(user);
     }
+
+    @Test
+    void testRefreshTokenDisabledUserThrowsDisabledException() {
+        String token = "valid-refresh-token";
+        HttpServletRequest req = mock(HttpServletRequest.class);
+        when(req.getCookies()).thenReturn(new Cookie[]{new Cookie(AuthService.REFRESH_TOKEN_COOKIE_NAME, token)});
+        when(tokenProvider.validateToken(token)).thenReturn(true);
+        when(tokenProvider.getTokenType(token)).thenReturn("refresh");
+
+        user.setEnabled(false);
+        RefreshToken dbToken = RefreshToken.builder()
+                .tokenHash(authService.hashToken(token))
+                .jti("jti-123")
+                .user(user)
+                .expiresAt(LocalDateTime.now().plusDays(1))
+                .revoked(false)
+                .build();
+        when(refreshTokenRepository.findByTokenHash(anyString())).thenReturn(Optional.of(dbToken));
+
+        assertThrows(org.springframework.security.authentication.DisabledException.class,
+                () -> authService.refreshToken(req, response));
+    }
 }
