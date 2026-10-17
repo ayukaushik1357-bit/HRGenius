@@ -1,6 +1,6 @@
 import { Injectable, signal, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, tap, catchError, throwError, of } from 'rxjs';
+import { Observable, tap, catchError, throwError, of, firstValueFrom, from, map } from 'rxjs';
 import { Router } from '@angular/router';
 import { environment } from '../../../environments/environment';
 import { AuthResponse, CurrentUser, LoginRequest } from '../models/auth.model';
@@ -11,36 +11,39 @@ import { AuthResponse, CurrentUser, LoginRequest } from '../models/auth.model';
 export class AuthService {
   private readonly apiUrl = `${environment.apiUrl}/auth`;
 
-  private readonly TOKEN_KEY = 'hrgenius_access_token';
-  private readonly USER_KEY = 'hrgenius_current_user';
-
-  private accessTokenSignal = signal<string | null>(this.getInitialToken());
-  private currentUserSignal = signal<CurrentUser | null>(this.getInitialUser());
+  private accessTokenSignal = signal<string | null>(null);
+  private currentUserSignal = signal<CurrentUser | null>(null);
+  private isInitializedSignal = signal<boolean>(false);
+  private initPromise: Promise<void> | null = null;
 
   readonly accessToken = computed(() => this.accessTokenSignal());
   readonly currentUser = computed(() => this.currentUserSignal());
   readonly isAuthenticated = computed(() => !!this.accessTokenSignal());
+  readonly isInitialized = computed(() => this.isInitializedSignal());
 
   constructor(
     private http: HttpClient,
     private router: Router
   ) {}
 
-  private getInitialToken(): string | null {
-    try {
-      return sessionStorage.getItem(this.TOKEN_KEY);
-    } catch {
-      return null;
+  initAuth(): Promise<void> {
+    if (!this.initPromise) {
+      this.initPromise = firstValueFrom(
+        this.refreshToken().pipe(
+          catchError(() => of(null))
+        )
+      ).then(() => {
+        this.isInitializedSignal.set(true);
+      });
     }
+    return this.initPromise;
   }
 
-  private getInitialUser(): CurrentUser | null {
-    try {
-      const data = sessionStorage.getItem(this.USER_KEY);
-      return data ? JSON.parse(data) : null;
-    } catch {
-      return null;
+  waitForInit(): Observable<boolean> {
+    if (this.isInitializedSignal()) {
+      return of(true);
     }
+    return from(this.initAuth()).pipe(map(() => true));
   }
 
   login(credentials: LoginRequest): Observable<AuthResponse> {
@@ -99,22 +102,10 @@ export class AuthService {
     };
     this.accessTokenSignal.set(authResponse.accessToken);
     this.currentUserSignal.set(user);
-    try {
-      sessionStorage.setItem(this.TOKEN_KEY, authResponse.accessToken);
-      sessionStorage.setItem(this.USER_KEY, JSON.stringify(user));
-    } catch {
-      // Ignore storage errors in restricted contexts
-    }
   }
 
   private clearSession(): void {
     this.accessTokenSignal.set(null);
     this.currentUserSignal.set(null);
-    try {
-      sessionStorage.removeItem(this.TOKEN_KEY);
-      sessionStorage.removeItem(this.USER_KEY);
-    } catch {
-      // Ignore
-    }
   }
 }
