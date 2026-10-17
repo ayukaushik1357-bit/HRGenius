@@ -94,11 +94,33 @@ export class AuthService {
     return this.accessTokenSignal();
   }
 
+  mustChangePassword(): boolean {
+    return !!this.currentUserSignal()?.mustChangePassword;
+  }
+
+  changePassword(currentPassword: string, newPassword: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.apiUrl}/change-password`, {
+      currentPassword,
+      newPassword
+    }, { withCredentials: true }).pipe(
+      tap(() => {
+        const user = this.currentUserSignal();
+        if (user) {
+          this.currentUserSignal.set({
+            ...user,
+            mustChangePassword: false
+          });
+        }
+      })
+    );
+  }
+
   private setSession(authResponse: AuthResponse): void {
     const user: CurrentUser = {
       username: authResponse.username,
       email: authResponse.email,
-      roles: authResponse.roles
+      roles: authResponse.roles,
+      mustChangePassword: authResponse.mustChangePassword
     };
     this.accessTokenSignal.set(authResponse.accessToken);
     this.currentUserSignal.set(user);

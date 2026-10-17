@@ -39,10 +39,15 @@ export class LoginComponent {
     this.errorMessage = '';
 
     this.authService.login(this.loginForm.value).subscribe({
-      next: () => {
+      next: (res) => {
         this.isLoading = false;
+        if (res.mustChangePassword) {
+          this.notify.info('Please change your password to continue.');
+          this.router.navigate(['/auth/change-password']);
+          return;
+        }
         this.notify.success('Welcome back to HRGenius!');
-        const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/employees';
+        const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/portal';
         this.router.navigateByUrl(returnUrl);
       },
       error: (err) => {

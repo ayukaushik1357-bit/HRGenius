@@ -61,4 +61,36 @@ class AuthControllerTest {
 
         verify(authService).logoutAll(eq("alice"), any(HttpServletResponse.class));
     }
+
+    @Test
+    @WithMockUser(username = "bob", roles = "EMPLOYEE")
+    void testChangePasswordCallsService() throws Exception {
+        mockMvc.perform(post("/auth/change-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"currentPassword\":\"OldSecret@123\",\"newPassword\":\"NewSecret@123\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Password changed successfully"));
+
+        verify(authService).changePassword(eq("bob"), any(com.hrgenius.dto.auth.ChangePasswordRequest.class));
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = "ADMIN")
+    void testAdminResetPasswordCallsService() throws Exception {
+        org.mockito.Mockito.when(authService.adminResetPassword(5L)).thenReturn(com.hrgenius.dto.auth.ResetPasswordResponse.builder()
+                .userId(5L)
+                .username("employee5")
+                .temporaryPassword("Temp@12341A")
+                .mustChangePassword(true)
+                .message("Password reset successfully")
+                .build());
+
+        mockMvc.perform(post("/auth/reset-password/5")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.temporaryPassword").value("Temp@12341A"))
+                .andExpect(jsonPath("$.mustChangePassword").value(true));
+
+        verify(authService).adminResetPassword(5L);
+    }
 }

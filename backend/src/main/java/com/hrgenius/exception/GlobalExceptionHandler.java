@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.LockedException;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -48,6 +49,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiError> handleLocked(LockedException ex,
                                                  HttpServletRequest request) {
         return buildResponse(HttpStatus.LOCKED, "Account is temporarily locked. Try again later.", request);
+    }
+
+    @ExceptionHandler(DisabledException.class)
+    public ResponseEntity<ApiError> handleDisabled(DisabledException ex,
+                                                   HttpServletRequest request) {
+        return buildResponse(HttpStatus.UNAUTHORIZED, "Account is disabled. Please contact an administrator.", request);
     }
 
     @ExceptionHandler(AccessDeniedException.class)

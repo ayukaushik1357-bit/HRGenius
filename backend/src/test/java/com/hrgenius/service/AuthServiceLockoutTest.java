@@ -53,6 +53,8 @@ class AuthServiceLockoutTest {
     @Spy
     private com.hrgenius.security.CookieProperties cookieProperties = new com.hrgenius.security.CookieProperties();
     @Mock
+    private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
+    @Mock
     private HttpServletResponse response;
 
     @InjectMocks
@@ -315,5 +317,56 @@ class AuthServiceLockoutTest {
         assertTrue(cookieHeader.contains("SameSite=Strict"));
         assertTrue(cookieHeader.contains("HttpOnly"));
         assertTrue(cookieHeader.contains("Secure"));
+    }
+
+    @Test
+    void testChangePasswordSuccess() {
+        when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("OldPassword@123", user.getPassword())).thenReturn(true);
+        when(passwordEncoder.matches("NewSecret@123", user.getPassword())).thenReturn(false);
+        when(passwordEncoder.encode("NewSecret@123")).thenReturn("encodedNewSecret");
+
+        com.hrgenius.dto.auth.ChangePasswordRequest req = new com.hrgenius.dto.auth.ChangePasswordRequest("OldPassword@123", "NewSecret@123");
+        user.setMustChangePassword(true);
+        authService.changePassword("testuser", req);
+
+        assertEquals("encodedNewSecret", user.getPassword());
+        assertFalse(user.isMustChangePassword());
+        verify(userRepository).save(user);
+    }
+
+    @Test
+    void testChangePasswordWrongCurrentPassword() {
+        when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("WrongPassword", user.getPassword())).thenReturn(false);
+
+        com.hrgenius.dto.auth.ChangePasswordRequest req = new com.hrgenius.dto.auth.ChangePasswordRequest("WrongPassword", "NewSecret@123");
+        BadRequestException ex = assertThrows(BadRequestException.class, () -> authService.changePassword("testuser", req));
+        assertTrue(ex.getMessage().contains("Current password is incorrect"));
+    }
+
+    @Test
+    void testChangePasswordWeakPasswordFails() {
+        when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("OldPassword@123", user.getPassword())).thenReturn(true);
+
+        com.hrgenius.dto.auth.ChangePasswordRequest req = new com.hrgenius.dto.auth.ChangePasswordRequest("OldPassword@123", "weak");
+        BadRequestException ex = assertThrows(BadRequestException.class, () -> authService.changePassword("testuser", req));
+        assertTrue(ex.getMessage().contains("at least 8 characters"));
+    }
+
+    @Test
+    void testAdminResetPassword() {
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(passwordEncoder.encode(anyString())).thenAnswer(inv -> "encoded_" + inv.getArgument(0));
+
+        com.hrgenius.dto.auth.ResetPasswordResponse resp = authService.adminResetPassword(1L);
+
+        assertNotNull(resp.getTemporaryPassword());
+        assertTrue(user.isMustChangePassword());
+        assertEquals(0, user.getFailedAttempts());
+        assertNull(user.getLockoutTime());
+        verify(refreshTokenRepository).revokeAllByUser(user);
+        verify(userRepository).save(user);
     }
 }

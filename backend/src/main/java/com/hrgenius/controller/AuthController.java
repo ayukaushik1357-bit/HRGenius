@@ -13,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -94,5 +95,40 @@ public class AuthController {
                 "username", authentication.getName(),
                 "roles", roles
         ));
+    }
+
+    @PostMapping("/change-password")
+    @Operation(summary = "Change password for the logged-in user")
+    public ResponseEntity<Map<String, String>> changePassword(
+            @Valid @RequestBody com.hrgenius.dto.auth.ChangePasswordRequest request,
+            Authentication authentication) {
+        if (authentication == null) {
+            authentication = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        }
+        if (authentication == null || "anonymousUser".equals(authentication.getName())) {
+            return ResponseEntity.status(401).build();
+        }
+        authService.changePassword(authentication.getName(), request);
+        return ResponseEntity.ok(Map.of("message", "Password changed successfully"));
+    }
+
+    @PostMapping("/reset-password")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Admin endpoint to reset a user's password and set must-change flag")
+    public ResponseEntity<com.hrgenius.dto.auth.ResetPasswordResponse> adminResetPasswordBody(@RequestBody Map<String, Object> body) {
+        Long userId = body.get("userId") != null ? Long.valueOf(body.get("userId").toString()) : null;
+        if (userId == null) {
+            throw new com.hrgenius.exception.BadRequestException("userId is required");
+        }
+        com.hrgenius.dto.auth.ResetPasswordResponse response = authService.adminResetPassword(userId);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/reset-password/{userId}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Admin endpoint to reset a user's password and set must-change flag")
+    public ResponseEntity<com.hrgenius.dto.auth.ResetPasswordResponse> adminResetPasswordPath(@PathVariable Long userId) {
+        com.hrgenius.dto.auth.ResetPasswordResponse response = authService.adminResetPassword(userId);
+        return ResponseEntity.ok(response);
     }
 }

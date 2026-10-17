@@ -39,6 +39,9 @@ public class User extends BaseEntity {
     @Column(name = "lockout_time")
     private java.time.LocalDateTime lockoutTime;
 
+    @Column(name = "must_change_password", nullable = false)
+    private boolean mustChangePassword = false;
+
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(

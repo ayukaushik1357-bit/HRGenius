@@ -1,10 +1,13 @@
 package com.hrgenius.service;
 
 import com.hrgenius.dto.auth.AuthResponse;
+import com.hrgenius.dto.auth.ChangePasswordRequest;
 import com.hrgenius.dto.auth.LoginRequest;
+import com.hrgenius.dto.auth.ResetPasswordResponse;
 import com.hrgenius.entity.RefreshToken;
 import com.hrgenius.entity.User;
 import com.hrgenius.exception.BadRequestException;
+import com.hrgenius.exception.ResourceNotFoundException;
 import com.hrgenius.repository.RefreshTokenRepository;
 import com.hrgenius.repository.UserRepository;
 import com.hrgenius.security.JwtTokenProvider;
@@ -20,6 +23,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.LockedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -53,6 +57,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final com.hrgenius.security.CookieProperties cookieProperties;
+    private final PasswordEncoder passwordEncoder;
 
     public static String hashToken(String token) {
         if (token == null) return null;
@@ -154,6 +159,7 @@ public class AuthService {
                 .username(principal.getUsername())
                 .email(principal.getEmail())
                 .roles(roles)
+                .mustChangePassword(user.isMustChangePassword())
                 .build();
     }
 
@@ -236,6 +242,7 @@ public class AuthService {
                 .username(userDetails.getUsername())
                 .email(email)
                 .roles(roles)
+                .mustChangePassword(user.isMustChangePassword())
                 .build();
     }
 
@@ -304,5 +311,71 @@ public class AuthService {
         return refreshTokenRepository.findByTokenHash(tokenHash)
                 .map(rt -> rt.getUser().getUsername())
                 .orElse(null);
+    }
+
+    public static void validatePasswordStrength(String password) {
+        if (password == null || password.length() < 8) {
+            throw new BadRequestException("Password must be at least 8 characters long");
+        }
+        boolean hasUpper = false;
+        boolean hasLower = false;
+        boolean hasDigit = false;
+        boolean hasSpecial = false;
+
+        for (char c : password.toCharArray()) {
+            if (Character.isUpperCase(c)) hasUpper = true;
+            else if (Character.isLowerCase(c)) hasLower = true;
+            else if (Character.isDigit(c)) hasDigit = true;
+            else hasSpecial = true;
+        }
+
+        if (!hasUpper || !hasLower || !hasDigit || !hasSpecial) {
+            throw new BadRequestException("Password must contain at least one uppercase letter, one lowercase letter, one digit, and one special character");
+        }
+    }
+
+    @Transactional
+    public void changePassword(String username, ChangePasswordRequest request) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with username: " + username));
+
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+            throw new BadRequestException("Current password is incorrect");
+        }
+
+        validatePasswordStrength(request.getNewPassword());
+
+        if (passwordEncoder.matches(request.getNewPassword(), user.getPassword())) {
+            throw new BadRequestException("New password cannot be the same as current password");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        user.setMustChangePassword(false);
+        userRepository.save(user);
+    }
+
+    @Transactional
+    public ResetPasswordResponse adminResetPassword(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+
+        String tempPassword = "Temp@" + java.util.UUID.randomUUID().toString().substring(0, 8) + "1A";
+
+        user.setPassword(passwordEncoder.encode(tempPassword));
+        user.setMustChangePassword(true);
+        user.setFailedAttempts(0);
+        user.setLockoutTime(null);
+        userRepository.save(user);
+
+        // Revoke all existing sessions
+        refreshTokenRepository.revokeAllByUser(user);
+
+        return ResetPasswordResponse.builder()
+                .userId(user.getId())
+                .username(user.getUsername())
+                .temporaryPassword(tempPassword)
+                .mustChangePassword(true)
+                .message("Password reset successfully. User must change password on next login.")
+                .build();
     }
 }
