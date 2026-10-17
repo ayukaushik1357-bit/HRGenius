@@ -129,4 +129,10 @@ class JwtTokenProviderTest {
         verify(userDetailsService, times(1)).loadUserByUsername("carol");
         verify(filterChain, times(1)).doFilter(request, response);
     }
+
+    @Test
+    void testExpirationDefaults() {
+        assertEquals(900000L, jwtProperties.getAccessTokenExpirationMs()); // 15 mins
+        assertEquals(604800000L, jwtProperties.getRefreshTokenExpirationMs()); // 7 days
+    }
 }

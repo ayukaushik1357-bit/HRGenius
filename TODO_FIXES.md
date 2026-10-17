@@ -7,7 +7,8 @@
   - Created RefreshToken entity, V9 Flyway migration, RefreshTokenRepository, SHA-256 token hashing, token rotation, and reuse detection revoking all sessions upon reused revoked tokens.
 - [x] A3. Logout must revoke the refresh token in the DB and clear the cookie. Add "logout from all devices" endpoint that revokes all of the user's refresh tokens.
   - Implemented token revocation in DB upon logout, added /auth/logout-all endpoint to revoke all refresh tokens of the user, and verified via AuthControllerTest and AuthServiceLockoutTest.
-- [ ] A4. Access token expiry back to 15 minutes (configurable). Refresh token 7 days.
+- [x] A4. Access token expiry back to 15 minutes (configurable). Refresh token 7 days.
+  - Configured default access token expiration to 15 mins (900000ms) and refresh token to 7 days in application.yml and JwtProperties with environment variable overrides.
 - [ ] A5. Frontend: keep the access token ONLY in memory (remove sessionStorage usage in auth.service.ts). Use provideAppInitializer to call /auth/refresh once on app start (withCredentials: true) so the user stays logged in after a page reload. Route guards must wait for this initial refresh to finish.
 - [ ] A6. Interceptor: refresh only on 401, not on 403. On 403 show a "You don't have permission" message and do not log the user out. Ensure only one refresh call runs at a time and queued requests replay correctly.
 - [ ] A7. Cookie flags from config: secure=true and SameSite=Strict in prod profile; secure=false only in h2/dev. Cookie path must match the real refresh path (/api/auth).
