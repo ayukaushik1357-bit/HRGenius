@@ -24,6 +24,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -82,8 +83,8 @@ class AuthServiceLockoutTest {
         req.setUsername("testuser");
         req.setPassword("WrongPassword");
 
-        BadRequestException ex = assertThrows(BadRequestException.class, () -> authService.login(req, response));
-        assertTrue(ex.getMessage().contains("Remaining attempts before account lockout: 4"));
+        BadCredentialsException ex = assertThrows(BadCredentialsException.class, () -> authService.login(req, response));
+        assertEquals("Invalid username or password", ex.getMessage());
         assertEquals(1, user.getFailedAttempts());
         verify(userRepository, times(1)).save(user);
     }
@@ -98,8 +99,8 @@ class AuthServiceLockoutTest {
         req.setUsername("testuser");
         req.setPassword("WrongPassword");
 
-        BadRequestException ex = assertThrows(BadRequestException.class, () -> authService.login(req, response));
-        assertTrue(ex.getMessage().contains("Account locked for 15 minutes"));
+        BadCredentialsException ex = assertThrows(BadCredentialsException.class, () -> authService.login(req, response));
+        assertEquals("Invalid username or password", ex.getMessage());
         assertEquals(5, user.getFailedAttempts());
         assertNotNull(user.getLockoutTime());
         verify(userRepository, times(1)).save(user);
@@ -114,9 +115,22 @@ class AuthServiceLockoutTest {
         req.setUsername("testuser");
         req.setPassword("AnyPassword");
 
-        BadRequestException ex = assertThrows(BadRequestException.class, () -> authService.login(req, response));
-        assertTrue(ex.getMessage().contains("Account is locked"));
+        LockedException ex = assertThrows(LockedException.class, () -> authService.login(req, response));
+        assertTrue(ex.getMessage().contains("Account is temporarily locked"));
         verifyNoInteractions(authenticationManager);
+    }
+
+    @Test
+    void testFailedLoginNonExistentUserReturnsSameGenericError() {
+        when(userRepository.findByUsername("unknown")).thenReturn(Optional.empty());
+        when(authenticationManager.authenticate(any())).thenThrow(new BadCredentialsException("Bad credentials"));
+
+        LoginRequest req = new LoginRequest();
+        req.setUsername("unknown");
+        req.setPassword("WrongPassword");
+
+        BadCredentialsException ex = assertThrows(BadCredentialsException.class, () -> authService.login(req, response));
+        assertEquals("Invalid username or password", ex.getMessage());
     }
 
     @Test

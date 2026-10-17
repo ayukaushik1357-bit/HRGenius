@@ -18,6 +18,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -77,8 +78,7 @@ public class AuthService {
             User user = userOpt.get();
             if (user.getLockoutTime() != null) {
                 if (user.getLockoutTime().isAfter(LocalDateTime.now())) {
-                    String unlockTime = user.getLockoutTime().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
-                    throw new BadRequestException("Account is locked due to repeated failed login attempts. Try again after " + unlockTime);
+                    throw new LockedException("Account is temporarily locked. Try again later.");
                 } else {
                     user.setLockoutTime(null);
                     user.setFailedAttempts(0);
@@ -102,14 +102,10 @@ public class AuthService {
                 user.setFailedAttempts(attempts);
                 if (attempts >= 5) {
                     user.setLockoutTime(LocalDateTime.now().plusMinutes(15));
-                    userRepository.save(user);
-                    throw new BadRequestException("Account locked for 15 minutes due to 5 consecutive failed login attempts.");
-                } else {
-                    userRepository.save(user);
-                    throw new BadRequestException("Invalid credentials. Remaining attempts before account lockout: " + (5 - attempts));
                 }
+                userRepository.save(user);
             }
-            throw new BadRequestException("Invalid username or password");
+            throw new BadCredentialsException("Invalid username or password");
         }
 
         // Reset failed attempts on successful login
