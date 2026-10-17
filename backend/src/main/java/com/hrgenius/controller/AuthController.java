@@ -60,6 +60,9 @@ public class AuthController {
             HttpServletRequest request,
             HttpServletResponse response) {
         String username = authentication != null ? authentication.getName() : null;
+        if (username == null && org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication() != null) {
+            username = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getName();
+        }
         if (username == null) {
             String refreshToken = authService.extractRefreshTokenFromCookie(request);
             if (org.springframework.util.StringUtils.hasText(refreshToken)) {
@@ -67,7 +70,7 @@ public class AuthController {
                 username = authService.getUsernameFromTokenHash(tokenHash);
             }
         }
-        if (username == null) {
+        if (username == null || "anonymousUser".equals(username)) {
             return ResponseEntity.status(401).build();
         }
         authService.logoutAll(username, response);
@@ -78,6 +81,9 @@ public class AuthController {
     @Operation(summary = "Get current authenticated user info")
     public ResponseEntity<Map<String, Object>> getCurrentUser(Authentication authentication) {
         if (authentication == null) {
+            authentication = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        }
+        if (authentication == null || "anonymousUser".equals(authentication.getName())) {
             return ResponseEntity.status(401).build();
         }
         Set<String> roles = authentication.getAuthorities().stream()

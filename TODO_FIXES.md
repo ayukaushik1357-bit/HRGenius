@@ -5,7 +5,8 @@
   - Added type ("access"/"refresh") and UUID jti claims to JwtTokenProvider, enforced access token type in JwtAuthenticationFilter, and rejected non-refresh tokens in /auth/refresh.
 - [x] A2. Server-side refresh tokens: create a RefreshToken entity + Flyway migration (id, jti or token hash, user_id, expires_at, revoked, created_at, replaced_by). Store only a SHA-256 hash, never the raw token. On refresh: validate against the DB, revoke the old token, issue a new one (rotation). If a revoked token is reused, revoke ALL tokens of that user (reuse detection).
   - Created RefreshToken entity, V9 Flyway migration, RefreshTokenRepository, SHA-256 token hashing, token rotation, and reuse detection revoking all sessions upon reused revoked tokens.
-- [ ] A3. Logout must revoke the refresh token in the DB and clear the cookie. Add "logout from all devices" endpoint that revokes all of the user's refresh tokens.
+- [x] A3. Logout must revoke the refresh token in the DB and clear the cookie. Add "logout from all devices" endpoint that revokes all of the user's refresh tokens.
+  - Implemented token revocation in DB upon logout, added /auth/logout-all endpoint to revoke all refresh tokens of the user, and verified via AuthControllerTest and AuthServiceLockoutTest.
 - [ ] A4. Access token expiry back to 15 minutes (configurable). Refresh token 7 days.
 - [ ] A5. Frontend: keep the access token ONLY in memory (remove sessionStorage usage in auth.service.ts). Use provideAppInitializer to call /auth/refresh once on app start (withCredentials: true) so the user stays logged in after a page reload. Route guards must wait for this initial refresh to finish.
 - [ ] A6. Interceptor: refresh only on 401, not on 403. On 403 show a "You don't have permission" message and do not log the user out. Ensure only one refresh call runs at a time and queued requests replay correctly.
