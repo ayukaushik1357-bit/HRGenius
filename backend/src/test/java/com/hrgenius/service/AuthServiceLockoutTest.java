@@ -97,4 +97,16 @@ class AuthServiceLockoutTest {
         assertTrue(ex.getMessage().contains("Account is locked"));
         verifyNoInteractions(authenticationManager);
     }
+
+    @Test
+    void testRefreshTokenRejectsAccessToken() {
+        jakarta.servlet.http.HttpServletRequest req = mock(jakarta.servlet.http.HttpServletRequest.class);
+        jakarta.servlet.http.Cookie cookie = new jakarta.servlet.http.Cookie("hrgenius_refresh_token", "sample-access-token");
+        when(req.getCookies()).thenReturn(new jakarta.servlet.http.Cookie[]{cookie});
+        when(tokenProvider.validateToken("sample-access-token")).thenReturn(true);
+        when(tokenProvider.getTokenType("sample-access-token")).thenReturn("access");
+
+        BadRequestException ex = assertThrows(BadRequestException.class, () -> authService.refreshToken(req, response));
+        assertTrue(ex.getMessage().contains("Invalid token type"));
+    }
 }

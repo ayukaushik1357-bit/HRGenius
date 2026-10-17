@@ -37,7 +37,7 @@ public class JwtTokenProvider {
      */
     public String generateAccessToken(Authentication authentication) {
         UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
-        return buildToken(principal, jwtProperties.getAccessTokenExpirationMs());
+        return buildToken(principal.getUsername(), principal.getAuthorities(), jwtProperties.getAccessTokenExpirationMs(), "access");
     }
 
     /**
@@ -45,28 +45,37 @@ public class JwtTokenProvider {
      */
     public String generateRefreshToken(Authentication authentication) {
         UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
-        return buildToken(principal, jwtProperties.getRefreshTokenExpirationMs());
+        return buildToken(principal.getUsername(), principal.getAuthorities(), jwtProperties.getRefreshTokenExpirationMs(), "refresh");
     }
 
     public String generateAccessTokenFromUsername(String username, java.util.Collection<? extends GrantedAuthority> authorities) {
-        String roles = authorities.stream()
-                .map(GrantedAuthority::getAuthority)
-                .collect(Collectors.joining(","));
+        return buildToken(username, authorities, jwtProperties.getAccessTokenExpirationMs(), "access");
+    }
 
-        Date now = new Date();
-        Date expiry = new Date(now.getTime() + jwtProperties.getAccessTokenExpirationMs());
-
-        return Jwts.builder()
-                .subject(username)
-                .claim("roles", roles)
-                .issuedAt(now)
-                .expiration(expiry)
-                .signWith(key)
-                .compact();
+    public String generateRefreshTokenFromUsername(String username, java.util.Collection<? extends GrantedAuthority> authorities) {
+        return buildToken(username, authorities, jwtProperties.getRefreshTokenExpirationMs(), "refresh");
     }
 
     public String getUsernameFromToken(String token) {
         return parseClaims(token).getSubject();
+    }
+
+    public String getTokenType(String token) {
+        Claims claims = parseClaims(token);
+        return claims.get("type", String.class);
+    }
+
+    public String getJtiFromToken(String token) {
+        Claims claims = parseClaims(token);
+        return claims.getId();
+    }
+
+    public boolean isAccessToken(String token) {
+        return "access".equals(getTokenType(token));
+    }
+
+    public boolean isRefreshToken(String token) {
+        return "refresh".equals(getTokenType(token));
     }
 
     public boolean validateToken(String token) {
@@ -91,10 +100,14 @@ public class JwtTokenProvider {
         return jwtProperties.getRefreshTokenExpirationMs();
     }
 
+    public long getAccessTokenExpirationMs() {
+        return jwtProperties.getAccessTokenExpirationMs();
+    }
+
     // ── private helpers ──────────────────────────────────────
 
-    private String buildToken(UserPrincipal principal, long expirationMs) {
-        String roles = principal.getAuthorities().stream()
+    private String buildToken(String username, java.util.Collection<? extends GrantedAuthority> authorities, long expirationMs, String type) {
+        String roles = authorities == null ? "" : authorities.stream()
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.joining(","));
 
@@ -102,7 +115,9 @@ public class JwtTokenProvider {
         Date expiry = new Date(now.getTime() + expirationMs);
 
         return Jwts.builder()
-                .subject(principal.getUsername())
+                .id(java.util.UUID.randomUUID().toString())
+                .subject(username)
+                .claim("type", type)
                 .claim("roles", roles)
                 .issuedAt(now)
                 .expiration(expiry)

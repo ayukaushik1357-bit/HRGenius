@@ -24,6 +24,8 @@ import com.hrgenius.entity.User;
 import com.hrgenius.repository.UserRepository;
 import org.springframework.security.authentication.BadCredentialsException;
 
+import org.springframework.util.StringUtils;
+
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
@@ -116,16 +118,23 @@ public class AuthService {
 
     public AuthResponse refreshToken(HttpServletRequest request, HttpServletResponse response) {
         String refreshToken = extractRefreshTokenFromCookie(request);
+        if (!StringUtils.hasText(refreshToken)) {
+            String bearer = request.getHeader("Authorization");
+            if (StringUtils.hasText(bearer) && bearer.startsWith("Bearer ")) {
+                refreshToken = bearer.substring(7);
+            }
+        }
         if (refreshToken == null || !tokenProvider.validateToken(refreshToken)) {
             throw new BadRequestException("Invalid or expired refresh token");
+        }
+        if (!"refresh".equals(tokenProvider.getTokenType(refreshToken))) {
+            throw new BadRequestException("Invalid token type. Expected refresh token");
         }
 
         String username = tokenProvider.getUsernameFromToken(refreshToken);
         UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
         String newAccessToken = tokenProvider.generateAccessTokenFromUsername(username, userDetails.getAuthorities());
-        // Rotate refresh token optionally or re-set
-        String newRefreshToken = tokenProvider.generateAccessTokenFromUsername(username, userDetails.getAuthorities()); // generate new refresh
         Authentication auth = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
         String rotatedRefreshToken = tokenProvider.generateRefreshToken(auth);
         addRefreshTokenCookie(response, rotatedRefreshToken);
