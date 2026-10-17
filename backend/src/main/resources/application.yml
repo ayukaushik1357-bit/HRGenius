@@ -50,6 +50,10 @@ app:
     secret: ${JWT_SECRET:myDefaultDevSecretKeyThatIsAtLeast256BitsLongForHS256Algorithm123456}
     access-token-expiration-ms: ${JWT_ACCESS_TOKEN_EXPIRATION_MS:900000}       # 15 minutes
     refresh-token-expiration-ms: ${JWT_REFRESH_TOKEN_EXPIRATION_MS:604800000}  # 7 days
+  cookie:
+    secure: ${REFRESH_COOKIE_SECURE:false}
+    same-site: ${REFRESH_COOKIE_SAME_SITE:Lax}
+    path: /api/auth
   file:
     upload-dir: ${FILE_UPLOAD_DIR:./uploads}
 
@@ -91,6 +95,12 @@ spring:
   flyway:
     enabled: false
 
+app:
+  cookie:
+    secure: false
+    same-site: Lax
+    path: /api/auth
+
 ---
 # ============================================================
 # Profile: dev  (Oracle XE local)
@@ -115,6 +125,12 @@ spring:
   flyway:
     enabled: true
     baseline-on-migrate: true
+
+app:
+  cookie:
+    secure: false
+    same-site: Lax
+    path: /api/auth
 
 ---
 # ============================================================
@@ -143,3 +159,7 @@ spring:
 app:
   jwt:
     secret: ${JWT_SECRET}
+  cookie:
+    secure: ${REFRESH_COOKIE_SECURE:true}
+    same-site: ${REFRESH_COOKIE_SAME_SITE:Strict}
+    path: /api/auth

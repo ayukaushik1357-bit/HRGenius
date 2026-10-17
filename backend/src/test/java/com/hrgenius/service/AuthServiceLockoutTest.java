@@ -19,7 +19,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -47,6 +49,8 @@ class AuthServiceLockoutTest {
     private UserRepository userRepository;
     @Mock
     private RefreshTokenRepository refreshTokenRepository;
+    @Spy
+    private com.hrgenius.security.CookieProperties cookieProperties = new com.hrgenius.security.CookieProperties();
     @Mock
     private HttpServletResponse response;
 
@@ -259,5 +263,43 @@ class AuthServiceLockoutTest {
         authService.logoutAll("testuser", response);
 
         verify(refreshTokenRepository, times(1)).revokeAllByUser(user);
+    }
+
+    @Test
+    void testCookieFlagsDev() {
+        when(tokenProvider.getRefreshTokenExpirationMs()).thenReturn(604800000L);
+        cookieProperties.setSecure(false);
+        cookieProperties.setSameSite("Lax");
+        cookieProperties.setPath("/api/auth");
+
+        authService.addRefreshTokenCookie(response, "test-refresh-token");
+
+        ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+        verify(response).addHeader(eq(HttpHeaders.SET_COOKIE), captor.capture());
+        String cookieHeader = captor.getValue();
+
+        assertTrue(cookieHeader.contains("Path=/api/auth"));
+        assertTrue(cookieHeader.contains("SameSite=Lax"));
+        assertTrue(cookieHeader.contains("HttpOnly"));
+        assertFalse(cookieHeader.contains("Secure"));
+    }
+
+    @Test
+    void testCookieFlagsProd() {
+        when(tokenProvider.getRefreshTokenExpirationMs()).thenReturn(604800000L);
+        cookieProperties.setSecure(true);
+        cookieProperties.setSameSite("Strict");
+        cookieProperties.setPath("/api/auth");
+
+        authService.addRefreshTokenCookie(response, "test-refresh-token");
+
+        ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+        verify(response).addHeader(eq(HttpHeaders.SET_COOKIE), captor.capture());
+        String cookieHeader = captor.getValue();
+
+        assertTrue(cookieHeader.contains("Path=/api/auth"));
+        assertTrue(cookieHeader.contains("SameSite=Strict"));
+        assertTrue(cookieHeader.contains("HttpOnly"));
+        assertTrue(cookieHeader.contains("Secure"));
     }
 }

@@ -51,6 +51,7 @@ public class AuthService {
     private final UserDetailsService userDetailsService;
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final com.hrgenius.security.CookieProperties cookieProperties;
 
     public static String hashToken(String token) {
         if (token == null) return null;
@@ -272,10 +273,10 @@ public class AuthService {
     public void clearRefreshTokenCookie(HttpServletResponse response) {
         ResponseCookie cookie = ResponseCookie.from(REFRESH_TOKEN_COOKIE_NAME, "")
                 .httpOnly(true)
-                .secure(false) // config-driven in A7
-                .path("/api/auth")
+                .secure(cookieProperties != null && cookieProperties.isSecure())
+                .path(cookieProperties != null ? cookieProperties.getPath() : "/api/auth")
                 .maxAge(0)
-                .sameSite("Lax")
+                .sameSite(cookieProperties != null ? cookieProperties.getSameSite() : "Lax")
                 .build();
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
     }
@@ -284,10 +285,10 @@ public class AuthService {
         long maxAgeSec = tokenProvider.getRefreshTokenExpirationMs() / 1000;
         ResponseCookie cookie = ResponseCookie.from(REFRESH_TOKEN_COOKIE_NAME, refreshToken)
                 .httpOnly(true)
-                .secure(false) // in local dev (HTTP), secure=true would block browser from sending cookie over localhost
-                .path("/api/auth")
+                .secure(cookieProperties != null && cookieProperties.isSecure())
+                .path(cookieProperties != null ? cookieProperties.getPath() : "/api/auth")
                 .maxAge(maxAgeSec)
-                .sameSite("Lax")
+                .sameSite(cookieProperties != null ? cookieProperties.getSameSite() : "Lax")
                 .build();
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
     }
