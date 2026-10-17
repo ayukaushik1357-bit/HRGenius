@@ -7,7 +7,7 @@ import com.hrgenius.dto.leave.LeaveBalanceResponse;
 import com.hrgenius.entity.Employee;
 import com.hrgenius.entity.leave.LeaveApplication;
 import com.hrgenius.exception.BadRequestException;
-import com.hrgenius.repository.EmployeeRepository;
+import com.hrgenius.security.CurrentUserService;
 import com.hrgenius.security.UserPrincipal;
 import com.hrgenius.service.LeaveService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -30,19 +30,7 @@ import java.util.List;
 public class LeaveController {
 
     private final LeaveService leaveService;
-    private final EmployeeRepository employeeRepository;
-
-    private Long getEmployeeIdForUser(UserPrincipal principal, Long requestedEmployeeId) {
-        if (requestedEmployeeId != null) {
-            return requestedEmployeeId;
-        }
-        if (principal == null) {
-            throw new BadRequestException("User not authenticated");
-        }
-        return employeeRepository.findByUserId(principal.getId())
-                .map(Employee::getId)
-                .orElseThrow(() -> new BadRequestException("No employee profile associated with current user account"));
-    }
+    private final CurrentUserService currentUserService;
 
     @PostMapping
     @Operation(summary = "Apply for leave")
@@ -50,7 +38,7 @@ public class LeaveController {
             @AuthenticationPrincipal UserPrincipal principal,
             @RequestParam(required = false) Long employeeId,
             @Valid @RequestBody LeaveApplicationRequest request) {
-        Long empId = getEmployeeIdForUser(principal, employeeId);
+        Long empId = currentUserService.getEmployeeIdForUser(principal, employeeId);
         return ResponseEntity.status(HttpStatus.CREATED).body(leaveService.applyLeave(empId, request));
     }
 
@@ -59,7 +47,7 @@ public class LeaveController {
     public ResponseEntity<List<LeaveApplicationResponse>> getMyLeaves(
             @AuthenticationPrincipal UserPrincipal principal,
             @RequestParam(required = false) Long employeeId) {
-        Long empId = getEmployeeIdForUser(principal, employeeId);
+        Long empId = currentUserService.getEmployeeIdForUser(principal, employeeId);
         return ResponseEntity.ok(leaveService.getEmployeeLeaves(empId));
     }
 
@@ -69,7 +57,7 @@ public class LeaveController {
             @AuthenticationPrincipal UserPrincipal principal,
             @RequestParam(required = false) Long employeeId,
             @RequestParam(required = false) Integer year) {
-        Long empId = getEmployeeIdForUser(principal, employeeId);
+        Long empId = currentUserService.getEmployeeIdForUser(principal, employeeId);
         int targetYear = year != null ? year : LocalDate.now().getYear();
         return ResponseEntity.ok(leaveService.getLeaveBalance(empId, targetYear));
     }
@@ -79,9 +67,7 @@ public class LeaveController {
     @Operation(summary = "Get pending leave applications waiting for manager approval")
     public ResponseEntity<List<LeaveApplicationResponse>> getPendingApprovals(
             @AuthenticationPrincipal UserPrincipal principal) {
-        Long managerEmpId = employeeRepository.findByUserId(principal.getId())
-                .map(Employee::getId)
-                .orElse(null);
+        Long managerEmpId = currentUserService.getCurrentEmployeeId().orElse(null);
         if (managerEmpId == null) {
             return ResponseEntity.ok(List.of());
         }
@@ -95,9 +81,7 @@ public class LeaveController {
             @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable Long id,
             @Valid @RequestBody LeaveApprovalRequest request) {
-        Long approverEmpId = employeeRepository.findByUserId(principal.getId())
-                .map(Employee::getId)
-                .orElse(null);
+        Long approverEmpId = currentUserService.getCurrentEmployeeId().orElse(null);
         return ResponseEntity.ok(leaveService.processLeaveApproval(id, approverEmpId, request));
     }
 

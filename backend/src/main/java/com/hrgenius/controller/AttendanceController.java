@@ -6,7 +6,7 @@ import com.hrgenius.dto.attendance.HolidayRequest;
 import com.hrgenius.dto.attendance.HolidayResponse;
 import com.hrgenius.entity.Employee;
 import com.hrgenius.exception.BadRequestException;
-import com.hrgenius.repository.EmployeeRepository;
+import com.hrgenius.security.CurrentUserService;
 import com.hrgenius.security.UserPrincipal;
 import com.hrgenius.service.AttendanceService;
 import com.hrgenius.service.HolidayService;
@@ -33,19 +33,7 @@ public class AttendanceController {
 
     private final AttendanceService attendanceService;
     private final HolidayService holidayService;
-    private final EmployeeRepository employeeRepository;
-
-    private Long getEmployeeIdForUser(UserPrincipal principal, Long requestedEmployeeId) {
-        if (requestedEmployeeId != null) {
-            return requestedEmployeeId;
-        }
-        if (principal == null) {
-            throw new BadRequestException("User not authenticated");
-        }
-        return employeeRepository.findByUserId(principal.getId())
-                .map(Employee::getId)
-                .orElseThrow(() -> new BadRequestException("No employee profile associated with current user account"));
-    }
+    private final CurrentUserService currentUserService;
 
     @PostMapping("/check-in")
     @Operation(summary = "Check in for current day")
@@ -53,7 +41,7 @@ public class AttendanceController {
             @AuthenticationPrincipal UserPrincipal principal,
             @RequestParam(required = false) Long employeeId,
             @RequestBody(required = false) AttendanceCheckInRequest request) {
-        Long empId = getEmployeeIdForUser(principal, employeeId);
+        Long empId = currentUserService.getEmployeeIdForUser(principal, employeeId);
         return ResponseEntity.ok(attendanceService.checkIn(empId, request));
     }
 
@@ -62,7 +50,7 @@ public class AttendanceController {
     public ResponseEntity<AttendanceResponse> checkOut(
             @AuthenticationPrincipal UserPrincipal principal,
             @RequestParam(required = false) Long employeeId) {
-        Long empId = getEmployeeIdForUser(principal, employeeId);
+        Long empId = currentUserService.getEmployeeIdForUser(principal, employeeId);
         return ResponseEntity.ok(attendanceService.checkOut(empId));
     }
 
@@ -71,7 +59,7 @@ public class AttendanceController {
     public ResponseEntity<AttendanceResponse> getTodayAttendance(
             @AuthenticationPrincipal UserPrincipal principal,
             @RequestParam(required = false) Long employeeId) {
-        Long empId = getEmployeeIdForUser(principal, employeeId);
+        Long empId = currentUserService.getEmployeeIdForUser(principal, employeeId);
         return ResponseEntity.ok(attendanceService.getTodayAttendance(empId));
     }
 
@@ -82,7 +70,7 @@ public class AttendanceController {
             @RequestParam(required = false) Long employeeId,
             @RequestParam(defaultValue = "#{T(java.time.LocalDate).now().getYear()}") int year,
             @RequestParam(defaultValue = "#{T(java.time.LocalDate).now().getMonthValue()}") int month) {
-        Long empId = getEmployeeIdForUser(principal, employeeId);
+        Long empId = currentUserService.getEmployeeIdForUser(principal, employeeId);
         return ResponseEntity.ok(attendanceService.getMonthlyAttendance(empId, year, month));
     }
 

@@ -42,7 +42,7 @@ class PerformanceControllerTest {
     private PerformanceService performanceService;
 
     @MockBean
-    private com.hrgenius.repository.EmployeeRepository employeeRepository;
+    private com.hrgenius.security.CurrentUserService currentUserService;
 
     @MockBean
     private JwtTokenProvider jwtTokenProvider;

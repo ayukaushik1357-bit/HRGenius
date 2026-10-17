@@ -1,9 +1,8 @@
 package com.hrgenius.controller;
 
 import com.hrgenius.dto.payroll.*;
-import com.hrgenius.entity.Employee;
 import com.hrgenius.exception.BadRequestException;
-import com.hrgenius.repository.EmployeeRepository;
+import com.hrgenius.security.CurrentUserService;
 import com.hrgenius.security.UserPrincipal;
 import com.hrgenius.service.PayrollService;
 import com.lowagie.text.DocumentException;
@@ -28,7 +27,7 @@ import java.util.List;
 public class PayrollController {
 
     private final PayrollService payrollService;
-    private final EmployeeRepository employeeRepository;
+    private final CurrentUserService currentUserService;
 
     // --- Salary Structure ---
     @GetMapping("/salary-structure/{employeeId}")
@@ -87,12 +86,8 @@ public class PayrollController {
     @GetMapping("/my-payslips")
     @Operation(summary = "Get payslips for the authenticated employee")
     public ResponseEntity<List<PayslipResponse>> getMyPayslips(@AuthenticationPrincipal UserPrincipal principal) {
-        if (principal == null) {
-            throw new BadRequestException("User not authenticated");
-        }
-        Employee emp = employeeRepository.findByUserId(principal.getId())
-                .orElseThrow(() -> new BadRequestException("No employee profile found for user"));
-        return ResponseEntity.ok(payrollService.getEmployeePayslips(emp.getId()));
+        Long empId = currentUserService.getCurrentEmployeeIdOrThrow();
+        return ResponseEntity.ok(payrollService.getEmployeePayslips(empId));
     }
 
     @GetMapping("/employee/{employeeId}/payslips")
@@ -109,9 +104,9 @@ public class PayrollController {
             @AuthenticationPrincipal UserPrincipal principal) {
         PayslipResponse payslip = payrollService.getPayslipById(id);
         // Authorization: employees can only view their own
-        if (!hasRole(principal, "ROLE_ADMIN") && !hasRole(principal, "ROLE_HR_MANAGER")) {
-            Employee emp = employeeRepository.findByUserId(principal.getId()).orElse(null);
-            if (emp == null || !emp.getId().equals(payslip.getEmployeeId())) {
+        if (!currentUserService.hasAnyRole(principal, "ADMIN", "HR_MANAGER")) {
+            Long empId = currentUserService.getCurrentEmployeeId().orElse(null);
+            if (empId == null || !empId.equals(payslip.getEmployeeId())) {
                 throw new BadRequestException("Access denied: You can only view your own payslips");
             }
         }
@@ -124,9 +119,9 @@ public class PayrollController {
             @PathVariable Long id,
             @AuthenticationPrincipal UserPrincipal principal) throws DocumentException {
         PayslipResponse payslip = payrollService.getPayslipById(id);
-        if (!hasRole(principal, "ROLE_ADMIN") && !hasRole(principal, "ROLE_HR_MANAGER")) {
-            Employee emp = employeeRepository.findByUserId(principal.getId()).orElse(null);
-            if (emp == null || !emp.getId().equals(payslip.getEmployeeId())) {
+        if (!currentUserService.hasAnyRole(principal, "ADMIN", "HR_MANAGER")) {
+            Long empId = currentUserService.getCurrentEmployeeId().orElse(null);
+            if (empId == null || !empId.equals(payslip.getEmployeeId())) {
                 throw new BadRequestException("Access denied: You can only download your own payslips");
             }
         }
@@ -138,10 +133,5 @@ public class PayrollController {
                 .contentType(MediaType.APPLICATION_PDF)
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
                 .body(pdfBytes);
-    }
-
-    private boolean hasRole(UserPrincipal principal, String role) {
-        if (principal == null || principal.getAuthorities() == null) return false;
-        return principal.getAuthorities().stream().anyMatch(a -> a.getAuthority().equalsIgnoreCase(role));
     }
 }

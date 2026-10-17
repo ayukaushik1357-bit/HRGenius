@@ -1,0 +1,200 @@
+package com.hrgenius.security;
+
+import com.hrgenius.entity.Employee;
+import com.hrgenius.entity.User;
+import com.hrgenius.exception.BadRequestException;
+import com.hrgenius.repository.EmployeeRepository;
+import com.hrgenius.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
+
+import java.util.Collections;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+public class CurrentUserService {
+
+    private final UserRepository userRepository;
+    private final EmployeeRepository employeeRepository;
+
+    public Optional<UserPrincipal> getCurrentUserPrincipal() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof UserPrincipal up) {
+            return Optional.of(up);
+        }
+        return Optional.empty();
+    }
+
+    public Optional<User> getCurrentUser() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
+            return Optional.empty();
+        }
+        if (auth.getPrincipal() instanceof UserPrincipal up) {
+            return userRepository.findById(up.getId());
+        }
+        String username = auth.getName();
+        if (username != null && !username.isBlank()) {
+            return userRepository.findByUsername(username);
+        }
+        return Optional.empty();
+    }
+
+    public User getCurrentUserOrThrow() {
+        return getCurrentUser()
+                .orElseThrow(() -> new BadRequestException("User not authenticated"));
+    }
+
+    public Optional<Employee> getCurrentEmployee() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
+            return Optional.empty();
+        }
+        if (auth.getPrincipal() instanceof UserPrincipal up) {
+            Optional<Employee> emp = employeeRepository.findByUserId(up.getId());
+            if (emp.isPresent()) {
+                return emp;
+            }
+            if (up.getEmail() != null) {
+                emp = employeeRepository.findByEmail(up.getEmail());
+                if (emp.isPresent()) {
+                    return emp;
+                }
+            }
+        }
+        String username = auth.getName();
+        if (username != null && !username.isBlank()) {
+            Optional<User> user = userRepository.findByUsername(username);
+            if (user.isPresent()) {
+                Optional<Employee> emp = employeeRepository.findByUserId(user.get().getId());
+                if (emp.isPresent()) {
+                    return emp;
+                }
+                if (user.get().getEmail() != null) {
+                    emp = employeeRepository.findByEmail(user.get().getEmail());
+                    if (emp.isPresent()) {
+                        return emp;
+                    }
+                }
+            }
+            Optional<Employee> byEmail = employeeRepository.findByEmail(username);
+            if (byEmail.isPresent()) {
+                return byEmail;
+            }
+        }
+        return Optional.empty();
+    }
+
+    public Employee getCurrentEmployeeOrThrow() {
+        return getCurrentEmployee()
+                .orElseThrow(() -> new BadRequestException("No employee profile associated with current user account"));
+    }
+
+    public Optional<Long> getCurrentEmployeeId() {
+        return getCurrentEmployee().map(Employee::getId);
+    }
+
+    public Long getCurrentEmployeeIdOrThrow() {
+        return getCurrentEmployeeId()
+                .orElseThrow(() -> new BadRequestException("No employee profile associated with current user account"));
+    }
+
+    public Long getEmployeeIdForUser(UserPrincipal principal, Long requestedEmployeeId) {
+        if (requestedEmployeeId != null) {
+            return requestedEmployeeId;
+        }
+        if (principal == null) {
+            throw new BadRequestException("User not authenticated");
+        }
+        return employeeRepository.findByUserId(principal.getId())
+                .map(Employee::getId)
+                .orElseThrow(() -> new BadRequestException("No employee profile associated with current user account"));
+    }
+
+    public Long getEmployeeIdForUser(Long requestedEmployeeId) {
+        return getEmployeeIdForUser(getCurrentUserPrincipal().orElse(null), requestedEmployeeId);
+    }
+
+    public Set<String> getCurrentRoles() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || auth.getAuthorities() == null) {
+            return Collections.emptySet();
+        }
+        return auth.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .collect(Collectors.toSet());
+    }
+
+    public boolean hasRole(UserPrincipal principal, String role) {
+        if (principal == null || principal.getAuthorities() == null || role == null) {
+            return false;
+        }
+        String cleanRole = role.toUpperCase();
+        String roleWithPrefix = cleanRole.startsWith("ROLE_") ? cleanRole : "ROLE_" + cleanRole;
+        String roleWithoutPrefix = cleanRole.startsWith("ROLE_") ? cleanRole.substring(5) : cleanRole;
+
+        return principal.getAuthorities().stream().anyMatch(auth -> {
+            String authority = auth.getAuthority().toUpperCase();
+            return authority.equals(roleWithPrefix) || authority.equals(roleWithoutPrefix);
+        });
+    }
+
+    public boolean hasRole(String role) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || auth.getAuthorities() == null || role == null) {
+            return false;
+        }
+        String cleanRole = role.toUpperCase();
+        String roleWithPrefix = cleanRole.startsWith("ROLE_") ? cleanRole : "ROLE_" + cleanRole;
+        String roleWithoutPrefix = cleanRole.startsWith("ROLE_") ? cleanRole.substring(5) : cleanRole;
+
+        return auth.getAuthorities().stream().anyMatch(a -> {
+            String authority = a.getAuthority().toUpperCase();
+            return authority.equals(roleWithPrefix) || authority.equals(roleWithoutPrefix);
+        });
+    }
+
+    public boolean hasAnyRole(UserPrincipal principal, String... roles) {
+        for (String r : roles) {
+            if (hasRole(principal, r)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean hasAnyRole(String... roles) {
+        for (String r : roles) {
+            if (hasRole(r)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean isAdmin() {
+        return hasRole("ADMIN");
+    }
+
+    public boolean isHrManager() {
+        return hasRole("HR_MANAGER");
+    }
+
+    public boolean isManager() {
+        return hasRole("MANAGER");
+    }
+
+    public boolean isEmployee() {
+        return hasRole("EMPLOYEE");
+    }
+
+    public boolean isHrOrAdmin() {
+        return hasAnyRole("ADMIN", "HR_MANAGER");
+    }
+}
