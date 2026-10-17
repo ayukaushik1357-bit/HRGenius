@@ -1,6 +1,7 @@
 import { HttpInterceptorFn, HttpRequest, HttpHandlerFn, HttpErrorResponse } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { AuthService } from '../services/auth.service';
+import { NotificationService } from '../services/notification.service';
 import { catchError, switchMap, throwError, BehaviorSubject, filter, take } from 'rxjs';
 import { Router } from '@angular/router';
 
@@ -10,6 +11,7 @@ let refreshTokenSubject = new BehaviorSubject<string | null>(null);
 export const jwtInterceptor: HttpInterceptorFn = (req: HttpRequest<unknown>, next: HttpHandlerFn) => {
   const authService = inject(AuthService);
   const router = inject(Router);
+  const notificationService = inject(NotificationService);
 
   let clonedReq = req.clone({
     withCredentials: true
@@ -26,7 +28,11 @@ export const jwtInterceptor: HttpInterceptorFn = (req: HttpRequest<unknown>, nex
 
   return next(clonedReq).pipe(
     catchError((error: HttpErrorResponse) => {
-      if ((error.status === 401 || error.status === 403) && !req.url.includes('/auth/login') && !req.url.includes('/auth/refresh')) {
+      if (error.status === 403) {
+        notificationService.error("You don't have permission");
+        return throwError(() => error);
+      }
+      if (error.status === 401 && !req.url.includes('/auth/login') && !req.url.includes('/auth/refresh')) {
         return handle401Error(clonedReq, next, authService, router);
       }
       return throwError(() => error);
