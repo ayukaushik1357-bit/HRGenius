@@ -30,8 +30,8 @@ public class DocumentController {
     private final DocumentService documentService;
 
     @PostMapping(value = "/employees/{employeeId}/documents", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasAnyRole('ADMIN', 'HR_MANAGER')")
-    @Operation(summary = "Upload document for an employee (ADMIN or HR_MANAGER)")
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR_MANAGER') or @authz.isSelf(#employeeId)")
+    @Operation(summary = "Upload document for an employee (ADMIN, HR_MANAGER, or self)")
     public ResponseEntity<EmployeeResponse.DocumentDto> uploadDocument(
             @PathVariable Long employeeId,
             @RequestParam("documentType") Document.DocumentType documentType,

@@ -57,7 +57,7 @@ public class EmployeeMapper {
                 .bankName(privileged ? e.getBankName() : null)
                 .addresses(mapAddresses(e.getAddresses()))
                 .emergencyContacts(mapEmergencyContacts(e.getEmergencyContacts()))
-                .documents(mapDocuments(e.getDocuments()))
+                .documents(privileged ? mapDocuments(e.getDocuments()) : Collections.emptyList())
                 .createdBy(e.getCreatedBy())
                 .createdAt(e.getCreatedAt())
                 .updatedBy(e.getUpdatedBy())

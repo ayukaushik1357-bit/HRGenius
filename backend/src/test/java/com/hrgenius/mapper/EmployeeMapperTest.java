@@ -40,6 +40,13 @@ class EmployeeMapperTest {
         employee.setBankAccountNumber("9876543210123");
         employee.setBankIfscCode("HDFC0001234");
         employee.setBankName("HDFC Bank");
+        com.hrgenius.entity.Document doc = new com.hrgenius.entity.Document();
+        doc.setId(101L);
+        doc.setOriginalFileName("contract.pdf");
+        doc.setContentType("application/pdf");
+        doc.setFileSize(2048L);
+        doc.setDocumentType(com.hrgenius.entity.Document.DocumentType.OTHER);
+        employee.setDocuments(java.util.List.of(doc));
     }
 
     @Test
@@ -54,6 +61,8 @@ class EmployeeMapperTest {
         assertEquals("9876543210123", res.getBankAccountNumber());
         assertEquals("HDFC0001234", res.getBankIfscCode());
         assertEquals("HDFC Bank", res.getBankName());
+        assertEquals(1, res.getDocuments().size());
+        assertEquals("contract.pdf", res.getDocuments().get(0).getOriginalFileName());
     }
 
     @Test
@@ -69,6 +78,8 @@ class EmployeeMapperTest {
         assertEquals("9876543210123", res.getBankAccountNumber());
         assertEquals("HDFC0001234", res.getBankIfscCode());
         assertEquals("HDFC Bank", res.getBankName());
+        assertEquals(1, res.getDocuments().size());
+        assertEquals("contract.pdf", res.getDocuments().get(0).getOriginalFileName());
     }
 
     @Test
@@ -84,5 +95,6 @@ class EmployeeMapperTest {
         assertEquals("XXXXXXXX0123", res.getBankAccountNumber());
         assertEquals("XXXX", res.getBankIfscCode());
         assertNull(res.getBankName());
+        assertTrue(res.getDocuments().isEmpty(), "Documents should be empty for manager/non-self");
     }
 }
