@@ -18,6 +18,7 @@ import com.hrgenius.repository.DesignationRepository;
 import com.hrgenius.repository.EmployeeRepository;
 import com.hrgenius.repository.RoleRepository;
 import com.hrgenius.repository.UserRepository;
+import com.hrgenius.security.CurrentUserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -46,6 +47,7 @@ public class EmployeeService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final CurrentUserService currentUserService;
 
     @Transactional(readOnly = true)
     public PagedResponse<EmployeeResponse> searchEmployees(
@@ -79,6 +81,15 @@ public class EmployeeService {
 
             if (status != null) {
                 predicates.add(cb.equal(root.get("status"), status));
+            }
+
+            // Managers see only their team (themselves and direct reports)
+            if (currentUserService != null && !currentUserService.isHrOrAdmin() && currentUserService.isManager()) {
+                Long managerEmpId = currentUserService.getCurrentEmployeeId().orElse(-1L);
+                predicates.add(cb.or(
+                    cb.equal(root.get("reportingManager").get("id"), managerEmpId),
+                    cb.equal(root.get("id"), managerEmpId)
+                ));
             }
 
             return cb.and(predicates.toArray(new Predicate[0]));

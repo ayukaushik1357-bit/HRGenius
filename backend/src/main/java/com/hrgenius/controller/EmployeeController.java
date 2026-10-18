@@ -33,6 +33,7 @@ public class EmployeeController {
     private final EmployeeService employeeService;
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR_MANAGER', 'MANAGER')")
     @Operation(summary = "Search employees with pagination, sorting, and filters")
     public ResponseEntity<PagedResponse<EmployeeResponse>> searchEmployees(
             @RequestParam(required = false) String name,

@@ -6,6 +6,8 @@ import com.hrgenius.entity.Address;
 import com.hrgenius.entity.Document;
 import com.hrgenius.entity.EmergencyContact;
 import com.hrgenius.entity.Employee;
+import com.hrgenius.security.CurrentUserService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
@@ -14,8 +16,19 @@ import java.util.List;
 @Component
 public class EmployeeMapper {
 
+    private final CurrentUserService currentUserService;
+
+    public EmployeeMapper() {
+        this.currentUserService = null;
+    }
+
+    @Autowired
+    public EmployeeMapper(CurrentUserService currentUserService) {
+        this.currentUserService = currentUserService;
+    }
+
     public EmployeeResponse toResponse(Employee e) {
-        boolean privileged = isHrOrAdmin();
+        boolean privileged = isPrivileged(e.getId());
         return EmployeeResponse.builder()
                 .id(e.getId())
                 .employeeCode(e.getEmployeeCode())
@@ -41,7 +54,7 @@ public class EmployeeMapper {
                 .aadhaarNumber(privileged ? e.getAadhaarNumber() : maskAadhaar(e.getAadhaarNumber()))
                 .bankAccountNumber(privileged ? e.getBankAccountNumber() : maskBankAccount(e.getBankAccountNumber()))
                 .bankIfscCode(privileged ? e.getBankIfscCode() : (e.getBankIfscCode() != null ? "XXXX" : null))
-                .bankName(e.getBankName())
+                .bankName(privileged ? e.getBankName() : null)
                 .addresses(mapAddresses(e.getAddresses()))
                 .emergencyContacts(mapEmergencyContacts(e.getEmergencyContacts()))
                 .documents(mapDocuments(e.getDocuments()))
@@ -106,7 +119,18 @@ public class EmployeeMapper {
         emp.setBankName(req.getBankName());
     }
 
-    private boolean isHrOrAdmin() {
+    private boolean isPrivileged(Long employeeId) {
+        if (currentUserService != null) {
+            if (currentUserService.isHrOrAdmin()) {
+                return true;
+            }
+            if (employeeId != null) {
+                return currentUserService.getCurrentEmployeeId()
+                        .map(id -> id.equals(employeeId))
+                        .orElse(false);
+            }
+            return false;
+        }
         var auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
         if (auth == null) return false;
         return auth.getAuthorities().stream().anyMatch(a -> 

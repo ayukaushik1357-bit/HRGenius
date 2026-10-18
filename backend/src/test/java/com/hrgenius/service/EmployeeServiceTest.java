@@ -51,6 +51,9 @@ class EmployeeServiceTest {
     @Mock
     private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
+    @Mock
+    private com.hrgenius.security.CurrentUserService currentUserService;
+
     @Spy
     private EmployeeMapper employeeMapper;
 
