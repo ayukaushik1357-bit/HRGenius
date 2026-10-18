@@ -51,6 +51,9 @@ public class AuthService {
 
     public static final String REFRESH_TOKEN_COOKIE_NAME = "hrgenius_refresh_token";
 
+    /** How long after a rotation the previous refresh token may still be replayed (page reload / two tabs). */
+    static final Duration REFRESH_REUSE_GRACE = Duration.ofSeconds(10);
+
     private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider tokenProvider;
     private final UserDetailsService userDetailsService;
@@ -58,6 +61,20 @@ public class AuthService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final com.hrgenius.security.CookieProperties cookieProperties;
     private final PasswordEncoder passwordEncoder;
+
+    /**
+     * True when a revoked token was rotated moments ago and its replacement is still unused:
+     * that is a client race, not a stolen token.
+     */
+    private boolean isBenignConcurrentReuse(RefreshToken revokedToken) {
+        if (revokedToken.getReplacedBy() == null) {
+            return false; // revoked by logout / logout-all, never valid again
+        }
+        return refreshTokenRepository.findByTokenHash(revokedToken.getReplacedBy())
+                .map(next -> !next.isRevoked()
+                        && next.getCreatedAt().isAfter(LocalDateTime.now().minus(REFRESH_REUSE_GRACE)))
+                .orElse(false);
+    }
 
     public static String hashToken(String token) {
         if (token == null) return null;
@@ -163,7 +180,9 @@ public class AuthService {
                 .build();
     }
 
-    @Transactional
+    // noRollbackFor: the reuse-detection branch revokes all tokens and then throws;
+    // without this the exception would roll the revocation back.
+    @Transactional(noRollbackFor = BadRequestException.class)
     public AuthResponse refreshToken(HttpServletRequest request, HttpServletResponse response) {
         String refreshToken = extractRefreshTokenFromCookie(request);
         if (!StringUtils.hasText(refreshToken)) {
@@ -185,8 +204,13 @@ public class AuthService {
 
         User user = dbToken.getUser();
 
-        // Reuse detection: If a revoked token is reused, revoke ALL tokens of that user
-        if (dbToken.isRevoked()) {
+        // Reuse detection: If a revoked token is reused, revoke ALL tokens of that user.
+        // Exception (benign race): a fast page reload or two tabs can send the same cookie twice.
+        // If the token was rotated only seconds ago and its replacement has not been used yet,
+        // just issue a fresh pair instead of treating it as theft.
+        if (dbToken.isRevoked() && isBenignConcurrentReuse(dbToken)) {
+            log.info("Refresh token for user '{}' reused within grace window; issuing a new pair.", user.getUsername());
+        } else if (dbToken.isRevoked()) {
             log.warn("Security Alert: Revoked refresh token reused for user '{}'. Revoking all active tokens.", user.getUsername());
             refreshTokenRepository.revokeAllByUser(user);
             throw new BadRequestException("Invalid refresh token (reused revoked token). All sessions have been terminated.");

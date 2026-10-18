@@ -18,9 +18,9 @@ export const roleGuard: CanActivateFn = (route) => {
         return true;
       }
 
-      // User lacks permission
-      router.navigate(['/employees']);
-      return false;
+      // User lacks permission: send them to the portal, which every logged-in role can open.
+      // (Redirecting to another role-guarded page such as /employees caused an infinite loop for EMPLOYEE.)
+      return router.createUrlTree(['/portal']);
     })
   );
 };

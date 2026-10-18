@@ -117,8 +117,9 @@ public class AnalyticsService {
         double sumRating = 0.0;
         long totalRated = 0;
         for (Object[] r : rawRatings) {
-            BigDecimal ratingVal = (BigDecimal) r[0];
-            Long count = (Long) r[1];
+            // finalRating is a Double column; accept any numeric type the JPA provider returns
+            BigDecimal ratingVal = r[0] instanceof Number n ? new BigDecimal(n.toString()) : null;
+            Long count = r[1] instanceof Number c ? c.longValue() : null;
             ratingDist.add(CategoryCount.builder()
                     .category(ratingVal != null ? ratingVal.toString() + " Stars" : "Unrated")
                     .count(count != null ? count : 0)

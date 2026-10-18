@@ -33,7 +33,7 @@
         <div class="punch-info">
           <span class="punch-label">Today's Punch</span>
           <b class="punch-time">
-            {{ dashboard.todayAttendance?.checkInTime ? ('In: ' + (dashboard.todayAttendance?.checkInTime | slice:11:16)) : 'Not Punched In' }}
+            {{ dashboard.todayAttendance?.checkInTime ? ('In: ' + (dashboard.todayAttendance?.checkInTime | slice:0:5)) : 'Not Punched In' }}
           </b>
         </div>
         @if (!dashboard.todayAttendance?.checkInTime) {
