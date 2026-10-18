@@ -26,6 +26,7 @@ public class Holiday extends BaseEntity {
     @Column(length = 500)
     private String description;
 
+    @jakarta.persistence.Convert(converter = org.hibernate.type.NumericBooleanConverter.class)
     @Column(name = "is_optional", nullable = false)
     private boolean optional = false;
 }

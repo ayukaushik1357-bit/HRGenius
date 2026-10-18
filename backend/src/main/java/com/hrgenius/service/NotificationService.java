@@ -93,11 +93,12 @@ public class NotificationService {
     public void markAsRead(Long id, String username) {
         AppNotification notif = notificationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Notification", "id", id));
-        if (notif.getRecipient() != null && notif.getRecipient().getUsername().equals(username)) {
-            notif.setRead(true);
-            notif.setReadAt(LocalDateTime.now());
-            notificationRepository.save(notif);
+        if (notif.getRecipient() == null || !notif.getRecipient().getUsername().equals(username)) {
+            throw new org.springframework.security.access.AccessDeniedException("Access denied: You can only mark your own notifications as read");
         }
+        notif.setRead(true);
+        notif.setReadAt(LocalDateTime.now());
+        notificationRepository.save(notif);
     }
 
     @Transactional

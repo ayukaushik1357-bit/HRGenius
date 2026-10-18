@@ -3,8 +3,8 @@
 -- ============================================================
 
 CREATE TABLE salary_structures (
-    id                   NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    employee_id          NUMBER         NOT NULL UNIQUE,
+    id                   BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    employee_id          BIGINT         NOT NULL UNIQUE,
     basic_salary         NUMBER(15,2)   NOT NULL,
     hra                  NUMBER(15,2)   NOT NULL,
     special_allowance    NUMBER(15,2)   DEFAULT 0.00,
@@ -18,10 +18,10 @@ CREATE TABLE salary_structures (
 );
 
 CREATE TABLE payroll_runs (
-    id                   NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    payroll_year         NUMBER(4)      NOT NULL,
-    payroll_month        NUMBER(2)      NOT NULL,
-    total_employees      NUMBER(6)      DEFAULT 0 NOT NULL,
+    id                   BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    payroll_year         INTEGER        NOT NULL,
+    payroll_month        INTEGER        NOT NULL,
+    total_employees      INTEGER        DEFAULT 0 NOT NULL,
     total_gross_pay      NUMBER(15,2)   DEFAULT 0.00,
     total_net_pay        NUMBER(15,2)   DEFAULT 0.00,
     status               VARCHAR2(20)   DEFAULT 'DRAFT' NOT NULL,
@@ -35,12 +35,12 @@ CREATE TABLE payroll_runs (
 );
 
 CREATE TABLE payslips (
-    id                   NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    payroll_run_id       NUMBER         NOT NULL,
-    employee_id          NUMBER         NOT NULL,
-    payroll_year         NUMBER(4)      NOT NULL,
-    payroll_month        NUMBER(2)      NOT NULL,
-    total_working_days   NUMBER(2)      NOT NULL,
+    id                   BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    payroll_run_id       BIGINT         NOT NULL,
+    employee_id          BIGINT         NOT NULL,
+    payroll_year         INTEGER        NOT NULL,
+    payroll_month        INTEGER        NOT NULL,
+    total_working_days   INTEGER        NOT NULL,
     present_days         NUMBER(4,1)    NOT NULL,
     unpaid_leave_days    NUMBER(4,1)    DEFAULT 0.0 NOT NULL,
     basic_salary         NUMBER(15,2)   NOT NULL,
@@ -65,12 +65,12 @@ CREATE TABLE payslips (
 );
 
 CREATE TABLE notifications (
-    id                   NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    user_id              NUMBER         NOT NULL,
+    id                   BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    user_id              BIGINT         NOT NULL,
     title                VARCHAR2(150)  NOT NULL,
     message              VARCHAR2(1000) NOT NULL,
     type                 VARCHAR2(30)   DEFAULT 'GENERAL' NOT NULL,
-    is_read              NUMBER(1)      DEFAULT 0 NOT NULL,
+    is_read              INTEGER        DEFAULT 0 NOT NULL,
     read_at              TIMESTAMP,
     link_url             VARCHAR2(255),
     created_by           VARCHAR2(100),

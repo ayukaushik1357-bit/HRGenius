@@ -24,7 +24,7 @@ jobs:
 
       - name: Build and Test Backend
         working-directory: ./backend
-        run: mvn -B clean verify
+        run: ./mvnw -B clean verify
 
   frontend-build:
     name: Frontend Build (Angular)
@@ -43,7 +43,7 @@ jobs:
 
       - name: Install Dependencies
         working-directory: ./frontend
-        run: npm ci || npm install
+        run: npm ci
 
       - name: Build Angular Application
         working-directory: ./frontend

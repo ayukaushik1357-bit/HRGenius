@@ -18,12 +18,12 @@
     <div class="welcome-banner card-elevated">
       <div class="user-greeting">
         <div class="user-avatar-large">
-          {{ (dashboard.profile?.firstName?.charAt(0) || 'U') }}{{ (dashboard.profile?.lastName?.charAt(0) || '') }}
+          {{ (dashboard.profile.firstName.charAt(0) || 'U') }}{{ (dashboard.profile.lastName.charAt(0) || '') }}
         </div>
         <div class="greeting-text">
-          <h1>Welcome back, {{ dashboard.profile?.firstName || 'Colleague' }}!</h1>
+          <h1>Welcome back, {{ dashboard.profile.firstName || 'Colleague' }}!</h1>
           <p class="role-desc">
-            {{ dashboard.profile?.designationTitle || 'Staff Member' }} &bull; {{ dashboard.profile?.departmentName || 'General' }} &bull; ID: {{ dashboard.profile?.employeeCode || 'N/A' }}
+            {{ dashboard.profile.designationTitle || 'Staff Member' }} &bull; {{ dashboard.profile.departmentName || 'General' }} &bull; ID: {{ dashboard.profile.employeeCode || 'N/A' }}
           </p>
         </div>
       </div>
@@ -115,8 +115,8 @@
           <h3>Profile Details</h3>
         </div>
         <p class="profile-meta">
-          Phone: {{ dashboard.profile?.phone || 'Not added' }}<br>
-          Bank: {{ dashboard.profile?.bankAccountNumber ? 'Connected' : 'Missing' }}
+          Phone: {{ dashboard.profile.phone || 'Not added' }}<br>
+          Bank: {{ dashboard.profile.bankAccountNumber ? 'Connected' : 'Missing' }}
         </p>
         <button mat-stroked-button color="primary" (click)="openUpdateModal()" class="action-link">
           Request Changes

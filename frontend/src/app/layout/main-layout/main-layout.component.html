@@ -20,41 +20,47 @@
       </a>
 
       <!-- Section 2: Analytics & Insights -->
-      <div class="nav-section-label">INTELLIGENCE</div>
-      <a mat-list-item routerLink="/analytics" routerLinkActive="active" class="nav-item">
-        <mat-icon>insights</mat-icon>
-        <span class="nav-text">HR Analytics</span>
-      </a>
-
-      <!-- Section 3: People & Organization -->
-      <div class="nav-section-label">PEOPLE & ORG</div>
-      <a mat-list-item routerLink="/employees" routerLinkActive="active" class="nav-item">
-        <mat-icon>people_alt</mat-icon>
-        <span class="nav-text">Employees</span>
-      </a>
-
-      @if (isAdminOrHr) {
-        <a mat-list-item routerLink="/departments" routerLinkActive="active" class="nav-item">
-          <mat-icon>domain</mat-icon>
-          <span class="nav-text">Departments</span>
-        </a>
-
-        <a mat-list-item routerLink="/designations" routerLinkActive="active" class="nav-item">
-          <mat-icon>badge</mat-icon>
-          <span class="nav-text">Designations</span>
+      @if (canAccessAnalytics) {
+        <div class="nav-section-label">INTELLIGENCE</div>
+        <a mat-list-item routerLink="/analytics" routerLinkActive="active" class="nav-item">
+          <mat-icon>insights</mat-icon>
+          <span class="nav-text">HR Analytics</span>
         </a>
       }
 
+      <!-- Section 3: People & Organization -->
+      @if (canAccessEmployees) {
+        <div class="nav-section-label">PEOPLE & ORG</div>
+        <a mat-list-item routerLink="/employees" routerLinkActive="active" class="nav-item">
+          <mat-icon>people_alt</mat-icon>
+          <span class="nav-text">Employees</span>
+        </a>
+
+        @if (isAdminOrHr) {
+          <a mat-list-item routerLink="/departments" routerLinkActive="active" class="nav-item">
+            <mat-icon>domain</mat-icon>
+            <span class="nav-text">Departments</span>
+          </a>
+
+          <a mat-list-item routerLink="/designations" routerLinkActive="active" class="nav-item">
+            <mat-icon>badge</mat-icon>
+            <span class="nav-text">Designations</span>
+          </a>
+        }
+      }
+
       <!-- Section 4: Talent Acquisition -->
-      <div class="nav-section-label">TALENT ACQUISITION</div>
-      <a mat-list-item routerLink="/recruitment" routerLinkActive="active" class="nav-item">
-        <mat-icon>view_kanban</mat-icon>
-        <span class="nav-text">Recruitment</span>
-      </a>
-      <a mat-list-item routerLink="/onboarding" routerLinkActive="active" class="nav-item">
-        <mat-icon>how_to_reg</mat-icon>
-        <span class="nav-text">Onboarding</span>
-      </a>
+      @if (canAccessRecruitment) {
+        <div class="nav-section-label">TALENT ACQUISITION</div>
+        <a mat-list-item routerLink="/recruitment" routerLinkActive="active" class="nav-item">
+          <mat-icon>view_kanban</mat-icon>
+          <span class="nav-text">Recruitment</span>
+        </a>
+        <a mat-list-item routerLink="/onboarding" routerLinkActive="active" class="nav-item">
+          <mat-icon>how_to_reg</mat-icon>
+          <span class="nav-text">Onboarding</span>
+        </a>
+      }
 
       <!-- Section 5: Time & Leave -->
       <div class="nav-section-label">TIME & LEAVE</div>
@@ -86,12 +92,14 @@
       </a>
 
       <!-- Section 8: Compliance & Security -->
-      @if (isAdmin) {
+      @if (isAdminOrHr) {
         <div class="nav-section-label">COMPLIANCE & SECURITY</div>
-        <a mat-list-item routerLink="/users" routerLinkActive="active" class="nav-item">
-          <mat-icon>manage_accounts</mat-icon>
-          <span class="nav-text">User Management</span>
-        </a>
+        @if (isAdmin) {
+          <a mat-list-item routerLink="/users" routerLinkActive="active" class="nav-item">
+            <mat-icon>manage_accounts</mat-icon>
+            <span class="nav-text">User Management</span>
+          </a>
+        }
         <a mat-list-item routerLink="/audit" routerLinkActive="active" class="nav-item">
           <mat-icon>security</mat-icon>
           <span class="nav-text">Audit Logs</span>

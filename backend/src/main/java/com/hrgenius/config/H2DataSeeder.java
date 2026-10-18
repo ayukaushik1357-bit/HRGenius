@@ -17,8 +17,8 @@ import com.hrgenius.entity.recruitment.JobPosting;
 import com.hrgenius.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
@@ -31,7 +31,7 @@ import java.util.*;
  * Seeds comprehensive realistic demo data (50 employees, payroll, review cycles, KRAs, audit logs).
  */
 @Component
-@Profile("h2")
+@ConditionalOnProperty(name = "app.seed-demo-data", havingValue = "true")
 @RequiredArgsConstructor
 @Slf4j
 public class H2DataSeeder implements CommandLineRunner {
@@ -371,6 +371,7 @@ public class H2DataSeeder implements CommandLineRunner {
             u.setPassword(passwordEncoder.encode(password));
             u.setEnabled(true);
             u.setRoles(roles);
+            u.setMustChangePassword(false);
             return userRepository.save(u);
         });
     }

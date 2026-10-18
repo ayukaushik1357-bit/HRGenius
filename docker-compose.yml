@@ -7,13 +7,13 @@ services:
     ports:
       - "1521:1521"
     environment:
-      - ORACLE_PASSWORD=hrgenius_pwd
-      - APP_USER=hrgenius
-      - APP_USER_PASSWORD=hrgenius_pwd
+      - ORACLE_PASSWORD=${ORACLE_PASSWORD}
+      - APP_USER=${DB_USERNAME}
+      - APP_USER_PASSWORD=${DB_PASSWORD}
     volumes:
       - oracle_data:/opt/oracle/oradata
     healthcheck:
-      test: ["CMD-SHELL", "echo 'exit' | sqlplus -L -S hrgenius/hrgenius_pwd@//localhost:1521/XEPDB1 | grep -q 'Connected' || exit 1"]
+      test: ["CMD-SHELL", "echo 'exit' | sqlplus -L -S ${DB_USERNAME}/${DB_PASSWORD}@//localhost:1521/XEPDB1 | grep -q 'Connected' || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -30,9 +30,9 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=prod
       - SPRING_DATASOURCE_URL=jdbc:oracle:thin:@oracle-db:1521/XEPDB1
-      - SPRING_DATASOURCE_USERNAME=hrgenius
-      - SPRING_DATASOURCE_PASSWORD=hrgenius_pwd
-      - JWT_SECRET=5367566B59703373367639792F423F4528482B4D6251655468576D5A71347437
+      - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
       - SPRING_FLYWAY_ENABLED=true
     depends_on:
       oracle-db:

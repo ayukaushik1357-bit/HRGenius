@@ -145,7 +145,7 @@ graph TD
 
 ## 🔑 Demo Credentials
 
-HRGenius comes pre-seeded with **50 realistic employee records** across 5 departments (Engineering, Human Resources, Finance, Marketing, Operations), appraisal cycles, goals, payroll records, and audit logs.
+HRGenius comes pre-seeded with **50 realistic employee records** across 5 departments (Engineering, Human Resources, Finance, Marketing, Operations), appraisal cycles, goals, payroll records, and audit logs. Demo data seeding is controlled by `app.seed-demo-data` (enabled by default in `h2`, disabled in `prod` and `migration-test`, and configurable for `dev`/Oracle). All seeded demo users have `mustChangePassword` disabled for immediate access.
 
 | Role | Username | Password | Access Level |
 | :--- | :--- | :--- | :--- |
@@ -153,6 +153,71 @@ HRGenius comes pre-seeded with **50 realistic employee records** across 5 depart
 | **HR Manager** | `hrmanager` | `Hr@123` | Workforce management, Recruitment, Payroll runs, Cycle creation, FnF settlement |
 | **Team Manager** | `manager` | `Manager@123` | Team attendance, Leave approvals, Team performance reviews, Goal setting |
 | **Employee** | `employee` | `Employee@123` | Self-service portal, Punch in/out, Goal progress, Self-appraisal, Resignation |
+
+---
+
+## 🔐 Authentication & Authorization Flow
+
+### JWT Access & Refresh Token Rotation
+
+```text
+[ Browser / Angular SPA ]                       [ Spring Boot Backend ]                [ Database (H2 / Oracle) ]
+         |                                                 |                                      |
+         | --- 1. POST /api/auth/login (username/pw) ----> |                                      |
+         |                                                 | -- Validate credentials & lockout -> |
+         |                                                 | -- Generate Access Token (15m) ----> |
+         |                                                 | -- Generate Refresh Token (7d) ----> |
+         |                                                 | -- Store SHA-256 hash in DB -------> |
+         | <-- 2. JSON: { accessToken, user } ------------ |                                      |
+         |    Set-Cookie: refreshToken (HttpOnly, Secure)  |                                      |
+         |                                                 |                                      |
+         | --- 3. API Requests with Authorization Bearer ->|                                      |
+         |                                                 | -- Validate 'type: access' + jti --> |
+         | <-- 4. 200 OK / Response Payload -------------- |                                      |
+         |                                                 |                                      |
+  (Access Token Expires -> 401 Unauthorized)               |                                      |
+         |                                                 |                                      |
+         | --- 5. POST /api/auth/refresh (Cookie) -------->|                                      |
+         |                                                 | -- Validate 'type: refresh' -------> |
+         |                                                 | -- Hash token & verify in DB ------> |
+         |                                                 | -- If revoked: Revoke ALL tokens!!-> |
+         |                                                 | -- Else: Mark old revoked ---------> |
+         |                                                 | -- Issue new Access & Refresh -----> |
+         |                                                 | -- Store new SHA-256 in DB --------> |
+         | <-- 6. JSON: { accessToken, user } ------------ |                                      |
+         |    Set-Cookie: new refreshToken (HttpOnly) ---- |                                      |
+         |                                                 |                                      |
+         | --- 7. POST /api/auth/logout ------------------>|                                      |
+         |                                                 | -- Mark current token revoked -----> |
+         | <-- 8. 200 OK + Clear Cookie ------------------ |                                      |
+```
+
+### Role & Permission Matrix
+
+| Module / Resource | Endpoint Scope | ADMIN | HR_MANAGER | MANAGER | EMPLOYEE |
+| :--- | :--- | :---: | :---: | :---: | :---: |
+| **Authentication** | `/api/auth/login`, `/api/auth/refresh`, `/api/auth/logout` | All | All | All | All |
+| **Password Mgmt** | `/api/auth/change-password` | Self | Self | Self | Self |
+| **User Admin** | `/api/admin/users/**`, `/api/auth/reset-password` | All | ❌ | ❌ | ❌ |
+| **Employee Directory** | `GET /api/employees` | All | All | Team only | ❌ |
+| **Employee Profile** | `GET /api/employees/{id}` | All | All | Direct reports | Self only |
+| **Salary / Tax Details** | In `EmployeeResponse` (salary, PAN, Aadhaar, Bank) | All | All | ❌ (Masked) | Self only |
+| **Employee Mutations** | `POST/PUT/DELETE /api/employees/**` | All | All | ❌ | ❌ |
+| **Document Vault** | `/api/documents/**` (Upload, View, Download) | All | All | ❌ | Self only |
+| **Attendance Records** | `/api/attendance/**` | All | All | Team / Self | Self only |
+| **Holidays** | `POST/PUT/DELETE /api/attendance/holidays/**` | All | All | ❌ | ❌ |
+| **Leave Applications** | `POST /api/leaves` | All | All | Self | Self |
+| **Leave Approvals** | `POST /api/leaves/{id}/action` | All | All | Team only (No self) | ❌ |
+| **Payroll Runs** | `POST /api/payroll/run/**` | All | All | ❌ | ❌ |
+| **Payslips** | `/api/payroll/payslips/**` | All | All | ❌ | Self only |
+| **Recruitment (ATS)** | `/api/recruitment/**` | All | All | ❌ | ❌ |
+| **Onboarding** | `/api/onboarding/**` | All | All | ❌ | Assigned tasks |
+| **Review Cycles** | `POST /api/performance/cycles/**` | All | All | ❌ | ❌ |
+| **Performance Reviews**| `/api/performance/reviews/**` | All | All | Team reports | Self review |
+| **Analytics Dashboard**| `GET /api/analytics/dashboard` | Company-wide | Company-wide | Team only | Self only |
+| **Analytics Exports** | `/api/analytics/export/**` (Excel, PDF) | All | All | ❌ | ❌ |
+| **Offboarding & FnF** | `/api/offboarding/**` | All | All | ❌ | Resignation (Self) |
+| **Audit Trails** | `GET /api/audit/**` | All | ❌ | ❌ | ❌ |
 
 ---
 

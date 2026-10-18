@@ -44,6 +44,7 @@ public class OffboardingController {
     }
 
     @GetMapping("/requests/{id}")
+    @PreAuthorize("@authz.canAccessExitRequest(#id)")
     @Operation(summary = "Get exit request details by id including clearance items and FnF")
     public ResponseEntity<ExitRequestDto.Response> getExitRequestById(@PathVariable Long id) {
         return ResponseEntity.ok(offboardingService.getExitRequestById(id));

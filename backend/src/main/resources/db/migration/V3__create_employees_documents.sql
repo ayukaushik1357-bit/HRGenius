@@ -3,7 +3,7 @@
 -- ============================================================
 
 CREATE TABLE employees (
-    id                    NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id                    BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     employee_code         VARCHAR2(20)   NOT NULL UNIQUE,
     first_name            VARCHAR2(50)   NOT NULL,
     last_name             VARCHAR2(50)   NOT NULL,
@@ -12,13 +12,13 @@ CREATE TABLE employees (
     date_of_birth         DATE,
     gender                VARCHAR2(10),
     joining_date          DATE           NOT NULL,
-    department_id         NUMBER,
-    designation_id        NUMBER,
-    reporting_manager_id  NUMBER,
+    department_id         BIGINT,
+    designation_id        BIGINT,
+    reporting_manager_id  BIGINT,
     employment_type       VARCHAR2(20)   DEFAULT 'FULL_TIME' NOT NULL,
     status                VARCHAR2(20)   DEFAULT 'ACTIVE' NOT NULL,
     salary_ctc            NUMBER(15,2),
-    user_id               NUMBER,
+    user_id               BIGINT,
     created_by            VARCHAR2(100),
     created_at            TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_by            VARCHAR2(100),
@@ -30,7 +30,7 @@ CREATE TABLE employees (
 );
 
 CREATE TABLE addresses (
-    id            NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id            BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     address_type  VARCHAR2(20)  NOT NULL,
     line1         VARCHAR2(200) NOT NULL,
     line2         VARCHAR2(200),
@@ -38,7 +38,7 @@ CREATE TABLE addresses (
     state         VARCHAR2(100) NOT NULL,
     country       VARCHAR2(100) NOT NULL,
     zip_code      VARCHAR2(20)  NOT NULL,
-    employee_id   NUMBER        NOT NULL,
+    employee_id   BIGINT        NOT NULL,
     created_by    VARCHAR2(100),
     created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_by    VARCHAR2(100),
@@ -47,11 +47,11 @@ CREATE TABLE addresses (
 );
 
 CREATE TABLE emergency_contacts (
-    id            NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id            BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     name          VARCHAR2(100) NOT NULL,
     relationship  VARCHAR2(50)  NOT NULL,
     phone         VARCHAR2(20)  NOT NULL,
-    employee_id   NUMBER        NOT NULL,
+    employee_id   BIGINT        NOT NULL,
     created_by    VARCHAR2(100),
     created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_by    VARCHAR2(100),
@@ -60,14 +60,14 @@ CREATE TABLE emergency_contacts (
 );
 
 CREATE TABLE documents (
-    id                 NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id                 BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     file_name          VARCHAR2(255) NOT NULL,
     original_file_name VARCHAR2(255) NOT NULL,
     content_type       VARCHAR2(100) NOT NULL,
-    file_size          NUMBER,
+    file_size          BIGINT,
     file_path          VARCHAR2(500) NOT NULL,
     document_type      VARCHAR2(30)  NOT NULL,
-    employee_id        NUMBER        NOT NULL,
+    employee_id        BIGINT        NOT NULL,
     created_by         VARCHAR2(100),
     created_at         TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_by         VARCHAR2(100),

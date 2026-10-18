@@ -43,6 +43,7 @@ public class RefreshToken {
     @Column(name = "expires_at", nullable = false)
     private LocalDateTime expiresAt;
 
+    @jakarta.persistence.Convert(converter = org.hibernate.type.NumericBooleanConverter.class)
     @Column(name = "revoked", nullable = false)
     @Builder.Default
     private boolean revoked = false;

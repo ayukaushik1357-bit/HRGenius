@@ -2,7 +2,7 @@
 
 -- 1. Review Cycles
 CREATE TABLE review_cycles (
-    id NUMBER(19) GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     name VARCHAR2(100) NOT NULL UNIQUE,
     start_date DATE NOT NULL,
     end_date DATE NOT NULL,
@@ -15,9 +15,9 @@ CREATE TABLE review_cycles (
 
 -- 2. Goals / KRAs
 CREATE TABLE goals (
-    id NUMBER(19) GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    employee_id NUMBER(19) NOT NULL,
-    review_cycle_id NUMBER(19) NOT NULL,
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    employee_id BIGINT NOT NULL,
+    review_cycle_id BIGINT NOT NULL,
     title VARCHAR2(150) NOT NULL,
     description VARCHAR2(1000),
     weightage NUMBER(5, 2) DEFAULT 0.0 NOT NULL,
@@ -32,10 +32,10 @@ CREATE TABLE goals (
 
 -- 3. Performance Reviews
 CREATE TABLE performance_reviews (
-    id NUMBER(19) GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    review_cycle_id NUMBER(19) NOT NULL,
-    employee_id NUMBER(19) NOT NULL,
-    manager_id NUMBER(19),
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    review_cycle_id BIGINT NOT NULL,
+    employee_id BIGINT NOT NULL,
+    manager_id BIGINT,
     status VARCHAR2(30) DEFAULT 'NOT_STARTED' NOT NULL,
     self_rating NUMBER(3, 1),
     self_comments VARCHAR2(2000),
@@ -56,9 +56,9 @@ CREATE TABLE performance_reviews (
 
 -- 4. 360 Peer Feedback
 CREATE TABLE peer_feedbacks (
-    id NUMBER(19) GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    performance_review_id NUMBER(19) NOT NULL,
-    reviewer_id NUMBER(19) NOT NULL,
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    performance_review_id BIGINT NOT NULL,
+    reviewer_id BIGINT NOT NULL,
     feedback VARCHAR2(2000) NOT NULL,
     rating NUMBER(3, 1),
     submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -72,14 +72,14 @@ CREATE TABLE peer_feedbacks (
 
 -- 5. Exit Requests (Resignation / Offboarding)
 CREATE TABLE exit_requests (
-    id NUMBER(19) GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    employee_id NUMBER(19) NOT NULL,
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    employee_id BIGINT NOT NULL,
     resignation_date DATE NOT NULL,
-    notice_period_days NUMBER(5) DEFAULT 30 NOT NULL,
+    notice_period_days INTEGER DEFAULT 30 NOT NULL,
     last_working_day DATE NOT NULL,
     reason VARCHAR2(1000) NOT NULL,
     status VARCHAR2(20) DEFAULT 'PENDING' NOT NULL,
-    approved_by_id NUMBER(19),
+    approved_by_id BIGINT,
     remarks VARCHAR2(1000),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     created_by VARCHAR2(50),
@@ -91,12 +91,12 @@ CREATE TABLE exit_requests (
 
 -- 6. Clearance Items
 CREATE TABLE clearance_items (
-    id NUMBER(19) GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    exit_request_id NUMBER(19) NOT NULL,
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    exit_request_id BIGINT NOT NULL,
     department_type VARCHAR2(30) NOT NULL,
     title VARCHAR2(150) NOT NULL,
     status VARCHAR2(20) DEFAULT 'PENDING' NOT NULL,
-    cleared_by_id NUMBER(19),
+    cleared_by_id BIGINT,
     cleared_at TIMESTAMP,
     remarks VARCHAR2(500),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -109,11 +109,11 @@ CREATE TABLE clearance_items (
 
 -- 7. Full & Final Settlement (FnF)
 CREATE TABLE fnf_settlements (
-    id NUMBER(19) GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    exit_request_id NUMBER(19) NOT NULL UNIQUE,
-    employee_id NUMBER(19) NOT NULL,
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    exit_request_id BIGINT NOT NULL UNIQUE,
+    employee_id BIGINT NOT NULL,
     settlement_date DATE NOT NULL,
-    payable_days NUMBER(5) DEFAULT 0 NOT NULL,
+    payable_days INTEGER DEFAULT 0 NOT NULL,
     salary_payable NUMBER(15, 2) DEFAULT 0.0 NOT NULL,
     leave_encashment_days NUMBER(5, 2) DEFAULT 0.0 NOT NULL,
     leave_encashment_amount NUMBER(15, 2) DEFAULT 0.0 NOT NULL,
@@ -132,9 +132,9 @@ CREATE TABLE fnf_settlements (
 
 -- 8. Audit Logs
 CREATE TABLE audit_logs (
-    id NUMBER(19) GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     entity_name VARCHAR2(100) NOT NULL,
-    entity_id NUMBER(19) NOT NULL,
+    entity_id BIGINT NOT NULL,
     action VARCHAR2(30) NOT NULL,
     changed_by VARCHAR2(50) NOT NULL,
     changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -145,11 +145,11 @@ CREATE TABLE audit_logs (
 
 -- 9. Profile Update Requests (Self-service with HR approval)
 CREATE TABLE profile_update_requests (
-    id NUMBER(19) GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    employee_id NUMBER(19) NOT NULL,
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    employee_id BIGINT NOT NULL,
     requested_changes CLOB NOT NULL,
     status VARCHAR2(20) DEFAULT 'PENDING' NOT NULL,
-    reviewed_by_id NUMBER(19),
+    reviewed_by_id BIGINT,
     reviewed_at TIMESTAMP,
     remarks VARCHAR2(500),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -161,7 +161,7 @@ CREATE TABLE profile_update_requests (
 );
 
 -- 10. Security: Account Lockout columns on users
-ALTER TABLE users ADD failed_attempts NUMBER(5) DEFAULT 0 NOT NULL;
+ALTER TABLE users ADD failed_attempts INTEGER DEFAULT 0 NOT NULL;
 ALTER TABLE users ADD lockout_time TIMESTAMP;
 
 -- 11. Sensitive fields on employees (masked for non-HR)

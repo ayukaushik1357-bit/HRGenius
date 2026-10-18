@@ -4,6 +4,7 @@ import com.hrgenius.entity.Document;
 import com.hrgenius.entity.Employee;
 import com.hrgenius.entity.User;
 import com.hrgenius.entity.leave.LeaveApplication;
+import com.hrgenius.entity.notification.AppNotification;
 import com.hrgenius.entity.performance.PerformanceReview;
 import com.hrgenius.repository.*;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,6 +42,9 @@ class AuthzTest {
 
     @Mock
     private PerformanceReviewRepository performanceReviewRepository;
+
+    @Mock
+    private ExitRequestRepository exitRequestRepository;
 
     @InjectMocks
     private Authz authz;
@@ -200,5 +204,27 @@ class AuthzTest {
         // Cannot submit feedback for oneself
         when(currentUserService.getCurrentEmployeeId()).thenReturn(Optional.of(20L));
         assertFalse(authz.canSubmitPeerFeedback(200L));
+    }
+
+    @Test
+    void testIsNotificationOwner() {
+        User recipient = new User();
+        recipient.setId(5L);
+
+        AppNotification notification = new AppNotification();
+        notification.setId(10L);
+        notification.setRecipient(recipient);
+
+        when(notificationRepository.findById(10L)).thenReturn(Optional.of(notification));
+
+        // Owner matches
+        when(currentUserService.getCurrentUser()).thenReturn(Optional.of(recipient));
+        assertTrue(authz.isNotificationOwner(10L));
+
+        // Owner does not match
+        User otherUser = new User();
+        otherUser.setId(99L);
+        when(currentUserService.getCurrentUser()).thenReturn(Optional.of(otherUser));
+        assertFalse(authz.isNotificationOwner(10L));
     }
 }

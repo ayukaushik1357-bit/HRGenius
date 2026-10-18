@@ -38,6 +38,18 @@ export class MainLayoutComponent implements OnInit {
     return this.authService.hasAnyRole(['ADMIN', 'HR_MANAGER']);
   }
 
+  get canAccessEmployees(): boolean {
+    return this.authService.hasAnyRole(['ADMIN', 'HR_MANAGER', 'MANAGER']);
+  }
+
+  get canAccessAnalytics(): boolean {
+    return this.authService.hasAnyRole(['ADMIN', 'HR_MANAGER', 'MANAGER']);
+  }
+
+  get canAccessRecruitment(): boolean {
+    return this.authService.hasAnyRole(['ADMIN', 'HR_MANAGER']);
+  }
+
   ngOnInit(): void {
     this.notificationService.fetchUnreadCount();
     // Poll notifications every 30 seconds

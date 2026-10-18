@@ -14,6 +14,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -98,6 +99,7 @@ public class PayrollController {
     }
 
     @GetMapping("/payslips/{id}")
+    @PreAuthorize("@authz.canAccessPayslip(#id)")
     @Operation(summary = "Get single payslip details")
     public ResponseEntity<PayslipResponse> getPayslipById(
             @PathVariable Long id,
@@ -107,13 +109,14 @@ public class PayrollController {
         if (!currentUserService.hasAnyRole(principal, "ADMIN", "HR_MANAGER")) {
             Long empId = currentUserService.getCurrentEmployeeId().orElse(null);
             if (empId == null || !empId.equals(payslip.getEmployeeId())) {
-                throw new BadRequestException("Access denied: You can only view your own payslips");
+                throw new AccessDeniedException("Access denied: You can only view your own payslips");
             }
         }
         return ResponseEntity.ok(payslip);
     }
 
     @GetMapping("/payslips/{id}/pdf")
+    @PreAuthorize("@authz.canAccessPayslip(#id)")
     @Operation(summary = "Download payslip as PDF (OpenPDF)")
     public ResponseEntity<byte[]> downloadPayslipPdf(
             @PathVariable Long id,
@@ -122,7 +125,7 @@ public class PayrollController {
         if (!currentUserService.hasAnyRole(principal, "ADMIN", "HR_MANAGER")) {
             Long empId = currentUserService.getCurrentEmployeeId().orElse(null);
             if (empId == null || !empId.equals(payslip.getEmployeeId())) {
-                throw new BadRequestException("Access denied: You can only download your own payslips");
+                throw new AccessDeniedException("Access denied: You can only download your own payslips");
             }
         }
 

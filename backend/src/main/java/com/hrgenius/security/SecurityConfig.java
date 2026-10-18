@@ -51,7 +51,15 @@ public class SecurityConfig {
                 .authenticationEntryPoint((request, response, authException) -> {
                     response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                     response.setContentType("application/json");
-                    response.getWriter().write("{\"status\":401,\"error\":\"Unauthorized\",\"message\":\"Authentication required\"}");
+                    String now = java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+                    response.getWriter().write("{\"timestamp\":\"" + now + "\",\"status\":401,\"error\":\"Unauthorized\",\"message\":\"Authentication required\",\"path\":\"" + request.getRequestURI() + "\"}");
+                })
+                .accessDeniedHandler((request, response, accessDeniedException) -> {
+                    response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                    response.setContentType("application/json");
+                    String now = java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+                    String msg = accessDeniedException.getMessage() != null ? accessDeniedException.getMessage() : "Access denied";
+                    response.getWriter().write("{\"timestamp\":\"" + now + "\",\"status\":403,\"error\":\"Forbidden\",\"message\":\"" + msg + "\",\"path\":\"" + request.getRequestURI() + "\"}");
                 })
             )
             .authorizeHttpRequests(auth -> {

@@ -3,7 +3,7 @@
 -- ============================================================
 
 CREATE TABLE departments (
-    id            NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id            BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     name          VARCHAR2(100)  NOT NULL UNIQUE,
     code          VARCHAR2(20)   NOT NULL UNIQUE,
     description   VARCHAR2(500),
@@ -14,9 +14,9 @@ CREATE TABLE departments (
 );
 
 CREATE TABLE designations (
-    id                NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id                BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     title             VARCHAR2(100) NOT NULL UNIQUE,
-    designation_level NUMBER(5),
+    designation_level INTEGER,
     description       VARCHAR2(500),
     created_by        VARCHAR2(100),
     created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

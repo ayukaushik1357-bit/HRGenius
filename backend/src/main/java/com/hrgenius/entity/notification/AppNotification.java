@@ -41,6 +41,7 @@ public class AppNotification extends BaseEntity {
     @Column(nullable = false, length = 30)
     private NotificationType type = NotificationType.GENERAL;
 
+    @jakarta.persistence.Convert(converter = org.hibernate.type.NumericBooleanConverter.class)
     @Column(name = "is_read", nullable = false)
     private boolean read = false;
 

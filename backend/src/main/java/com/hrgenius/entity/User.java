@@ -31,6 +31,7 @@ public class User extends BaseEntity {
     @Column(nullable = false)
     private String password;
 
+    @jakarta.persistence.Convert(converter = org.hibernate.type.NumericBooleanConverter.class)
     @Column(nullable = false)
     private boolean enabled = true;
 
@@ -40,6 +41,7 @@ public class User extends BaseEntity {
     @Column(name = "lockout_time")
     private java.time.LocalDateTime lockoutTime;
 
+    @jakarta.persistence.Convert(converter = org.hibernate.type.NumericBooleanConverter.class)
     @Column(name = "must_change_password", nullable = false)
     private boolean mustChangePassword = false;
 

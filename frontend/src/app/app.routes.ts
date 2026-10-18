@@ -28,11 +28,15 @@ export const routes: Routes = [
       },
       {
         path: 'analytics',
-        loadComponent: () => import('./features/analytics/analytics.component').then(m => m.AnalyticsComponent)
+        loadComponent: () => import('./features/analytics/analytics.component').then(m => m.AnalyticsComponent),
+        canActivate: [roleGuard],
+        data: { roles: ['ADMIN', 'HR_MANAGER', 'MANAGER'] }
       },
       {
         path: 'employees',
-        loadComponent: () => import('./features/employees/employee-list/employee-list.component').then(m => m.EmployeeListComponent)
+        loadComponent: () => import('./features/employees/employee-list/employee-list.component').then(m => m.EmployeeListComponent),
+        canActivate: [roleGuard],
+        data: { roles: ['ADMIN', 'HR_MANAGER', 'MANAGER'] }
       },
       {
         path: 'employees/new',
@@ -64,7 +68,9 @@ export const routes: Routes = [
       },
       {
         path: 'recruitment',
-        loadComponent: () => import('./features/recruitment/recruitment.component').then(m => m.RecruitmentComponent)
+        loadComponent: () => import('./features/recruitment/recruitment.component').then(m => m.RecruitmentComponent),
+        canActivate: [roleGuard],
+        data: { roles: ['ADMIN', 'HR_MANAGER'] }
       },
       {
         path: 'onboarding',
@@ -94,7 +100,7 @@ export const routes: Routes = [
         path: 'audit',
         loadComponent: () => import('./features/audit/audit.component').then(m => m.AuditComponent),
         canActivate: [roleGuard],
-        data: { roles: ['ADMIN'] }
+        data: { roles: ['ADMIN', 'HR_MANAGER'] }
       },
       {
         path: 'users',

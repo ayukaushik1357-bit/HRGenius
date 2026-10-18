@@ -1,5 +1,7 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { forkJoin, of, Subscription } from 'rxjs';
+import { catchError, finalize } from 'rxjs/operators';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatCardModule } from '@angular/material/card';
@@ -44,7 +46,8 @@ import { OnboardingTemplate } from '../../core/models/onboarding.model';
   templateUrl: './recruitment.component.html',
   styleUrls: ['./recruitment.component.scss']
 })
-export class RecruitmentComponent implements OnInit {
+export class RecruitmentComponent implements OnInit, OnDestroy {
+  private loadDataSubscription?: Subscription;
   jobPostings = signal<JobPosting[]>([]);
   applications = signal<Application[]>([]);
   departments = signal<Department[]>([]);
@@ -145,35 +148,28 @@ export class RecruitmentComponent implements OnInit {
   }
 
   loadData(): void {
+    this.loadDataSubscription?.unsubscribe();
     this.isLoading.set(true);
-    let pending = 5;
-    const dec = () => {
-      pending--;
-      if (pending <= 0) {
-        this.isLoading.set(false);
-      }
-    };
 
-    this.recruitmentService.getJobPostings().subscribe({
-      next: jobs => { this.jobPostings.set(jobs || []); dec(); },
-      error: () => { dec(); }
+    this.loadDataSubscription = forkJoin({
+      jobs: this.recruitmentService.getJobPostings().pipe(catchError(() => of([]))),
+      apps: this.recruitmentService.getApplications().pipe(catchError(() => of([]))),
+      depts: this.departmentService.getAllDepartments().pipe(catchError(() => of([]))),
+      desigs: this.designationService.getAllDesignations().pipe(catchError(() => of([]))),
+      templates: this.onboardingService.getTemplates().pipe(catchError(() => of([])))
+    }).pipe(
+      finalize(() => this.isLoading.set(false))
+    ).subscribe(({ jobs, apps, depts, desigs, templates }) => {
+      this.jobPostings.set(jobs || []);
+      this.applications.set(apps || []);
+      this.departments.set(depts || []);
+      this.designations.set(desigs || []);
+      this.onboardingTemplates.set(templates || []);
     });
-    this.recruitmentService.getApplications().subscribe({
-      next: apps => { this.applications.set(apps || []); dec(); },
-      error: () => { dec(); }
-    });
-    this.departmentService.getAllDepartments().subscribe({
-      next: depts => { this.departments.set(depts || []); dec(); },
-      error: () => { dec(); }
-    });
-    this.designationService.getAllDesignations().subscribe({
-      next: desigs => { this.designations.set(desigs || []); dec(); },
-      error: () => { dec(); }
-    });
-    this.onboardingService.getTemplates().subscribe({
-      next: templates => { this.onboardingTemplates.set(templates || []); dec(); },
-      error: () => { dec(); }
-    });
+  }
+
+  ngOnDestroy(): void {
+    this.loadDataSubscription?.unsubscribe();
   }
 
   getStageApplications(stage: string): Application[] {

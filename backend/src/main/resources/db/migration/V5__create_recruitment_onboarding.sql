@@ -3,17 +3,17 @@
 -- ============================================================
 
 CREATE TABLE job_postings (
-    id                   NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id                   BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     title                VARCHAR2(150)  NOT NULL,
     description          VARCHAR2(2000),
     requirements         VARCHAR2(2000),
     location             VARCHAR2(100),
-    min_exp_years        NUMBER(3),
-    max_exp_years        NUMBER(3),
-    openings             NUMBER(5)      DEFAULT 1 NOT NULL,
+    min_exp_years        INTEGER,
+    max_exp_years        INTEGER,
+    openings             INTEGER        DEFAULT 1 NOT NULL,
     status               VARCHAR2(20)   DEFAULT 'DRAFT' NOT NULL,
-    department_id        NUMBER,
-    designation_id       NUMBER,
+    department_id        BIGINT,
+    designation_id       BIGINT,
     created_by           VARCHAR2(100),
     created_at           TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_by           VARCHAR2(100),
@@ -23,7 +23,7 @@ CREATE TABLE job_postings (
 );
 
 CREATE TABLE candidates (
-    id                   NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id                   BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     first_name           VARCHAR2(50)   NOT NULL,
     last_name            VARCHAR2(50)   NOT NULL,
     email                VARCHAR2(100)  NOT NULL UNIQUE,
@@ -40,9 +40,9 @@ CREATE TABLE candidates (
 );
 
 CREATE TABLE job_applications (
-    id                   NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    job_posting_id       NUMBER         NOT NULL,
-    candidate_id         NUMBER         NOT NULL,
+    id                   BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    job_posting_id       BIGINT         NOT NULL,
+    candidate_id         BIGINT         NOT NULL,
     stage                VARCHAR2(20)   DEFAULT 'APPLIED' NOT NULL,
     applied_at           TIMESTAMP      DEFAULT CURRENT_TIMESTAMP NOT NULL,
     notes                VARCHAR2(2000),
@@ -55,12 +55,12 @@ CREATE TABLE job_applications (
 );
 
 CREATE TABLE interviews (
-    id                   NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    application_id       NUMBER         NOT NULL,
-    interviewer_id       NUMBER         NOT NULL,
+    id                   BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    application_id       BIGINT         NOT NULL,
+    interviewer_id       BIGINT         NOT NULL,
     scheduled_at         TIMESTAMP      NOT NULL,
     round_name           VARCHAR2(100)  NOT NULL,
-    rating               NUMBER(2),
+    rating               INTEGER,
     feedback             VARCHAR2(2000),
     status               VARCHAR2(20)   DEFAULT 'SCHEDULED' NOT NULL,
     created_by           VARCHAR2(100),
@@ -72,8 +72,8 @@ CREATE TABLE interviews (
 );
 
 CREATE TABLE job_offers (
-    id                   NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    application_id       NUMBER         NOT NULL UNIQUE,
+    id                   BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    application_id       BIGINT         NOT NULL UNIQUE,
     offer_date           DATE           NOT NULL,
     joining_date         DATE           NOT NULL,
     offered_salary_ctc   NUMBER(15,2)   NOT NULL,
@@ -87,7 +87,7 @@ CREATE TABLE job_offers (
 );
 
 CREATE TABLE onboarding_templates (
-    id                   NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id                   BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     name                 VARCHAR2(100)  NOT NULL UNIQUE,
     description          VARCHAR2(500),
     created_by           VARCHAR2(100),
@@ -97,12 +97,12 @@ CREATE TABLE onboarding_templates (
 );
 
 CREATE TABLE onboarding_template_tasks (
-    id                   NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    template_id          NUMBER         NOT NULL,
+    id                   BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    template_id          BIGINT         NOT NULL,
     title                VARCHAR2(150)  NOT NULL,
     description          VARCHAR2(500),
     category             VARCHAR2(30)   DEFAULT 'DOCUMENTS' NOT NULL,
-    default_days_to_complete NUMBER(3)  DEFAULT 3 NOT NULL,
+    default_days_to_complete INTEGER    DEFAULT 3 NOT NULL,
     created_by           VARCHAR2(100),
     created_at           TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_by           VARCHAR2(100),
@@ -111,13 +111,13 @@ CREATE TABLE onboarding_template_tasks (
 );
 
 CREATE TABLE onboarding_tasks (
-    id                   NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    employee_id          NUMBER         NOT NULL,
+    id                   BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    employee_id          BIGINT         NOT NULL,
     title                VARCHAR2(150)  NOT NULL,
     description          VARCHAR2(500),
     category             VARCHAR2(30)   NOT NULL,
     status               VARCHAR2(20)   DEFAULT 'PENDING' NOT NULL,
-    owner_id             NUMBER,
+    owner_id             BIGINT,
     due_date             DATE,
     completed_at         TIMESTAMP,
     created_by           VARCHAR2(100),

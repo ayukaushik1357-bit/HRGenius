@@ -17,6 +17,7 @@ public class Authz {
     private final PayslipRepository payslipRepository;
     private final NotificationRepository notificationRepository;
     private final PerformanceReviewRepository performanceReviewRepository;
+    private final ExitRequestRepository exitRequestRepository;
 
     public boolean isSelf(Long employeeId) {
         if (employeeId == null) {
@@ -175,6 +176,26 @@ public class Authz {
         }
         return performanceReviewRepository.findById(reviewId)
                 .map(r -> r.getEmployee() != null && !currentEmpId.equals(r.getEmployee().getId()))
+                .orElse(false);
+    }
+
+    public boolean canAccessExitRequest(Long exitRequestId) {
+        if (exitRequestId == null) {
+            return false;
+        }
+        if (currentUserService.isHrOrAdmin()) {
+            return true;
+        }
+        Long currentEmpId = currentUserService.getCurrentEmployeeId().orElse(null);
+        if (currentEmpId == null) {
+            return false;
+        }
+        return exitRequestRepository.findById(exitRequestId)
+                .map(req -> {
+                    if (req.getEmployee() == null) return false;
+                    Long empId = req.getEmployee().getId();
+                    return currentEmpId.equals(empId) || isManagerOf(empId);
+                })
                 .orElse(false);
     }
 }

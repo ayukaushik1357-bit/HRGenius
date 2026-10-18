@@ -1,14 +1,15 @@
 # Multi-stage Dockerfile for HRGenius Spring Boot Backend
-FROM maven:3.9.6-eclipse-temurin-17-alpine AS builder
+FROM eclipse-temurin:17-jdk-alpine AS builder
 WORKDIR /app
 
-# Copy POM and download dependencies for faster layer caching
-COPY pom.xml .
-RUN mvn dependency:go-offline -B
+# Copy wrapper and POM for faster layer caching
+COPY .mvn .mvn
+COPY mvnw pom.xml ./
+RUN chmod +x mvnw && ./mvnw dependency:go-offline -B
 
 # Copy source code and build production package
 COPY src ./src
-RUN mvn clean package -DskipTests
+RUN ./mvnw clean package -DskipTests
 
 # Runtime stage
 FROM eclipse-temurin:17-jre-alpine
