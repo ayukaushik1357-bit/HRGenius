@@ -75,7 +75,7 @@ public class LeaveController {
     }
 
     @PostMapping("/{id}/action")
-    @PreAuthorize("hasAnyRole('ADMIN', 'HR_MANAGER', 'MANAGER')")
+    @PreAuthorize("@authz.canApproveLeave(#id)")
     @Operation(summary = "Approve or reject a leave application")
     public ResponseEntity<LeaveApplicationResponse> actionLeave(
             @AuthenticationPrincipal UserPrincipal principal,

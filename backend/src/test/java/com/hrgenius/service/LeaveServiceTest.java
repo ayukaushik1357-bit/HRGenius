@@ -45,6 +45,9 @@ class LeaveServiceTest {
     @Mock
     private NotificationService notificationService;
 
+    @Mock
+    private com.hrgenius.security.CurrentUserService currentUserService;
+
     @InjectMocks
     private LeaveService leaveService;
 
@@ -146,8 +149,12 @@ class LeaveServiceTest {
     }
 
     @Test
-    @DisplayName("Should deduct quota upon manager approval")
+    @DisplayName("Should deduct quota upon manager approval of direct report")
     void processLeaveApproval_approved_deductsQuota() {
+        Employee manager = new Employee();
+        manager.setId(2L);
+        employee.setReportingManager(manager);
+
         LeaveApplication app = new LeaveApplication();
         app.setId(100L);
         app.setEmployee(employee);
@@ -160,6 +167,7 @@ class LeaveServiceTest {
         when(leaveApplicationRepository.findById(100L)).thenReturn(Optional.of(app));
         when(leaveBalanceRepository.findByEmployeeIdAndYear(1L, 2026)).thenReturn(Optional.of(balance));
         when(leaveApplicationRepository.save(any(LeaveApplication.class))).thenReturn(app);
+        when(currentUserService.isHrOrAdmin()).thenReturn(false);
 
         LeaveApprovalRequest approvalRequest = new LeaveApprovalRequest();
         approvalRequest.setApproved(true);
@@ -169,5 +177,71 @@ class LeaveServiceTest {
         assertThat(app.getStatus()).isEqualTo(LeaveApplication.LeaveStatus.APPROVED);
         assertThat(balance.getCasualUsed()).isEqualTo(4.0); // 2.0 previous + 2.0 new
         verify(leaveBalanceRepository).save(balance);
+    }
+
+    @Test
+    @DisplayName("Should throw AccessDeniedException when employee tries to approve own leave")
+    void processLeaveApproval_selfApproval_throwsAccessDenied() {
+        LeaveApplication app = new LeaveApplication();
+        app.setId(100L);
+        app.setEmployee(employee); // employee.id is 1L
+        app.setStatus(LeaveApplication.LeaveStatus.PENDING);
+
+        when(leaveApplicationRepository.findById(100L)).thenReturn(Optional.of(app));
+
+        LeaveApprovalRequest approvalRequest = new LeaveApprovalRequest();
+        approvalRequest.setApproved(true);
+
+        assertThatThrownBy(() -> leaveService.processLeaveApproval(100L, 1L, approvalRequest))
+                .isInstanceOf(org.springframework.security.access.AccessDeniedException.class)
+                .hasMessageContaining("Cannot approve or reject your own leave application");
+    }
+
+    @Test
+    @DisplayName("Should throw AccessDeniedException when manager attempts to approve non-direct report")
+    void processLeaveApproval_nonReportingManager_throwsAccessDenied() {
+        Employee manager = new Employee();
+        manager.setId(99L);
+        employee.setReportingManager(manager); // reporting manager is 99L
+
+        LeaveApplication app = new LeaveApplication();
+        app.setId(100L);
+        app.setEmployee(employee);
+        app.setStatus(LeaveApplication.LeaveStatus.PENDING);
+
+        when(leaveApplicationRepository.findById(100L)).thenReturn(Optional.of(app));
+        when(currentUserService.isHrOrAdmin()).thenReturn(false);
+
+        LeaveApprovalRequest approvalRequest = new LeaveApprovalRequest();
+        approvalRequest.setApproved(true);
+
+        // Approver is 2L, but reporting manager is 99L
+        assertThatThrownBy(() -> leaveService.processLeaveApproval(100L, 2L, approvalRequest))
+                .isInstanceOf(org.springframework.security.access.AccessDeniedException.class)
+                .hasMessageContaining("Managers can only approve or reject leaves for their direct reports");
+    }
+
+    @Test
+    @DisplayName("Should allow HR/Admin to approve any employee's leave")
+    void processLeaveApproval_adminApproval_succeeds() {
+        LeaveApplication app = new LeaveApplication();
+        app.setId(100L);
+        app.setEmployee(employee);
+        app.setLeaveType(LeaveApplication.LeaveType.CASUAL);
+        app.setStartDate(LocalDate.of(2026, 5, 2));
+        app.setEndDate(LocalDate.of(2026, 5, 3));
+        app.setNumberOfDays(2.0);
+        app.setStatus(LeaveApplication.LeaveStatus.PENDING);
+
+        when(leaveApplicationRepository.findById(100L)).thenReturn(Optional.of(app));
+        when(leaveBalanceRepository.findByEmployeeIdAndYear(1L, 2026)).thenReturn(Optional.of(balance));
+        when(leaveApplicationRepository.save(any(LeaveApplication.class))).thenReturn(app);
+        when(currentUserService.isHrOrAdmin()).thenReturn(true);
+
+        LeaveApprovalRequest approvalRequest = new LeaveApprovalRequest();
+        approvalRequest.setApproved(true);
+
+        LeaveApplicationResponse response = leaveService.processLeaveApproval(100L, 50L, approvalRequest);
+        assertThat(app.getStatus()).isEqualTo(LeaveApplication.LeaveStatus.APPROVED);
     }
 }

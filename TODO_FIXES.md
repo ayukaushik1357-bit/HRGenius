@@ -35,7 +35,8 @@
   - Scoped GET /employees to ADMIN, HR_MANAGER, and MANAGER (filtering to manager's direct reports and self), protected GET /employees/{id} via @authz.canViewEmployee, and restricted salary/bank/tax details to HR/ADMIN and self via EmployeeMapper.
 - [x] B5. Documents: list and download only for ADMIN/HR or the document owner. Validate file type and size on upload, and never trust the client file name for the storage path (prevent path traversal).
   - Enforced document access and download scoping to ADMIN/HR and document owner, validated file types (.pdf, .png, .jpg, .jpeg, .doc, .docx) and 10MB size limit, sanitized original filenames, enforced UUID storage filenames, prevented path traversal in load and delete, and added DocumentServiceTest coverage.
-- [ ] B6. Leave approvals: a MANAGER may approve/reject only leaves of their direct reports; nobody may approve their own leave. HR/ADMIN may approve any.
+- [x] B6. Leave approvals: a MANAGER may approve/reject only leaves of their direct reports; nobody may approve their own leave. HR/ADMIN may approve any.
+  - Enforced @authz.canApproveLeave on POST /leaves/{id}/action and in LeaveService.processLeaveApproval, preventing self-approval and ensuring managers only action direct reports while HR/ADMIN can approve any non-self leave, with unit test coverage.
 - [ ] B7. Performance reviews: manager review only by the employee's manager; self review only by the employee; peer feedback cannot be given to oneself.
 - [ ] B8. Recruitment, onboarding templates, payroll runs, holidays, audit logs, analytics company-wide: ADMIN/HR only (verify every endpoint). Analytics team view: MANAGER sees only their team.
 - [ ] B9. Notifications: a user can read/mark only their own notifications (check ownership on PATCH /{id}/read).

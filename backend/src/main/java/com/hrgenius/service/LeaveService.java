@@ -32,6 +32,7 @@ public class LeaveService {
     private final EmployeeRepository employeeRepository;
     private final LeaveMapper leaveMapper;
     private final NotificationService notificationService;
+    private final com.hrgenius.security.CurrentUserService currentUserService;
 
     @Transactional
     public LeaveBalance getOrCreateBalance(Long employeeId, int year) {
@@ -138,6 +139,21 @@ public class LeaveService {
 
         if (app.getStatus() != LeaveApplication.LeaveStatus.PENDING) {
             throw new BadRequestException("Leave application is already " + app.getStatus());
+        }
+
+        // Nobody may approve their own leave
+        if (approverEmployeeId != null && approverEmployeeId.equals(app.getEmployee().getId())) {
+            throw new org.springframework.security.access.AccessDeniedException("Cannot approve or reject your own leave application");
+        }
+
+        // Managers can only approve direct reports; HR/ADMIN can approve any
+        boolean isHrOrAdmin = currentUserService != null && currentUserService.isHrOrAdmin();
+        if (!isHrOrAdmin) {
+            Employee applicant = app.getEmployee();
+            if (applicant.getReportingManager() == null || approverEmployeeId == null ||
+                    !approverEmployeeId.equals(applicant.getReportingManager().getId())) {
+                throw new org.springframework.security.access.AccessDeniedException("Managers can only approve or reject leaves for their direct reports");
+            }
         }
 
         Employee approver = approverEmployeeId != null ? employeeRepository.findById(approverEmployeeId).orElse(null) : null;
