@@ -298,7 +298,7 @@ cd backend
 .\mvnw.cmd test
 ```
 
-**Oracle migration test:** `OracleMigrationTest` starts a real Oracle XE container (Testcontainers, same image as `docker-compose.yml`), runs all Flyway migrations, validates every entity against the Oracle schema (`ddl-auto=validate`) and runs the demo seeder. It runs automatically in GitHub Actions and is skipped on machines without Docker.
+**Oracle:** tests run on the in-memory H2 database. To try the app on real Oracle, run `docker compose up --build` (Oracle XE + backend + frontend).
 
 Frontend compilation test:
 ```powershell
