@@ -23,12 +23,14 @@ public class OnboardingController {
     private final OnboardingService onboardingService;
 
     @GetMapping("/templates")
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR_MANAGER')")
     @Operation(summary = "List onboarding templates")
     public ResponseEntity<List<OnboardingTemplateResponse>> getAllTemplates() {
         return ResponseEntity.ok(onboardingService.getAllTemplates());
     }
 
     @GetMapping("/templates/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR_MANAGER')")
     @Operation(summary = "Get onboarding template by ID")
     public ResponseEntity<OnboardingTemplateResponse> getTemplateById(@PathVariable Long id) {
         return ResponseEntity.ok(onboardingService.getTemplateById(id));

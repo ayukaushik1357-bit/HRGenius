@@ -53,5 +53,7 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long>, JpaSp
 
     @Query("SELECT COUNT(e) FROM Employee e WHERE e.reportingManager.id = :managerId AND e.status = 'ACTIVE'")
     long countDirectReports(@Param("managerId") Long managerId);
+
+    java.util.List<Employee> findByReportingManagerId(Long managerId);
 }
 

@@ -68,12 +68,14 @@ public class RecruitmentController {
 
     // --- Candidates ---
     @GetMapping("/candidates")
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR_MANAGER')")
     @Operation(summary = "List all candidates")
     public ResponseEntity<List<CandidateResponse>> getAllCandidates() {
         return ResponseEntity.ok(recruitmentService.getAllCandidates());
     }
 
     @GetMapping("/candidates/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR_MANAGER')")
     @Operation(summary = "Get candidate by ID")
     public ResponseEntity<CandidateResponse> getCandidateById(@PathVariable Long id) {
         return ResponseEntity.ok(recruitmentService.getCandidateById(id));
@@ -95,6 +97,7 @@ public class RecruitmentController {
     }
 
     @GetMapping("/candidates/{id}/resume")
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR_MANAGER')")
     @Operation(summary = "Download candidate resume")
     public ResponseEntity<Resource> downloadResume(@PathVariable Long id) throws IOException {
         CandidateResponse c = recruitmentService.getCandidateById(id);
@@ -107,6 +110,7 @@ public class RecruitmentController {
 
     // --- Applications ---
     @GetMapping("/applications")
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR_MANAGER')")
     @Operation(summary = "List applications (filter by job posting or stage)")
     public ResponseEntity<List<ApplicationResponse>> getApplications(
             @RequestParam(required = false) Long jobPostingId,
@@ -131,6 +135,7 @@ public class RecruitmentController {
 
     // --- Interviews ---
     @GetMapping("/interviews/application/{applicationId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR_MANAGER')")
     @Operation(summary = "List interviews for application")
     public ResponseEntity<List<InterviewResponse>> getInterviewsByApplication(@PathVariable Long applicationId) {
         return ResponseEntity.ok(recruitmentService.getInterviewsByApplication(applicationId));
@@ -156,6 +161,7 @@ public class RecruitmentController {
 
     // --- Offers ---
     @GetMapping("/offers/application/{applicationId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR_MANAGER')")
     @Operation(summary = "Get offer for application")
     public ResponseEntity<OfferResponse> getOfferByApplication(@PathVariable Long applicationId) {
         return ResponseEntity.ok(recruitmentService.getOfferByApplication(applicationId));

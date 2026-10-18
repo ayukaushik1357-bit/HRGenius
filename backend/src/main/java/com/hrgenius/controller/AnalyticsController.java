@@ -22,7 +22,8 @@ public class AnalyticsController {
     private final AnalyticsService analyticsService;
 
     @GetMapping("/dashboard")
-    @Operation(summary = "Get aggregated HR analytics dashboard data with optional role/dept filter")
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR_MANAGER', 'MANAGER')")
+    @Operation(summary = "Get aggregated HR analytics dashboard data (company-wide for Admin/HR, team view for Manager)")
     public ResponseEntity<AnalyticsDashboardResponse> getDashboard(
             @RequestParam(required = false) String role,
             @RequestParam(required = false) Long departmentId) {
@@ -30,7 +31,7 @@ public class AnalyticsController {
     }
 
     @GetMapping("/export/excel")
-    @PreAuthorize("hasAnyRole('ADMIN', 'HR_MANAGER', 'MANAGER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR_MANAGER')")
     @Operation(summary = "Export analytics report as Excel workbook (.xlsx)")
     public ResponseEntity<byte[]> exportExcel(
             @RequestParam(required = false) Integer year,
@@ -45,7 +46,7 @@ public class AnalyticsController {
     }
 
     @GetMapping("/export/pdf")
-    @PreAuthorize("hasAnyRole('ADMIN', 'HR_MANAGER', 'MANAGER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR_MANAGER')")
     @Operation(summary = "Export analytics report as PDF document")
     public ResponseEntity<byte[]> exportPdf(
             @RequestParam(required = false) Integer year,

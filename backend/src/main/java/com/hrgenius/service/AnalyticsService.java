@@ -17,6 +17,8 @@ import com.lowagie.text.Phrase;
 import com.lowagie.text.pdf.PdfPCell;
 import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.pdf.PdfWriter;
+import com.hrgenius.entity.performance.PerformanceReview;
+import com.hrgenius.security.CurrentUserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*;
@@ -35,6 +37,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -50,9 +53,15 @@ public class AnalyticsService {
     private final JobPostingRepository jobPostingRepository;
     private final PayrollRunRepository payrollRunRepository;
     private final ExitRequestRepository exitRequestRepository;
+    private final CurrentUserService currentUserService;
 
     @Transactional(readOnly = true)
     public AnalyticsDashboardResponse getDashboardData(String roleOverride, Long departmentId) {
+        if (!currentUserService.isHrOrAdmin()) {
+            Long managerEmpId = currentUserService.getCurrentEmployeeId().orElse(null);
+            List<Employee> team = managerEmpId != null ? employeeRepository.findByReportingManagerId(managerEmpId) : List.of();
+            return buildTeamDashboard(managerEmpId, team);
+        }
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String currentRole = "EMPLOYEE";
         Long currentUserId = null;
@@ -202,6 +211,125 @@ public class AnalyticsService {
                     .count();
 
             long exited = allEmps.stream()
+                    .filter(e -> e.getStatus() == Employee.EmployeeStatus.EXITED
+                            && e.getUpdatedAt() != null
+                            && !e.getUpdatedAt().toLocalDate().isBefore(start)
+                            && !e.getUpdatedAt().toLocalDate().isAfter(end))
+                    .count();
+
+            list.add(MonthlyTrend.builder()
+                    .month(ym.format(fmt))
+                    .joinings(joined)
+                    .exits(exited)
+                    .build());
+        }
+        return list;
+    }
+
+    private AnalyticsDashboardResponse buildTeamDashboard(Long managerEmpId, List<Employee> team) {
+        long activeCount = team.stream().filter(e -> e.getStatus() == Employee.EmployeeStatus.ACTIVE).count();
+        long exitedCount = team.stream().filter(e -> e.getStatus() == Employee.EmployeeStatus.EXITED).count();
+        long onNoticeCount = team.stream().filter(e -> e.getStatus() == Employee.EmployeeStatus.ON_NOTICE).count();
+        long totalHeadcount = activeCount + exitedCount + onNoticeCount;
+
+        double attritionRate = totalHeadcount > 0
+                ? BigDecimal.valueOf((double) exitedCount / totalHeadcount * 100)
+                    .setScale(1, RoundingMode.HALF_UP).doubleValue()
+                : 0.0;
+
+        List<Employee> activeTeam = team.stream()
+                .filter(e -> e.getStatus() == Employee.EmployeeStatus.ACTIVE && e.getJoiningDate() != null)
+                .toList();
+
+        double avgTenure = 0.0;
+        if (!activeTeam.isEmpty()) {
+            long totalDays = activeTeam.stream()
+                    .mapToLong(e -> ChronoUnit.DAYS.between(e.getJoiningDate(), LocalDate.now()))
+                    .sum();
+            avgTenure = BigDecimal.valueOf((double) totalDays / activeTeam.size() / 365.25)
+                    .setScale(1, RoundingMode.HALF_UP).doubleValue();
+        }
+
+        List<PerformanceReview> teamReviews = managerEmpId != null ?
+                performanceReviewRepository.findByManagerId(managerEmpId) : List.of();
+
+        Map<Double, Long> ratingCounts = teamReviews.stream()
+                .filter(r -> r.getStatus() == PerformanceReview.ReviewStatus.COMPLETED && r.getFinalRating() != null)
+                .collect(Collectors.groupingBy(PerformanceReview::getFinalRating, Collectors.counting()));
+
+        List<CategoryCount> ratingDist = new ArrayList<>();
+        double sumRating = 0.0;
+        long totalRated = 0;
+        for (Map.Entry<Double, Long> entry : ratingCounts.entrySet()) {
+            ratingDist.add(CategoryCount.builder()
+                    .category(entry.getKey() + " Stars")
+                    .count(entry.getValue())
+                    .build());
+            sumRating += entry.getKey() * entry.getValue();
+            totalRated += entry.getValue();
+        }
+
+        double avgPerformance = totalRated > 0
+                ? BigDecimal.valueOf(sumRating / totalRated).setScale(2, RoundingMode.HALF_UP).doubleValue()
+                : 0.0;
+
+        Map<String, Long> deptMap = team.stream()
+                .filter(e -> e.getStatus() == Employee.EmployeeStatus.ACTIVE)
+                .collect(Collectors.groupingBy(
+                        e -> e.getDepartment() != null ? e.getDepartment().getName() : "Unassigned",
+                        Collectors.counting()
+                ));
+        List<CategoryCount> headcountByDept = deptMap.entrySet().stream()
+                .map(e -> CategoryCount.builder().category(e.getKey()).count(e.getValue()).build())
+                .toList();
+
+        Map<String, Long> genderMap = team.stream()
+                .filter(e -> e.getStatus() == Employee.EmployeeStatus.ACTIVE && e.getGender() != null)
+                .collect(Collectors.groupingBy(
+                        e -> e.getGender().name(),
+                        Collectors.counting()
+                ));
+        List<CategoryCount> genderDist = genderMap.entrySet().stream()
+                .map(e -> CategoryCount.builder().category(e.getKey()).count(e.getValue()).build())
+                .toList();
+
+        List<MonthlyTrend> trends = buildTeamHiringVsExitTrend(team);
+
+        return AnalyticsDashboardResponse.builder()
+                .totalHeadcount(totalHeadcount)
+                .activeEmployees(activeCount)
+                .attritionRate(attritionRate)
+                .averageTenureYears(avgTenure)
+                .monthlyPayrollTotal(BigDecimal.ZERO)
+                .openRequisitions(0L)
+                .averagePerformanceRating(avgPerformance)
+                .leaveUtilisationPercentage(68.5)
+                .headcountByDepartment(headcountByDept)
+                .genderDistribution(genderDist)
+                .recruitmentFunnel(List.of())
+                .payrollCostByDepartment(List.of())
+                .performanceRatingDistribution(ratingDist)
+                .hiringVsExitTrend(trends)
+                .build();
+    }
+
+    private List<MonthlyTrend> buildTeamHiringVsExitTrend(List<Employee> team) {
+        List<MonthlyTrend> list = new ArrayList<>();
+        YearMonth current = YearMonth.now();
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("MMM yyyy");
+
+        for (int i = 5; i >= 0; i--) {
+            YearMonth ym = current.minusMonths(i);
+            LocalDate start = ym.atDay(1);
+            LocalDate end = ym.atEndOfMonth();
+
+            long joined = team.stream()
+                    .filter(e -> e.getJoiningDate() != null
+                            && !e.getJoiningDate().isBefore(start)
+                            && !e.getJoiningDate().isAfter(end))
+                    .count();
+
+            long exited = team.stream()
                     .filter(e -> e.getStatus() == Employee.EmployeeStatus.EXITED
                             && e.getUpdatedAt() != null
                             && !e.getUpdatedAt().toLocalDate().isBefore(start)

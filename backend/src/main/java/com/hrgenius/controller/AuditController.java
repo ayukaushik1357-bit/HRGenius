@@ -22,8 +22,8 @@ public class AuditController {
     private final AuditService auditService;
 
     @GetMapping("/logs")
-    @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Get paginated audit logs (Admin only)")
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR_MANAGER')")
+    @Operation(summary = "Get paginated audit logs (Admin/HR only)")
     public ResponseEntity<PagedResponse<AuditLogResponse>> getAuditLogs(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
