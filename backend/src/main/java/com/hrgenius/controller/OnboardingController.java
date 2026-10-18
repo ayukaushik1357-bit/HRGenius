@@ -42,6 +42,7 @@ public class OnboardingController {
     }
 
     @GetMapping("/employees/{employeeId}/progress")
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR_MANAGER') or @authz.canViewEmployee(#employeeId)")
     @Operation(summary = "Get onboarding progress and tasks for employee")
     public ResponseEntity<OnboardingProgressResponse> getEmployeeProgress(@PathVariable Long employeeId) {
         return ResponseEntity.ok(onboardingService.getEmployeeProgress(employeeId));
@@ -59,7 +60,7 @@ public class OnboardingController {
     }
 
     @PostMapping("/employees/{employeeId}/tasks")
-    @PreAuthorize("hasAnyRole('ADMIN', 'HR_MANAGER', 'MANAGER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR_MANAGER') or @authz.isManagerOf(#employeeId)")
     @Operation(summary = "Add ad-hoc onboarding task to employee")
     public ResponseEntity<OnboardingTaskResponse> addTask(
             @PathVariable Long employeeId,

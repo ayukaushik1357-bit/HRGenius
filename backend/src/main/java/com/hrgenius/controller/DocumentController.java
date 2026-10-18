@@ -41,6 +41,7 @@ public class DocumentController {
     }
 
     @GetMapping("/employees/{employeeId}/documents")
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR_MANAGER') or @authz.isSelf(#employeeId)")
     @Operation(summary = "Get all documents metadata for an employee")
     public ResponseEntity<List<EmployeeResponse.DocumentDto>> getEmployeeDocuments(
             @PathVariable Long employeeId) {
@@ -48,6 +49,7 @@ public class DocumentController {
     }
 
     @GetMapping("/documents/{documentId}/download")
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR_MANAGER') or @authz.canAccessDocument(#documentId)")
     @Operation(summary = "Download an uploaded document file")
     public ResponseEntity<Resource> downloadDocument(@PathVariable Long documentId) {
         Document document = documentService.getDocumentMetadata(documentId);
