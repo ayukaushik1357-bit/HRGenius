@@ -40,19 +40,19 @@ public class PerformanceReview extends BaseEntity {
     @Column(nullable = false, length = 30)
     private ReviewStatus status = ReviewStatus.NOT_STARTED;
 
-    @Column(name = "self_rating")
+    @Column(name = "self_rating", columnDefinition = "NUMBER(3,1)")
     private Double selfRating; // 1.0 to 5.0
 
     @Column(name = "self_comments", length = 2000)
     private String selfComments;
 
-    @Column(name = "manager_rating")
+    @Column(name = "manager_rating", columnDefinition = "NUMBER(3,1)")
     private Double managerRating; // 1.0 to 5.0
 
     @Column(name = "manager_comments", length = 2000)
     private String managerComments;
 
-    @Column(name = "final_rating")
+    @Column(name = "final_rating", columnDefinition = "NUMBER(3,2)")
     private Double finalRating; // Calculated or consensus
 
     @Column(name = "submitted_at")

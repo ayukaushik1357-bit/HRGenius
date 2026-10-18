@@ -38,7 +38,7 @@ public class FnFSettlement extends BaseEntity {
     @Column(name = "salary_payable", nullable = false, precision = 15, scale = 2)
     private BigDecimal salaryPayable = BigDecimal.ZERO;
 
-    @Column(name = "leave_encashment_days", nullable = false)
+    @Column(name = "leave_encashment_days", nullable = false, columnDefinition = "NUMBER(5,2)")
     private Double leaveEncashmentDays = 0.0;
 
     @Column(name = "leave_encashment_amount", nullable = false, precision = 15, scale = 2)

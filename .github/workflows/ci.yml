@@ -43,7 +43,11 @@ jobs:
 
       - name: Install Dependencies
         working-directory: ./frontend
-        run: npm ci
+        # Lock file is generated with npm 11 (see "packageManager" in package.json);
+        # npm 10 bundled with Node 22 rejects it, so use the same npm version here.
+        run: |
+          npm install -g npm@11.6.0
+          npm ci
 
       - name: Build Angular Application
         working-directory: ./frontend

@@ -27,7 +27,7 @@ public class PeerFeedback extends BaseEntity {
     @Column(nullable = false, length = 2000)
     private String feedback;
 
-    @Column
+    @Column(columnDefinition = "NUMBER(3,1)")
     private Double rating; // 1.0 to 5.0
 
     @Column(name = "submitted_at", nullable = false)

@@ -46,7 +46,7 @@ public class LeaveApplication extends BaseEntity {
     @Column(name = "end_date", nullable = false)
     private LocalDate endDate;
 
-    @Column(name = "number_of_days", nullable = false)
+    @Column(name = "number_of_days", nullable = false, columnDefinition = "NUMBER(5,2)")
     private Double numberOfDays;
 
     @Column(nullable = false, length = 1000)

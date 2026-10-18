@@ -28,9 +28,9 @@ public class Goal extends BaseEntity {
     @Column(length = 1000)
     private String description;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "NUMBER(5,2)")
     private Double weightage = 0.0; // e.g. 25.0 %
 
-    @Column(name = "progress_percentage", nullable = false)
+    @Column(name = "progress_percentage", nullable = false, columnDefinition = "NUMBER(5,2)")
     private Double progressPercentage = 0.0; // 0 to 100%
 }

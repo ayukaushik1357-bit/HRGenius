@@ -145,7 +145,7 @@ graph TD
 
 ## 🔑 Demo Credentials
 
-HRGenius comes pre-seeded with **50 realistic employee records** across 5 departments (Engineering, Human Resources, Finance, Marketing, Operations), appraisal cycles, goals, payroll records, and audit logs. Demo data seeding is controlled by `app.seed-demo-data` (enabled by default in `h2`, disabled in `prod` and `migration-test`, and configurable for `dev`/Oracle). All seeded demo users have `mustChangePassword` disabled for immediate access.
+HRGenius comes pre-seeded with **50 realistic employee records** across 5 departments (Engineering, Human Resources, Finance, Marketing, Operations), appraisal cycles, goals, payroll records, and audit logs. Demo data seeding is controlled by `app.seed-demo-data` (enabled by default in `h2`, disabled in `prod`, and configurable for `dev`/Oracle). All seeded demo users have `mustChangePassword` disabled for immediate access.
 
 | Role | Username | Password | Access Level |
 | :--- | :--- | :--- | :--- |
@@ -291,12 +291,14 @@ docker compose down -v
 
 ## 🧪 Automated Testing
 
-Backend test coverage includes 36 automated unit and end-to-end controller tests covering authentication lockout, payroll rules, performance calculations, and analytics:
+Backend tests cover authentication lockout, payroll rules, performance calculations, analytics, and a table-driven authorization suite (`SecurityRulesParameterizedTest`) that checks role, self and team rules (including IDOR cases) on every controller with real JWTs.
 
 ```powershell
 cd backend
 .\mvnw.cmd test
 ```
+
+**Oracle migration test:** `OracleMigrationTest` starts a real Oracle XE container (Testcontainers, same image as `docker-compose.yml`), runs all Flyway migrations, validates every entity against the Oracle schema (`ddl-auto=validate`) and runs the demo seeder. It runs automatically in GitHub Actions and is skipped on machines without Docker.
 
 Frontend compilation test:
 ```powershell

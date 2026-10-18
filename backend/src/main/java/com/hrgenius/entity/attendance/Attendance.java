@@ -2,7 +2,9 @@ package com.hrgenius.entity.attendance;
 
 import com.hrgenius.entity.BaseEntity;
 import com.hrgenius.entity.Employee;
+import com.hrgenius.entity.converter.LocalTimeStringConverter;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -38,13 +40,15 @@ public class Attendance extends BaseEntity {
     @Column(name = "attendance_date", nullable = false)
     private LocalDate date;
 
-    @Column(name = "check_in_time")
+    @Column(name = "check_in_time", length = 10)
+    @Convert(converter = LocalTimeStringConverter.class)
     private LocalTime checkInTime;
 
-    @Column(name = "check_out_time")
+    @Column(name = "check_out_time", length = 10)
+    @Convert(converter = LocalTimeStringConverter.class)
     private LocalTime checkOutTime;
 
-    @Column(name = "working_hours")
+    @Column(name = "working_hours", columnDefinition = "NUMBER(5,2)")
     private Double workingHours;
 
     @Enumerated(EnumType.STRING)

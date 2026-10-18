@@ -35,7 +35,7 @@ public class Candidate extends BaseEntity {
     @Column(name = "resume_file_path", length = 500)
     private String resumeFilePath;
 
-    @Column(name = "experience_years")
+    @Column(name = "experience_years", columnDefinition = "NUMBER(5,2)")
     private Double experienceYears;
 
     @Column(name = "current_company", length = 100)

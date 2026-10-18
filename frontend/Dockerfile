@@ -4,7 +4,8 @@ WORKDIR /app
 
 # Copy dependency manifests
 COPY package*.json ./
-RUN npm ci
+# Same npm as package.json "packageManager" (npm 10 in node:22 rejects the lock file)
+RUN npm install -g npm@11.6.0 && npm ci
 
 # Copy source code and build production bundle
 COPY . .
