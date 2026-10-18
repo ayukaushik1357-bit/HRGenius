@@ -106,15 +106,51 @@ public class CurrentUserService {
     }
 
     public Long getEmployeeIdForUser(UserPrincipal principal, Long requestedEmployeeId) {
-        if (requestedEmployeeId != null) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (principal == null) {
+            Optional<UserPrincipal> current = getCurrentUserPrincipal();
+            if (current.isPresent()) {
+                principal = current.get();
+            } else if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
+                throw new org.springframework.security.access.AccessDeniedException("User not authenticated");
+            }
+        }
+
+        if (requestedEmployeeId == null) {
+            return getCurrentEmployeeIdOrThrow();
+        }
+
+        // 1. ADMIN and HR_MANAGER can act on any employee
+        boolean isHrOrAdmin = (principal != null && hasAnyRole(principal, "ADMIN", "HR_MANAGER"))
+                || hasAnyRole("ADMIN", "HR_MANAGER");
+        if (isHrOrAdmin) {
             return requestedEmployeeId;
         }
-        if (principal == null) {
-            throw new BadRequestException("User not authenticated");
+
+        Long currentEmpId = getCurrentEmployeeId().orElse(null);
+        if (currentEmpId == null) {
+            throw new org.springframework.security.access.AccessDeniedException("No employee profile associated with current account");
         }
-        return employeeRepository.findByUserId(principal.getId())
-                .map(Employee::getId)
-                .orElseThrow(() -> new BadRequestException("No employee profile associated with current user account"));
+
+        // 2. If acting on self, allowed
+        if (currentEmpId.equals(requestedEmployeeId)) {
+            return requestedEmployeeId;
+        }
+
+        // 3. If manager, can act only on direct reports
+        boolean isManager = (principal != null && hasRole(principal, "MANAGER")) || hasRole("MANAGER");
+        if (isManager) {
+            boolean isDirectReport = employeeRepository.findById(requestedEmployeeId)
+                    .map(emp -> emp.getReportingManager() != null && currentEmpId.equals(emp.getReportingManager().getId()))
+                    .orElse(false);
+            if (isDirectReport) {
+                return requestedEmployeeId;
+            }
+            throw new org.springframework.security.access.AccessDeniedException("Access denied: Managers can only act on direct reports");
+        }
+
+        // 4. Regular employee acting on someone else
+        throw new org.springframework.security.access.AccessDeniedException("Access denied: You can only act on your own employee profile");
     }
 
     public Long getEmployeeIdForUser(Long requestedEmployeeId) {

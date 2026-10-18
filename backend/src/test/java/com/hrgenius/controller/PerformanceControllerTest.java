@@ -92,6 +92,7 @@ class PerformanceControllerTest {
                 .progressPercentage(0.0)
                 .build();
 
+        when(currentUserService.getEmployeeIdForUser(1L)).thenReturn(1L);
         when(performanceService.createGoal(any(GoalRequest.class))).thenReturn(response);
 
         mockMvc.perform(post("/performance/goals")

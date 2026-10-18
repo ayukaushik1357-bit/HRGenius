@@ -106,13 +106,81 @@ class CurrentUserServiceTest {
     }
 
     @Test
-    void testGetEmployeeIdForUser_WithRequestedId() {
-        Long result = currentUserService.getEmployeeIdForUser(testPrincipal, 999L);
+    void testGetEmployeeIdForUser_EmployeeActingOnSelf_Success() {
+        Authentication auth = new UsernamePasswordAuthenticationToken(testPrincipal, null, testPrincipal.getAuthorities());
+        SecurityContextHolder.getContext().setAuthentication(auth);
+        when(employeeRepository.findByUserId(100L)).thenReturn(Optional.of(testEmployee));
+
+        Long result = currentUserService.getEmployeeIdForUser(testPrincipal, 200L);
+        assertEquals(200L, result);
+    }
+
+    @Test
+    void testGetEmployeeIdForUser_EmployeeActingOnOther_ThrowsAccessDenied() {
+        Authentication auth = new UsernamePasswordAuthenticationToken(testPrincipal, null, testPrincipal.getAuthorities());
+        SecurityContextHolder.getContext().setAuthentication(auth);
+        when(employeeRepository.findByUserId(100L)).thenReturn(Optional.of(testEmployee));
+
+        assertThrows(org.springframework.security.access.AccessDeniedException.class,
+                () -> currentUserService.getEmployeeIdForUser(testPrincipal, 999L));
+    }
+
+    @Test
+    void testGetEmployeeIdForUser_ManagerActingOnDirectReport_Success() {
+        Role managerRole = new Role(Role.RoleName.MANAGER);
+        testUser.setRoles(Set.of(managerRole));
+        UserPrincipal managerPrincipal = new UserPrincipal(testUser);
+        Authentication auth = new UsernamePasswordAuthenticationToken(managerPrincipal, null, managerPrincipal.getAuthorities());
+        SecurityContextHolder.getContext().setAuthentication(auth);
+
+        Employee reportEmployee = new Employee();
+        reportEmployee.setId(300L);
+        reportEmployee.setReportingManager(testEmployee);
+
+        when(employeeRepository.findByUserId(100L)).thenReturn(Optional.of(testEmployee));
+        when(employeeRepository.findById(300L)).thenReturn(Optional.of(reportEmployee));
+
+        Long result = currentUserService.getEmployeeIdForUser(managerPrincipal, 300L);
+        assertEquals(300L, result);
+    }
+
+    @Test
+    void testGetEmployeeIdForUser_ManagerActingOnNonDirectReport_ThrowsAccessDenied() {
+        Role managerRole = new Role(Role.RoleName.MANAGER);
+        testUser.setRoles(Set.of(managerRole));
+        UserPrincipal managerPrincipal = new UserPrincipal(testUser);
+        Authentication auth = new UsernamePasswordAuthenticationToken(managerPrincipal, null, managerPrincipal.getAuthorities());
+        SecurityContextHolder.getContext().setAuthentication(auth);
+
+        Employee otherEmployee = new Employee();
+        otherEmployee.setId(400L);
+        Employee otherManager = new Employee();
+        otherManager.setId(500L);
+        otherEmployee.setReportingManager(otherManager);
+
+        when(employeeRepository.findByUserId(100L)).thenReturn(Optional.of(testEmployee));
+        when(employeeRepository.findById(400L)).thenReturn(Optional.of(otherEmployee));
+
+        assertThrows(org.springframework.security.access.AccessDeniedException.class,
+                () -> currentUserService.getEmployeeIdForUser(managerPrincipal, 400L));
+    }
+
+    @Test
+    void testGetEmployeeIdForUser_AdminActingOnAnyEmployee_Success() {
+        Role adminRole = new Role(Role.RoleName.ADMIN);
+        testUser.setRoles(Set.of(adminRole));
+        UserPrincipal adminPrincipal = new UserPrincipal(testUser);
+        Authentication auth = new UsernamePasswordAuthenticationToken(adminPrincipal, null, adminPrincipal.getAuthorities());
+        SecurityContextHolder.getContext().setAuthentication(auth);
+
+        Long result = currentUserService.getEmployeeIdForUser(adminPrincipal, 999L);
         assertEquals(999L, result);
     }
 
     @Test
     void testGetEmployeeIdForUser_WithoutRequestedId_UsesPrincipal() {
+        Authentication auth = new UsernamePasswordAuthenticationToken(testPrincipal, null, testPrincipal.getAuthorities());
+        SecurityContextHolder.getContext().setAuthentication(auth);
         when(employeeRepository.findByUserId(100L)).thenReturn(Optional.of(testEmployee));
 
         Long result = currentUserService.getEmployeeIdForUser(testPrincipal, null);
@@ -120,8 +188,9 @@ class CurrentUserServiceTest {
     }
 
     @Test
-    void testGetEmployeeIdForUser_WhenUnauthenticated_ThrowsBadRequest() {
-        assertThrows(BadRequestException.class, () -> currentUserService.getEmployeeIdForUser(null, null));
+    void testGetEmployeeIdForUser_WhenUnauthenticated_ThrowsAccessDenied() {
+        assertThrows(org.springframework.security.access.AccessDeniedException.class,
+                () -> currentUserService.getEmployeeIdForUser(null, 200L));
     }
 
     @Test

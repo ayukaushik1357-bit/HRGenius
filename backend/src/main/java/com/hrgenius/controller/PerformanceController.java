@@ -42,7 +42,7 @@ public class PerformanceController {
     public ResponseEntity<List<GoalResponse>> getGoals(
             @RequestParam(required = false) Long employeeId,
             @RequestParam(required = false) Long cycleId) {
-        Long targetEmpId = employeeId != null ? employeeId : currentUserService.getCurrentEmployeeOrThrow().getId();
+        Long targetEmpId = currentUserService.getEmployeeIdForUser(employeeId);
         return ResponseEntity.ok(performanceService.getEmployeeGoals(targetEmpId, cycleId));
     }
 
@@ -50,9 +50,8 @@ public class PerformanceController {
     @Operation(summary = "Create goal or KRA")
     public ResponseEntity<GoalResponse> createGoal(
             @Valid @RequestBody GoalRequest request) {
-        if (request.getEmployeeId() == null) {
-            request.setEmployeeId(currentUserService.getCurrentEmployeeOrThrow().getId());
-        }
+        Long targetEmpId = currentUserService.getEmployeeIdForUser(request.getEmployeeId());
+        request.setEmployeeId(targetEmpId);
         return ResponseEntity.status(HttpStatus.CREATED).body(performanceService.createGoal(request));
     }
 
