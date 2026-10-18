@@ -198,6 +198,9 @@ public class PerformanceService {
     public PeerFeedbackResponse submitPeerFeedback(Long reviewerId, PeerFeedbackRequest request) {
         PerformanceReview review = performanceReviewRepository.findById(request.getPerformanceReviewId())
                 .orElseThrow(() -> new ResourceNotFoundException("PerformanceReview", "id", request.getPerformanceReviewId()));
+        if (review.getEmployee() != null && review.getEmployee().getId().equals(reviewerId)) {
+            throw new BadRequestException("Employees cannot submit peer feedback for themselves");
+        }
         Employee reviewer = employeeRepository.findById(reviewerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Employee (Reviewer)", "id", reviewerId));
 

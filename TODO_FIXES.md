@@ -37,7 +37,8 @@
   - Enforced document access and download scoping to ADMIN/HR and document owner, validated file types (.pdf, .png, .jpg, .jpeg, .doc, .docx) and 10MB size limit, sanitized original filenames, enforced UUID storage filenames, prevented path traversal in load and delete, and added DocumentServiceTest coverage.
 - [x] B6. Leave approvals: a MANAGER may approve/reject only leaves of their direct reports; nobody may approve their own leave. HR/ADMIN may approve any.
   - Enforced @authz.canApproveLeave on POST /leaves/{id}/action and in LeaveService.processLeaveApproval, preventing self-approval and ensuring managers only action direct reports while HR/ADMIN can approve any non-self leave, with unit test coverage.
-- [ ] B7. Performance reviews: manager review only by the employee's manager; self review only by the employee; peer feedback cannot be given to oneself.
+- [x] B7. Performance reviews: manager review only by the employee's manager; self review only by the employee; peer feedback cannot be given to oneself.
+  - Enforced @authz.canSubmitSelfReview, @authz.canSubmitManagerReview, and @authz.canSubmitPeerFeedback on PerformanceController endpoints, added validation in PerformanceService preventing peer feedback for oneself, and verified via AuthzTest and PerformanceServiceTest.
 - [ ] B8. Recruitment, onboarding templates, payroll runs, holidays, audit logs, analytics company-wide: ADMIN/HR only (verify every endpoint). Analytics team view: MANAGER sees only their team.
 - [ ] B9. Notifications: a user can read/mark only their own notifications (check ownership on PATCH /{id}/read).
 - [ ] B10. Replace every "Access denied" BadRequestException with a proper AccessDeniedException -> 403. Add a JSON accessDeniedHandler in SecurityConfig next to the existing 401 entry point, and handle AccessDeniedException in the GlobalExceptionHandler, so the error format is consistent.

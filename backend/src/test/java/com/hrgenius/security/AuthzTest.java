@@ -4,6 +4,7 @@ import com.hrgenius.entity.Document;
 import com.hrgenius.entity.Employee;
 import com.hrgenius.entity.User;
 import com.hrgenius.entity.leave.LeaveApplication;
+import com.hrgenius.entity.performance.PerformanceReview;
 import com.hrgenius.repository.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -143,5 +144,61 @@ class AuthzTest {
         when(employeeRepository.findById(20L)).thenReturn(Optional.of(employee));
 
         assertTrue(authz.canApproveLeave(50L));
+    }
+
+    @Test
+    void testCanSubmitSelfReview() {
+        PerformanceReview review = new PerformanceReview();
+        review.setId(200L);
+        review.setEmployee(employee); // id 20
+
+        when(performanceReviewRepository.findById(200L)).thenReturn(Optional.of(review));
+
+        // Self review by employee
+        when(currentUserService.getCurrentEmployeeId()).thenReturn(Optional.of(20L));
+        assertTrue(authz.canSubmitSelfReview(200L));
+
+        // Other employee attempting self review
+        when(currentUserService.getCurrentEmployeeId()).thenReturn(Optional.of(30L));
+        assertFalse(authz.canSubmitSelfReview(200L));
+    }
+
+    @Test
+    void testCanSubmitManagerReview() {
+        PerformanceReview review = new PerformanceReview();
+        review.setId(200L);
+        review.setEmployee(employee); // id 20
+        review.setManager(manager); // id 10
+
+        when(performanceReviewRepository.findById(200L)).thenReturn(Optional.of(review));
+
+        // Direct manager
+        when(currentUserService.getCurrentEmployeeId()).thenReturn(Optional.of(10L));
+        assertTrue(authz.canSubmitManagerReview(200L));
+
+        // Employee reviewing themselves as manager (forbidden)
+        when(currentUserService.getCurrentEmployeeId()).thenReturn(Optional.of(20L));
+        assertFalse(authz.canSubmitManagerReview(200L));
+
+        // Unrelated employee
+        when(currentUserService.getCurrentEmployeeId()).thenReturn(Optional.of(30L));
+        assertFalse(authz.canSubmitManagerReview(200L));
+    }
+
+    @Test
+    void testCanSubmitPeerFeedback() {
+        PerformanceReview review = new PerformanceReview();
+        review.setId(200L);
+        review.setEmployee(employee); // id 20
+
+        when(performanceReviewRepository.findById(200L)).thenReturn(Optional.of(review));
+
+        // Peer employee (id 30) can submit feedback for employee (id 20)
+        when(currentUserService.getCurrentEmployeeId()).thenReturn(Optional.of(30L));
+        assertTrue(authz.canSubmitPeerFeedback(200L));
+
+        // Cannot submit feedback for oneself
+        when(currentUserService.getCurrentEmployeeId()).thenReturn(Optional.of(20L));
+        assertFalse(authz.canSubmitPeerFeedback(200L));
     }
 }

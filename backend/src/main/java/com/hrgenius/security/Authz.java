@@ -164,4 +164,17 @@ public class Authz {
                 })
                 .orElse(false);
     }
+
+    public boolean canSubmitPeerFeedback(Long reviewId) {
+        if (reviewId == null) {
+            return false;
+        }
+        Long currentEmpId = currentUserService.getCurrentEmployeeId().orElse(null);
+        if (currentEmpId == null) {
+            return false;
+        }
+        return performanceReviewRepository.findById(reviewId)
+                .map(r -> r.getEmployee() != null && !currentEmpId.equals(r.getEmployee().getId()))
+                .orElse(false);
+    }
 }

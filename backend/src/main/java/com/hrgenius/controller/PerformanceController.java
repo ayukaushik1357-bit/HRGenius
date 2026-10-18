@@ -88,6 +88,7 @@ public class PerformanceController {
     }
 
     @PostMapping("/reviews/{reviewId}/self-review")
+    @PreAuthorize("@authz.canSubmitSelfReview(#reviewId)")
     @Operation(summary = "Submit self-review rating and comments")
     public ResponseEntity<PerformanceReviewResponse> submitSelfReview(
             @PathVariable Long reviewId,
@@ -97,7 +98,7 @@ public class PerformanceController {
     }
 
     @PostMapping("/reviews/{reviewId}/manager-review")
-    @PreAuthorize("hasAnyRole('ADMIN', 'HR_MANAGER', 'MANAGER')")
+    @PreAuthorize("@authz.canSubmitManagerReview(#reviewId)")
     @Operation(summary = "Submit manager review, calculating weighted final score")
     public ResponseEntity<PerformanceReviewResponse> submitManagerReview(
             @PathVariable Long reviewId,
@@ -107,6 +108,7 @@ public class PerformanceController {
     }
 
     @PostMapping("/360-feedback")
+    @PreAuthorize("@authz.canSubmitPeerFeedback(#request.performanceReviewId)")
     @Operation(summary = "Submit 360 peer feedback")
     public ResponseEntity<PeerFeedbackResponse> submitPeerFeedback(
             @Valid @RequestBody PeerFeedbackRequest request) {

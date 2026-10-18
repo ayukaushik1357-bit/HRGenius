@@ -10,6 +10,8 @@ import com.hrgenius.entity.performance.Goal;
 import com.hrgenius.entity.performance.PerformanceReview;
 import com.hrgenius.entity.performance.ReviewCycle;
 import com.hrgenius.mapper.PerformanceMapper;
+import com.hrgenius.dto.performance.PeerFeedbackRequest;
+import com.hrgenius.exception.BadRequestException;
 import com.hrgenius.repository.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -146,5 +148,19 @@ class PerformanceServiceTest {
         assertNotNull(res);
         assertEquals("COMPLETED", res.getStatus());
         assertEquals(3.9, res.getFinalRating());
+    }
+
+    @Test
+    void testSubmitPeerFeedbackSelfThrowsBadRequest() {
+        PeerFeedbackRequest req = new PeerFeedbackRequest();
+        req.setPerformanceReviewId(100L);
+        req.setRating(5.0);
+        req.setFeedback("Awesome work");
+
+        when(performanceReviewRepository.findById(100L)).thenReturn(Optional.of(review));
+
+        // Review is for employee with id 20. If reviewerId is 20 (self), it must throw BadRequestException
+        assertThrows(BadRequestException.class, () -> performanceService.submitPeerFeedback(20L, req));
+        verify(peerFeedbackRepository, never()).save(any());
     }
 }
