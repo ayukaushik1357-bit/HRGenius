@@ -1,0 +1,7 @@
+# Tests use a throwaway in-memory database so every run starts from the same seed data
+spring:
+  datasource:
+    url: jdbc:h2:mem:hrgenius;DB_CLOSE_DELAY=-1;MODE=Oracle
+  jpa:
+    hibernate:
+      ddl-auto: create-drop

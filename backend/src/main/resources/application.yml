@@ -84,6 +84,8 @@ springdoc:
 ---
 # ============================================================
 # Profile: h2  (run without Oracle)
+# Data is kept in a file (backend/data/hrgenius.mv.db), so sign-ups, role changes,
+# leaves and payroll survive a restart. Delete the data folder to start fresh.
 # ============================================================
 spring:
   config:
@@ -91,7 +93,7 @@ spring:
       on-profile: h2
 
   datasource:
-    url: jdbc:h2:mem:hrgenius;DB_CLOSE_DELAY=-1;MODE=Oracle
+    url: ${H2_DB_URL:jdbc:h2:file:./data/hrgenius;MODE=Oracle;AUTO_SERVER=TRUE}
     username: sa
     password:
     driver-class-name: org.h2.Driver
@@ -104,7 +106,8 @@ spring:
   jpa:
     database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
-      ddl-auto: create-drop
+      # Creates missing tables and columns, never drops data
+      ddl-auto: update
     show-sql: true
 
   flyway:

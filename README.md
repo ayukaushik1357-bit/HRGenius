@@ -63,7 +63,7 @@ flowchart TB
         direction LR
         F["🧬 Flyway V1–V11"]
         O[("Oracle XE 21c<br/>dev · prod · Docker")]
-        H[("H2 in-memory<br/>local run · tests")]
+        H[("H2 file DB<br/>local run · tests in memory")]
         F --> O
     end
 
@@ -221,7 +221,7 @@ flowchart LR
 | **Backend** | Java 17, Spring Boot 3.2.5, Spring Security 6, Spring Data JPA, Hibernate 6, Bean Validation |
 | **Auth** | JJWT 0.12 (HS512), BCrypt, HttpOnly refresh cookie, per-IP rate limit, account lockout, Google Identity Services + Spring Security OAuth2 JOSE (ID-token verification) |
 | **Frontend** | Angular 21 (standalone components, signals), Angular Material, RxJS, Chart.js 4, SCSS |
-| **Database** | Oracle XE 21c (`dev`, `prod`, Docker) · H2 in-memory (`h2` profile, tests) |
+| **Database** | Oracle XE 21c (`dev`, `prod`, Docker) · H2 file database (`h2` profile) · H2 in-memory (tests) |
 | **Migrations** | Flyway, 11 versioned scripts (`V1`–`V11`) |
 | **Reports** | Apache POI 5.2 (Excel), OpenPDF 1.3 (payslips and analytics PDF) |
 | **API docs** | springdoc-openapi (Swagger UI) |
@@ -358,7 +358,8 @@ npm start
 ```
 
 - Swagger UI: http://localhost:8080/api/swagger-ui.html
-- H2 console: http://localhost:8080/api/h2-console (JDBC URL `jdbc:h2:mem:hrgenius`, user `sa`, empty password)
+- Your data is saved in `backend/data/hrgenius.mv.db`, so accounts, role changes, leave and payroll are still there after a restart. Stop the backend and delete the `backend/data` folder to start again from the demo data.
+- H2 console: http://localhost:8080/api/h2-console (JDBC URL `jdbc:h2:file:./data/hrgenius;MODE=Oracle;AUTO_SERVER=TRUE`, user `sa`, empty password)
 
 ### Option 2 · Everything in Docker (Oracle + backend + frontend)
 
@@ -392,7 +393,7 @@ Set `SPRING_MAIL_HOST` / `SPRING_MAIL_PORT` (and username/password if needed). L
 
 | Profile | Database | Schema | Demo data |
 | :--- | :--- | :--- | :--- |
-| `h2` *(default)* | H2 in-memory | Hibernate create-drop | ✅ |
+| `h2` *(default)* | H2 file in `backend/data` (kept across restarts) | Hibernate `update` | ✅ |
 | `dev` | Oracle XE on localhost | Flyway + `validate` | optional (`APP_SEED_DEMO_DATA=true`) |
 | `prod` | Oracle via `ORACLE_URL` | Flyway + `validate` | ❌ · fails fast without a strong `JWT_SECRET` |
 

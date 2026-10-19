@@ -20,23 +20,27 @@
     gap: 12px;
     padding: 24px 20px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    text-decoration: none;
+    color: inherit;
 
+    &:focus-visible {
+      outline: 2px solid #e9c46a;
+      outline-offset: -4px;
+    }
+
+    // Same mark as the landing page: navy tile, manila letters
     .logo-mark {
+      display: grid;
+      place-items: center;
       width: 40px;
       height: 40px;
-      border-radius: var(--radius-md);
-      background: linear-gradient(135deg, #4f46e5, #06b6d4);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #ffffff;
-      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);
-
-      mat-icon {
-        font-size: 24px;
-        width: 24px;
-        height: 24px;
-      }
+      flex-shrink: 0;
+      border-radius: 9px;
+      background: #14213d;
+      border: 1px solid rgba(233, 196, 106, 0.35);
+      color: #e9c46a;
+      font: 700 16px/1 'Bricolage Grotesque', 'Inter', system-ui, sans-serif;
+      letter-spacing: 0.02em;
     }
 
     .brand-text {
@@ -44,7 +48,8 @@
       flex-direction: column;
 
       .brand-name {
-        font-size: 1.15rem;
+        font-family: 'Bricolage Grotesque', 'Inter', system-ui, sans-serif;
+        font-size: 1.2rem;
         font-weight: 700;
         letter-spacing: -0.02em;
         color: #ffffff;
