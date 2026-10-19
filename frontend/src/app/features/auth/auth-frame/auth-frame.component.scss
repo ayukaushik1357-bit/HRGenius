@@ -1,0 +1,102 @@
+@use '../../public/brand' as *;
+
+:host { display: block; }
+
+.frame {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: minmax(280px, 0.8fr) minmax(0, 1.2fr);
+  background: $paper;
+  font-family: $body;
+  color: $ink;
+}
+
+.side {
+  display: flex;
+  flex-direction: column;
+  padding: 40px clamp(24px, 4vw, 56px);
+  background: $ink;
+  color: #fff;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: #fff;
+  text-decoration: none;
+  &:focus-visible { @include focus-ring; border-radius: 6px; }
+}
+
+.brand-mark {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: $manila;
+  color: $ink;
+  font: 700 14px/1 $display;
+}
+
+.brand-name { font: 700 20px/1 $display; }
+
+.side-body { margin: auto 0; padding: 48px 0; }
+
+.side-title {
+  margin: 0;
+  font: 700 clamp(28px, 2.6vw, 36px)/1.15 $display;
+  letter-spacing: -0.015em;
+}
+
+.side-points {
+  list-style: none;
+  margin: 28px 0 0;
+  padding: 0;
+  li {
+    padding: 14px 0;
+    border-top: 1px solid rgba(#fff, 0.16);
+    color: rgba(#fff, 0.82);
+    font-size: 15px;
+    line-height: 1.5;
+  }
+}
+
+.side-back {
+  color: rgba(#fff, 0.7);
+  font-size: 14px;
+  &:hover { color: #fff; }
+  &:focus-visible { @include focus-ring; border-radius: 4px; }
+}
+
+.panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px clamp(16px, 5vw, 64px);
+}
+
+.panel-inner {
+  width: 100%;
+  max-width: 420px;
+}
+
+h1 {
+  margin: 0;
+  font: 700 32px/1.15 $display;
+  letter-spacing: -0.015em;
+}
+
+.sub {
+  margin: 8px 0 0;
+  color: $ink-soft;
+  font-size: 15.5px;
+  line-height: 1.5;
+}
+
+@media (max-width: 860px) {
+  .frame { grid-template-columns: 1fr; }
+  .side { padding: 20px 16px; flex-direction: row; align-items: center; justify-content: space-between; }
+  .side-body { display: none; }
+  .panel { align-items: flex-start; padding-top: 32px; }
+}

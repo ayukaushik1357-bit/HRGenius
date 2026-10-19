@@ -4,6 +4,13 @@
       <mat-spinner diameter="48"></mat-spinner>
       <p>Loading your personal workspace...</p>
     </div>
+  } @else if (notLinked) {
+    <div class="portal-error card-elevated">
+      <mat-icon class="error-icon">badge</mat-icon>
+      <h2>Your account is ready</h2>
+      <p>{{ errorMessage }}</p>
+      <p>Until then you can still change your password from the profile menu.</p>
+    </div>
   } @else if (hasError) {
     <div class="portal-error card-elevated">
       <mat-icon color="warn" class="error-icon">error_outline</mat-icon>

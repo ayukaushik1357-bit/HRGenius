@@ -6,6 +6,7 @@ import com.hrgenius.dto.auth.LoginRequest;
 import com.hrgenius.dto.auth.ResetPasswordResponse;
 import com.hrgenius.entity.RefreshToken;
 import com.hrgenius.entity.User;
+import com.hrgenius.exception.AccountPendingApprovalException;
 import com.hrgenius.exception.BadRequestException;
 import com.hrgenius.exception.ResourceNotFoundException;
 import com.hrgenius.repository.RefreshTokenRepository;
@@ -93,9 +94,13 @@ public class AuthService {
         }
     }
 
-    @Transactional
+    // noRollbackFor: the failed-attempt counter and lockout are saved right before these exceptions
+    // are thrown; without it the exception would roll the counter back and lockout would never trigger.
+    @Transactional(noRollbackFor = {BadCredentialsException.class, LockedException.class,
+            AccountPendingApprovalException.class})
     public AuthResponse login(LoginRequest loginRequest, HttpServletResponse response) {
-        Optional<User> userOpt = userRepository.findByUsername(loginRequest.getUsername());
+        // The "username" field accepts either a username or an email address
+        Optional<User> userOpt = userRepository.findByUsernameOrEmail(loginRequest.getUsername());
         if (userOpt.isPresent()) {
             User user = userOpt.get();
             if (user.getLockoutTime() != null) {
@@ -107,16 +112,20 @@ public class AuthService {
                     userRepository.save(user);
                 }
             }
+            // Only reveal "pending approval" to someone who knows the password
+            if (user.isPendingApproval()) {
+                if (passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
+                    throw new AccountPendingApprovalException();
+                }
+                throw new BadCredentialsException("Invalid username or password");
+            }
         }
 
+        String principalName = userOpt.map(User::getUsername).orElse(loginRequest.getUsername());
         Authentication authentication;
         try {
             authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(
-                            loginRequest.getUsername(),
-                            loginRequest.getPassword()
-                    )
-            );
+                    new UsernamePasswordAuthenticationToken(principalName, loginRequest.getPassword()));
         } catch (BadCredentialsException ex) {
             if (userOpt.isPresent()) {
                 User user = userOpt.get();
@@ -130,35 +139,36 @@ public class AuthService {
             throw new BadCredentialsException("Invalid username or password");
         }
 
+        User user = userOpt.orElseGet(() -> userRepository.findByUsername(principalName)
+                .orElseThrow(() -> new BadRequestException("User not found")));
+
         // Reset failed attempts on successful login
-        if (userOpt.isPresent()) {
-            User user = userOpt.get();
-            if (user.getFailedAttempts() > 0 || user.getLockoutTime() != null) {
-                user.setFailedAttempts(0);
-                user.setLockoutTime(null);
-                userRepository.save(user);
-            }
+        if (user.getFailedAttempts() > 0 || user.getLockoutTime() != null) {
+            user.setFailedAttempts(0);
+            user.setLockoutTime(null);
+            userRepository.save(user);
         }
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
+        return issueSession(user, response);
+    }
 
-        String accessToken = tokenProvider.generateAccessToken(authentication);
-        String refreshToken = tokenProvider.generateRefreshToken(authentication);
+    /**
+     * Creates a new access token and a rotating refresh token (stored as a SHA-256 hash and sent as an
+     * HttpOnly cookie) for an already authenticated user. Used by password login and Google sign-in.
+     */
+    public AuthResponse issueSession(User user, HttpServletResponse response) {
+        UserDetails userDetails = userDetailsService.loadUserByUsername(user.getUsername());
+        Authentication auth = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
 
-        UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
-        User user = userOpt.orElseGet(() -> userRepository.findByUsername(loginRequest.getUsername())
-                .orElseThrow(() -> new BadRequestException("User not found")));
-
-        // Save server-side refresh token hash
-        String tokenHash = hashToken(refreshToken);
-        String jti = tokenProvider.getJtiFromToken(refreshToken);
-        LocalDateTime expiresAt = LocalDateTime.now().plus(Duration.ofMillis(tokenProvider.getRefreshTokenExpirationMs()));
+        String accessToken = tokenProvider.generateAccessToken(auth);
+        String refreshToken = tokenProvider.generateRefreshToken(auth);
 
         RefreshToken dbRefreshToken = RefreshToken.builder()
-                .tokenHash(tokenHash)
-                .jti(jti)
+                .tokenHash(hashToken(refreshToken))
+                .jti(tokenProvider.getJtiFromToken(refreshToken))
                 .user(user)
-                .expiresAt(expiresAt)
+                .expiresAt(LocalDateTime.now().plus(Duration.ofMillis(tokenProvider.getRefreshTokenExpirationMs())))
                 .revoked(false)
                 .createdAt(LocalDateTime.now())
                 .build();
@@ -166,15 +176,15 @@ public class AuthService {
 
         addRefreshTokenCookie(response, refreshToken);
 
-        Set<String> roles = principal.getAuthorities().stream()
+        Set<String> roles = userDetails.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.toSet());
 
         return AuthResponse.builder()
                 .accessToken(accessToken)
                 .tokenType("Bearer")
-                .username(principal.getUsername())
-                .email(principal.getEmail())
+                .username(user.getUsername())
+                .email(user.getEmail())
                 .roles(roles)
                 .mustChangePassword(user.isMustChangePassword())
                 .build();

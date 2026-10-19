@@ -78,7 +78,7 @@ class AuthServiceLockoutTest {
 
     @Test
     void testFailedLoginIncrementsAttempts() {
-        when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(user));
+        when(userRepository.findByUsernameOrEmail("testuser")).thenReturn(Optional.of(user));
         when(authenticationManager.authenticate(any())).thenThrow(new BadCredentialsException("Bad credentials"));
 
         LoginRequest req = new LoginRequest();
@@ -94,7 +94,7 @@ class AuthServiceLockoutTest {
     @Test
     void testAccountLockoutAfterFiveAttempts() {
         user.setFailedAttempts(4);
-        when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(user));
+        when(userRepository.findByUsernameOrEmail("testuser")).thenReturn(Optional.of(user));
         when(authenticationManager.authenticate(any())).thenThrow(new BadCredentialsException("Bad credentials"));
 
         LoginRequest req = new LoginRequest();
@@ -111,7 +111,7 @@ class AuthServiceLockoutTest {
     @Test
     void testLockedAccountRejectsLoginImmediately() {
         user.setLockoutTime(LocalDateTime.now().plusMinutes(10));
-        when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(user));
+        when(userRepository.findByUsernameOrEmail("testuser")).thenReturn(Optional.of(user));
 
         LoginRequest req = new LoginRequest();
         req.setUsername("testuser");
@@ -124,7 +124,7 @@ class AuthServiceLockoutTest {
 
     @Test
     void testFailedLoginNonExistentUserReturnsSameGenericError() {
-        when(userRepository.findByUsername("unknown")).thenReturn(Optional.empty());
+        when(userRepository.findByUsernameOrEmail("unknown")).thenReturn(Optional.empty());
         when(authenticationManager.authenticate(any())).thenThrow(new BadCredentialsException("Bad credentials"));
 
         LoginRequest req = new LoginRequest();
@@ -137,12 +137,13 @@ class AuthServiceLockoutTest {
 
     @Test
     void testLoginSavesHashedRefreshToken() {
-        when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(user));
+        when(userRepository.findByUsernameOrEmail("testuser")).thenReturn(Optional.of(user));
         UserPrincipal principal = new UserPrincipal(user);
         Authentication auth = new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities());
         when(authenticationManager.authenticate(any())).thenReturn(auth);
-        when(tokenProvider.generateAccessToken(auth)).thenReturn("sample-access-token");
-        when(tokenProvider.generateRefreshToken(auth)).thenReturn("sample-refresh-token");
+        when(userDetailsService.loadUserByUsername("testuser")).thenReturn(principal);
+        when(tokenProvider.generateAccessToken(any())).thenReturn("sample-access-token");
+        when(tokenProvider.generateRefreshToken(any())).thenReturn("sample-refresh-token");
         when(tokenProvider.getJtiFromToken("sample-refresh-token")).thenReturn("jti-123");
         when(tokenProvider.getRefreshTokenExpirationMs()).thenReturn(604800000L);
 
@@ -162,6 +163,21 @@ class AuthServiceLockoutTest {
         assertEquals("jti-123", savedToken.getJti());
         assertFalse(savedToken.isRevoked());
         assertEquals(user, savedToken.getUser());
+    }
+
+    @Test
+    void testPendingAccountWithCorrectPasswordGetsApprovalMessage() {
+        user.setPendingApproval(true);
+        user.setPassword("hashed");
+        when(userRepository.findByUsernameOrEmail("testuser")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("RightPassword", "hashed")).thenReturn(true);
+
+        LoginRequest req = new LoginRequest();
+        req.setUsername("testuser");
+        req.setPassword("RightPassword");
+
+        assertThrows(com.hrgenius.exception.AccountPendingApprovalException.class, () -> authService.login(req, response));
+        verifyNoInteractions(authenticationManager);
     }
 
     @Test

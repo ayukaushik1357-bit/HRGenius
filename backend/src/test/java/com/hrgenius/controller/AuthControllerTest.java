@@ -30,6 +30,9 @@ class AuthControllerTest {
     private MockMvc mockMvc;
 
     @MockBean
+    private com.hrgenius.service.AccountService accountService;
+
+    @MockBean
     private AuthService authService;
 
     @MockBean

@@ -1,7 +1,14 @@
 package com.hrgenius.controller;
 
+import com.hrgenius.dto.auth.AuthConfigResponse;
 import com.hrgenius.dto.auth.AuthResponse;
+import com.hrgenius.dto.auth.GoogleLoginRequest;
+import com.hrgenius.dto.auth.GoogleLoginResponse;
 import com.hrgenius.dto.auth.LoginRequest;
+import com.hrgenius.dto.auth.PasswordResetConfirmRequest;
+import com.hrgenius.dto.auth.PasswordResetRequest;
+import com.hrgenius.dto.auth.RegisterRequest;
+import com.hrgenius.service.AccountService;
 import com.hrgenius.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -9,6 +16,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -30,9 +38,44 @@ import java.util.stream.Collectors;
 public class AuthController {
 
     private final AuthService authService;
+    private final AccountService accountService;
+
+    @GetMapping("/config")
+    @Operation(summary = "Public login-page settings: is sign-up enabled, is Google sign-in configured")
+    public ResponseEntity<AuthConfigResponse> config() {
+        return ResponseEntity.ok(accountService.publicConfig());
+    }
+
+    @PostMapping("/register")
+    @Operation(summary = "Request an account. It stays disabled until an administrator approves it")
+    public ResponseEntity<Map<String, String>> register(@Valid @RequestBody RegisterRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("message", accountService.register(request)));
+    }
+
+    @PostMapping("/password-reset/request")
+    @Operation(summary = "Email a one-time password reset link (same response whether or not the email exists)")
+    public ResponseEntity<Map<String, String>> requestPasswordReset(@Valid @RequestBody PasswordResetRequest request) {
+        return ResponseEntity.ok(Map.of("message", accountService.requestPasswordReset(request.getEmail())));
+    }
+
+    @PostMapping("/password-reset/confirm")
+    @Operation(summary = "Set a new password using the token from the reset link")
+    public ResponseEntity<Map<String, String>> confirmPasswordReset(@Valid @RequestBody PasswordResetConfirmRequest request) {
+        accountService.confirmPasswordReset(request);
+        return ResponseEntity.ok(Map.of("message", "Your password has been changed. You can now sign in."));
+    }
+
+    @PostMapping("/google")
+    @Operation(summary = "Sign in with a Google ID token; unknown accounts become sign-up requests")
+    public ResponseEntity<GoogleLoginResponse> google(@Valid @RequestBody GoogleLoginRequest request,
+                                                      HttpServletResponse response) {
+        GoogleLoginResponse result = accountService.googleLogin(request.getCredential(), response);
+        return ResponseEntity.status("PENDING_APPROVAL".equals(result.status()) ? HttpStatus.ACCEPTED : HttpStatus.OK)
+                .body(result);
+    }
 
     @PostMapping("/login")
-    @Operation(summary = "Login with username and password, returns access token and sets refresh token in HttpOnly cookie")
+    @Operation(summary = "Login with username or email and password; returns an access token and sets the refresh token as an HttpOnly cookie")
     public ResponseEntity<AuthResponse> login(
             @Valid @RequestBody LoginRequest loginRequest,
             HttpServletResponse response) {

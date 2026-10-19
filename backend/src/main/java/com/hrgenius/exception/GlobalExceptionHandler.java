@@ -51,6 +51,12 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.LOCKED, "Account is temporarily locked. Try again later.", request);
     }
 
+    @ExceptionHandler(AccountPendingApprovalException.class)
+    public ResponseEntity<ApiError> handlePendingApproval(AccountPendingApprovalException ex,
+                                                          HttpServletRequest request) {
+        return buildResponse(HttpStatus.FORBIDDEN, ex.getMessage(), request);
+    }
+
     @ExceptionHandler(DisabledException.class)
     public ResponseEntity<ApiError> handleDisabled(DisabledException ex,
                                                    HttpServletRequest request) {

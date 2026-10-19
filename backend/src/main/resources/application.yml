@@ -3,6 +3,8 @@
 # ============================================================
 server:
   port: 8080
+  # Trust X-Forwarded-For only from internal proxies (Nginx); client-sent values are ignored
+  forward-headers-strategy: native
   servlet:
     context-path: /api
 
@@ -57,6 +59,13 @@ app:
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200,http://localhost:80,http://localhost}
   seed-demo-data: ${APP_SEED_DEMO_DATA:false}
+  account:
+    frontend-url: ${APP_FRONTEND_URL:http://localhost:4200}
+    signup-enabled: ${APP_SIGNUP_ENABLED:true}
+    signup-allowed-domains: ${APP_SIGNUP_ALLOWED_DOMAINS:}
+    password-reset-ttl-minutes: 30
+    log-password-reset-link: ${APP_LOG_PASSWORD_RESET_LINK:true}
+    google-client-id: ${GOOGLE_CLIENT_ID:}
   file:
     upload-dir: ${FILE_UPLOAD_DIR:./uploads}
 
@@ -161,6 +170,9 @@ spring:
     enabled: true
 
 app:
+  account:
+    log-password-reset-link: false
+    frontend-url: ${APP_FRONTEND_URL:http://localhost}
   jwt:
     secret: ${JWT_SECRET}
   seed-demo-data: false

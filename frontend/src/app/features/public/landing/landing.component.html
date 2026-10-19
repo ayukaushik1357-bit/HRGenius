@@ -1,0 +1,182 @@
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="nav">
+  <a class="brand" routerLink="/" aria-label="HRGenius home">
+    <span class="brand-mark" aria-hidden="true">HG</span>
+    <span class="brand-name">HRGenius</span>
+  </a>
+  <nav class="nav-links" aria-label="Page sections">
+    <a href="#journey">How it works</a>
+    <a href="#access">Who sees what</a>
+    <a href="#security">Security</a>
+  </nav>
+  <div class="nav-actions">
+    @if (auth.isAuthenticated()) {
+      <a class="btn-primary" routerLink="/portal">Open my workspace</a>
+    } @else {
+      <a class="nav-signin" routerLink="/auth/login">Sign in</a>
+      <a class="btn-primary small" routerLink="/auth/register">Request access</a>
+    }
+  </div>
+</header>
+
+<main id="main">
+  <!-- Hero: the most familiar object in HR, a payslip -->
+  <section class="hero">
+    <div class="hero-copy">
+      <h1>Every employee&rsquo;s file, from offer letter to full and final.</h1>
+      <p class="lede">
+        HRGenius keeps hiring, attendance, leave, payroll, appraisals and exits in one record,
+        and shows each person only what their role allows.
+      </p>
+      <div class="hero-actions">
+        @if (auth.isAuthenticated()) {
+          <a class="btn-primary" routerLink="/portal">Open my workspace</a>
+        } @else {
+          <a class="btn-primary" routerLink="/auth/login">Sign in</a>
+          <a class="btn-quiet" routerLink="/auth/register">Request access</a>
+        }
+      </div>
+      <p class="fineprint">Payroll follows Indian rules: PF, ESI, professional tax, TDS and loss of pay.</p>
+    </div>
+
+    <figure class="payslip" aria-label="Example payslip for Rohan Gupta, October 2026, net pay {{ inr(net) }} rupees">
+      <div class="slip-tab" aria-hidden="true">Payslip</div>
+      <header class="slip-head">
+        <div>
+          <p class="slip-company">HRGenius Demo Pvt. Ltd.</p>
+          <p class="slip-period">October 2026</p>
+        </div>
+        <div class="slip-person">
+          <p class="slip-name">Rohan Gupta</p>
+          <p class="slip-meta">EMP004, Senior Software Engineer</p>
+        </div>
+      </header>
+
+      <div class="slip-columns">
+        <div class="slip-col">
+          <h2 class="slip-col-title">Earnings</h2>
+          <dl>
+            @for (line of earnings; track line.label) {
+              <div class="slip-row"><dt>{{ line.label }}</dt><dd>{{ inr(line.amount) }}</dd></div>
+            }
+          </dl>
+          <div class="slip-row slip-sum"><span>Gross</span><span>{{ inr(gross) }}</span></div>
+        </div>
+        <div class="slip-col">
+          <h2 class="slip-col-title">Deductions</h2>
+          <dl>
+            @for (line of deductions; track line.label) {
+              <div class="slip-row"><dt>{{ line.label }}</dt><dd>{{ inr(line.amount) }}</dd></div>
+            }
+          </dl>
+          <div class="slip-row slip-sum"><span>Total</span><span>{{ inr(totalDeductions) }}</span></div>
+        </div>
+      </div>
+
+      <footer class="slip-net">
+        <span>Net pay</span>
+        <strong>&#8377;{{ inr(net) }}</strong>
+      </footer>
+
+      <div class="stamp" aria-hidden="true">
+        <span class="stamp-word">Paid</span>
+        <span class="stamp-date">31 Oct 2026</span>
+      </div>
+    </figure>
+  </section>
+
+  <!-- A real sequence, so it is numbered -->
+  <section class="journey" id="journey" aria-labelledby="journey-title">
+    <div class="section-head">
+      <h2 id="journey-title">One record, the whole working life</h2>
+      <p>Each step adds to the same employee file, so nothing is typed twice.</p>
+    </div>
+    <ol class="stages">
+      @for (stage of stages; track stage.title; let i = $index) {
+        <li class="stage">
+          <span class="stage-no" aria-hidden="true">{{ i + 1 }}</span>
+          <h3>{{ stage.title }}</h3>
+          <p>{{ stage.detail }}</p>
+        </li>
+      }
+    </ol>
+  </section>
+
+  <section class="access" id="access" aria-labelledby="access-title">
+    <div class="section-head">
+      <h2 id="access-title">Each role sees exactly what it should</h2>
+      <p>
+        Managers see their own team, employees see their own records, and salary details stay with HR.
+        The server checks every request, not just the menu.
+      </p>
+    </div>
+    <div class="table-wrap" role="region" aria-labelledby="access-title" tabindex="0">
+      <table class="access-table">
+        <thead>
+          <tr>
+            <th scope="col">What</th>
+            <th scope="col">Admin</th>
+            <th scope="col">HR manager</th>
+            <th scope="col">Manager</th>
+            <th scope="col">Employee</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of access; track row.area) {
+            <tr>
+              <th scope="row">{{ row.area }}</th>
+              <td [class.limited]="isLimited(row.admin)">{{ row.admin }}</td>
+              <td [class.limited]="isLimited(row.hr)">{{ row.hr }}</td>
+              <td [class.limited]="isLimited(row.manager)">{{ row.manager }}</td>
+              <td [class.limited]="isLimited(row.employee)">{{ row.employee }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="security" id="security" aria-labelledby="security-title">
+    <h2 id="security-title">Built so the wrong person can&rsquo;t open the wrong record</h2>
+    <ul class="security-list">
+      <li>
+        <h3>Short-lived sessions</h3>
+        <p>Sign-in tokens last 15 minutes and are never written to browser storage. A secure cookie keeps you signed in for up to 7 days.</p>
+      </li>
+      <li>
+        <h3>Stolen sessions end themselves</h3>
+        <p>If an old session token is ever reused, every session for that account is closed at once.</p>
+      </li>
+      <li>
+        <h3>Brute force gets nowhere</h3>
+        <p>Five wrong passwords lock the account for 15 minutes, and each network address is rate limited.</p>
+      </li>
+      <li>
+        <h3>New accounts need approval</h3>
+        <p>Anyone can request access, but nobody gets in until an administrator approves them.</p>
+      </li>
+      <li>
+        <h3>Every sensitive change is logged</h3>
+        <p>Salary, status and role changes are recorded with who made them, when, and from where.</p>
+      </li>
+    </ul>
+  </section>
+
+  <section class="closing" aria-labelledby="closing-title">
+    <h2 id="closing-title">Your team&rsquo;s records are one sign-in away.</h2>
+    <div class="closing-actions">
+      @if (auth.isAuthenticated()) {
+        <a class="btn-light" routerLink="/portal">Open my workspace</a>
+      } @else {
+        <a class="btn-light" routerLink="/auth/login">Sign in</a>
+        <a class="btn-outline-light" routerLink="/auth/register">Request access</a>
+      }
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <span>&copy; {{ year }} HRGenius</span>
+  <span>Java 17, Spring Boot 3, Angular 21, Oracle</span>
+</footer>

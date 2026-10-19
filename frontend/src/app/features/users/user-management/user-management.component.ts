@@ -111,9 +111,13 @@ export class UserManagementComponent implements OnInit {
     const newStatus = !user.enabled;
     this.userService.updateStatus(user.id, newStatus).subscribe({
       next: (updated) => {
+        const wasPending = user.pendingApproval;
         user.enabled = updated.enabled;
+        user.pendingApproval = updated.pendingApproval;
         this.snackBar.open(
-          `User '${user.username}' is now ${updated.enabled ? 'Enabled' : 'Disabled'}`,
+          wasPending
+            ? `Approved '${user.username}'. They can sign in now.`
+            : `User '${user.username}' is now ${updated.enabled ? 'Enabled' : 'Disabled'}`,
           'OK',
           { duration: 3000 }
         );

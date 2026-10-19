@@ -114,7 +114,9 @@
         <th mat-header-cell *matHeaderCellDef>Status</th>
         <td mat-cell *matCellDef="let u">
           <div class="status-cell">
-            @if (u.enabled) {
+            @if (u.pendingApproval) {
+              <span class="badge badge-warning" matTooltip="Signed up and waiting for approval">Waiting for approval</span>
+            } @else if (u.enabled) {
               <span class="badge badge-success">Active</span>
             } @else {
               <span class="badge badge-danger">Disabled</span>
@@ -154,14 +156,20 @@
                 <mat-icon>lock_open</mat-icon>
               </button>
             }
-            <button
-              mat-icon-button
-              [color]="u.enabled ? 'warn' : 'primary'"
-              (click)="toggleStatus(u)"
-              [matTooltip]="u.enabled ? 'Disable Account' : 'Enable Account'"
-            >
-              <mat-icon>{{ u.enabled ? 'person_off' : 'person' }}</mat-icon>
-            </button>
+            @if (u.pendingApproval) {
+              <button mat-flat-button color="primary" class="approve-btn" (click)="toggleStatus(u)">
+                <mat-icon>how_to_reg</mat-icon> Approve
+              </button>
+            } @else {
+              <button
+                mat-icon-button
+                [color]="u.enabled ? 'warn' : 'primary'"
+                (click)="toggleStatus(u)"
+                [matTooltip]="u.enabled ? 'Disable Account' : 'Enable Account'"
+              >
+                <mat-icon>{{ u.enabled ? 'person_off' : 'person' }}</mat-icon>
+              </button>
+            }
             <button mat-icon-button (click)="resetPassword(u)" matTooltip="Reset to Temporary Password">
               <mat-icon>lock_reset</mat-icon>
             </button>

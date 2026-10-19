@@ -45,6 +45,11 @@ public class User extends BaseEntity {
     @Column(name = "must_change_password", nullable = false)
     private boolean mustChangePassword = false;
 
+    /** Self-registered / Google sign-up accounts stay disabled until an administrator approves them. */
+    @jakarta.persistence.Convert(converter = org.hibernate.type.NumericBooleanConverter.class)
+    @Column(name = "pending_approval", nullable = false)
+    private boolean pendingApproval = false;
+
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(

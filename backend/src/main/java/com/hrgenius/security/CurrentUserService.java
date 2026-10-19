@@ -20,6 +20,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CurrentUserService {
 
+    public static final String NO_EMPLOYEE_PROFILE =
+            "Your account is not linked to an employee record yet. HR will link it, and then your details will appear here.";
+
     private final UserRepository userRepository;
     private final EmployeeRepository employeeRepository;
 
@@ -93,7 +96,7 @@ public class CurrentUserService {
 
     public Employee getCurrentEmployeeOrThrow() {
         return getCurrentEmployee()
-                .orElseThrow(() -> new BadRequestException("No employee profile associated with current user account"));
+                .orElseThrow(() -> new com.hrgenius.exception.ResourceNotFoundException(NO_EMPLOYEE_PROFILE));
     }
 
     public Optional<Long> getCurrentEmployeeId() {
@@ -102,7 +105,7 @@ public class CurrentUserService {
 
     public Long getCurrentEmployeeIdOrThrow() {
         return getCurrentEmployeeId()
-                .orElseThrow(() -> new BadRequestException("No employee profile associated with current user account"));
+                .orElseThrow(() -> new com.hrgenius.exception.ResourceNotFoundException(NO_EMPLOYEE_PROFILE));
     }
 
     public Long getEmployeeIdForUser(UserPrincipal principal, Long requestedEmployeeId) {

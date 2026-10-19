@@ -15,4 +15,4 @@ CREATE TABLE refresh_tokens (
 );
 
 CREATE INDEX idx_rt_user ON refresh_tokens(user_id);
-CREATE INDEX idx_rt_hash ON refresh_tokens(token_hash);
+-- token_hash is UNIQUE, which already creates an index (a second index fails on Oracle with ORA-01408)

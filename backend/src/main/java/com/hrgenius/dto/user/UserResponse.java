@@ -19,6 +19,7 @@ public class UserResponse {
     private String email;
     private boolean enabled;
     private boolean mustChangePassword;
+    private boolean pendingApproval;
     private int failedAttempts;
     private LocalDateTime lockoutTime;
     private boolean locked;

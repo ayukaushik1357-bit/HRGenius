@@ -28,16 +28,14 @@ public class LoginRateLimitFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
-        String path = request.getServletPath();
-        String uri = request.getRequestURI();
-        boolean isLoginPath = (path != null && path.endsWith("/auth/login")) || (uri != null && uri.endsWith("/auth/login"));
-
-        if ("POST".equalsIgnoreCase(request.getMethod()) && isLoginPath) {
-            String clientIp = getClientIp(request);
-            if (!rateLimiter.tryAcquire(clientIp)) {
+        String endpoint = rateLimitedEndpoint(request);
+        if ("POST".equalsIgnoreCase(request.getMethod()) && endpoint != null) {
+            // Separate budget per endpoint so password-reset requests cannot lock out logins, and vice versa
+            String key = request.getRemoteAddr() + "|" + endpoint;
+            if (!rateLimiter.tryAcquire(key)) {
                 response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value()); // 429
                 response.setContentType("application/json");
-                response.getWriter().write("{\"status\":429,\"error\":\"Too Many Requests\",\"message\":\"Too many login attempts. Please try again later.\"}");
+                response.getWriter().write("{\"status\":429,\"error\":\"Too Many Requests\",\"message\":\"Too many attempts. Please try again in a minute.\"}");
                 return;
             }
         }
@@ -45,11 +43,23 @@ public class LoginRateLimitFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
-    private String getClientIp(HttpServletRequest request) {
-        String xf = request.getHeader("X-Forwarded-For");
-        if (xf != null && !xf.isBlank()) {
-            return xf.split(",")[0].trim();
+    /**
+     * Public auth endpoints that are throttled per client IP.
+     * The IP is request.getRemoteAddr(): with server.forward-headers-strategy=native, Tomcat only
+     * honours X-Forwarded-For from trusted internal proxies, so a client cannot fake its address.
+     */
+    private static final String[] THROTTLED = {
+            "/auth/login", "/auth/register", "/auth/google", "/auth/password-reset/request"
+    };
+
+    private String rateLimitedEndpoint(HttpServletRequest request) {
+        String path = request.getServletPath();
+        String uri = request.getRequestURI();
+        for (String endpoint : THROTTLED) {
+            if ((path != null && path.endsWith(endpoint)) || (uri != null && uri.endsWith(endpoint))) {
+                return endpoint;
+            }
         }
-        return request.getRemoteAddr();
+        return null;
     }
 }

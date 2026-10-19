@@ -91,6 +91,11 @@ public class UserService {
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", id));
 
         user.setEnabled(enabled);
+        if (enabled && user.isPendingApproval()) {
+            // Approving a self sign-up request
+            user.setPendingApproval(false);
+            log.info("Sign-up request for '{}' approved by admin.", user.getUsername());
+        }
         if (!enabled) {
             log.info("User '{}' disabled by admin. Revoking active refresh tokens.", user.getUsername());
             refreshTokenRepository.revokeAllByUser(user);
@@ -156,6 +161,7 @@ public class UserService {
                 .email(user.getEmail())
                 .enabled(user.isEnabled())
                 .mustChangePassword(user.isMustChangePassword())
+                .pendingApproval(user.isPendingApproval())
                 .failedAttempts(user.getFailedAttempts())
                 .lockoutTime(user.getLockoutTime())
                 .locked(isLocked)

@@ -4,6 +4,7 @@ export interface UserResponse {
   email: string;
   enabled: boolean;
   mustChangePassword: boolean;
+  pendingApproval?: boolean;
   failedAttempts: number;
   lockoutTime?: string;
   locked: boolean;

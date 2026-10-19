@@ -62,7 +62,7 @@ class LoginRateLimitFilterTest {
 
         assertEquals(429, blockedRes.getStatus());
         assertTrue(blockedRes.getContentAsString().contains("\"status\":429"));
-        assertTrue(blockedRes.getContentAsString().contains("Too many login attempts"));
+        assertTrue(blockedRes.getContentAsString().contains("Too many attempts"));
 
         // Another IP should still be allowed
         MockHttpServletRequest otherIpReq = new MockHttpServletRequest("POST", "/api/auth/login");
@@ -90,27 +90,44 @@ class LoginRateLimitFilterTest {
     }
 
     @Test
-    void testXForwardedForHeaderExtractsClientIp() throws ServletException, IOException {
-        String proxiedIp = "203.0.113.195";
-
+    void testSpoofedXForwardedForCannotBypassLimit() throws ServletException, IOException {
+        // An attacker rotating fake X-Forwarded-For values must still be limited by the real connection IP
         for (int i = 0; i < 3; i++) {
             MockHttpServletRequest req = new MockHttpServletRequest("POST", "/api/auth/login");
             req.setServletPath("/auth/login");
-            req.setRemoteAddr("127.0.0.1");
-            req.addHeader("X-Forwarded-For", proxiedIp + ", 10.0.0.1");
+            req.setRemoteAddr("198.51.100.7");
+            req.addHeader("X-Forwarded-For", "203.0.113." + i);
             MockHttpServletResponse res = new MockHttpServletResponse();
             filter.doFilter(req, res, filterChain);
             assertEquals(200, res.getStatus());
         }
 
-        // 4th request with same X-Forwarded-For should be rejected
         MockHttpServletRequest blockedReq = new MockHttpServletRequest("POST", "/api/auth/login");
         blockedReq.setServletPath("/auth/login");
-        blockedReq.setRemoteAddr("127.0.0.1");
-        blockedReq.addHeader("X-Forwarded-For", proxiedIp + ", 10.0.0.1");
+        blockedReq.setRemoteAddr("198.51.100.7");
+        blockedReq.addHeader("X-Forwarded-For", "203.0.113.99");
         MockHttpServletResponse blockedRes = new MockHttpServletResponse();
 
         filter.doFilter(blockedReq, blockedRes, filterChain);
         assertEquals(429, blockedRes.getStatus());
+    }
+
+    @Test
+    void testPasswordResetRequestsAreThrottledSeparatelyFromLogin() throws ServletException, IOException {
+        for (int i = 0; i < 4; i++) {
+            MockHttpServletRequest req = new MockHttpServletRequest("POST", "/api/auth/password-reset/request");
+            req.setServletPath("/auth/password-reset/request");
+            req.setRemoteAddr("198.51.100.8");
+            MockHttpServletResponse res = new MockHttpServletResponse();
+            filter.doFilter(req, res, filterChain);
+            assertEquals(i < 3 ? 200 : 429, res.getStatus());
+        }
+        // Login from the same IP still has its own budget
+        MockHttpServletRequest login = new MockHttpServletRequest("POST", "/api/auth/login");
+        login.setServletPath("/auth/login");
+        login.setRemoteAddr("198.51.100.8");
+        MockHttpServletResponse loginRes = new MockHttpServletResponse();
+        filter.doFilter(login, loginRes, filterChain);
+        assertEquals(200, loginRes.getStatus());
     }
 }

@@ -23,3 +23,22 @@ export interface CurrentUser {
   roles: string[];
   mustChangePassword?: boolean;
 }
+
+export interface AuthConfig {
+  signupEnabled: boolean;
+  googleEnabled: boolean;
+  googleClientId?: string;
+}
+
+export interface RegisterRequest {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+}
+
+export interface GoogleLoginResponse {
+  status: 'SIGNED_IN' | 'PENDING_APPROVAL';
+  message?: string;
+  auth?: AuthResponse;
+}

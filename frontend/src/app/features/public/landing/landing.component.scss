@@ -1,0 +1,466 @@
+@use '../brand' as *;
+
+:host {
+  display: block;
+  min-height: 100vh;
+  background: $paper;
+  color: $ink;
+  font-family: $body;
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+$max: 1160px;
+$gutter: clamp(16px, 4vw, 40px);
+
+h1, h2, h3 {
+  font-family: $display;
+  margin: 0;
+  color: $ink;
+}
+
+p { margin: 0; }
+
+a:focus-visible { @include focus-ring; border-radius: 6px; }
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  &:focus { left: 16px; top: 16px; z-index: 10; background: $sheet; padding: 8px 12px; }
+}
+
+.btn-primary { @include button-primary; }
+.btn-primary.small { height: 40px; padding: 0 16px; font-size: 14px; }
+.btn-quiet { @include button-quiet; }
+
+/* ---------- navigation ---------- */
+.nav {
+  max-width: $max;
+  margin: 0 auto;
+  padding: 20px $gutter;
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: $ink;
+  text-decoration: none;
+}
+
+.brand-mark {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: $ink;
+  color: $manila;
+  font: 700 14px/1 $display;
+  letter-spacing: 0.02em;
+}
+
+.brand-name { font: 700 20px/1 $display; }
+
+.nav-links {
+  display: flex;
+  gap: 24px;
+  margin-right: auto;
+  a {
+    color: $ink-soft;
+    font-size: 15px;
+    text-decoration: none;
+    &:hover { color: $ink; }
+  }
+}
+
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.nav-signin {
+  color: $ink;
+  font-weight: 600;
+  font-size: 15px;
+  text-decoration: none;
+  &:hover { color: $indigo; }
+}
+
+/* ---------- hero ---------- */
+.hero {
+  max-width: $max;
+  margin: 0 auto;
+  padding: clamp(32px, 6vw, 72px) $gutter clamp(56px, 8vw, 104px);
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  gap: clamp(40px, 6vw, 88px);
+  align-items: center;
+}
+
+.hero-copy h1 {
+  font-size: clamp(40px, 5.4vw, 64px);
+  line-height: 1.04;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  max-width: 15ch;
+}
+
+.lede {
+  margin-top: 24px;
+  max-width: 34em;
+  font-size: 19px;
+  line-height: 1.55;
+  color: $ink-soft;
+}
+
+.hero-actions {
+  margin-top: 32px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.fineprint {
+  margin-top: 20px;
+  font-size: 14px;
+  color: $ink-soft;
+}
+
+/* The payslip: a sheet of paper resting slightly askew */
+.payslip {
+  position: relative;
+  margin: 24px 0 26px;
+  padding: 28px 28px 24px;
+  background: $sheet;
+  border: 1px solid $line;
+  border-radius: 4px;
+  box-shadow: 0 1px 0 $line, 0 24px 48px -24px rgba($ink, 0.35);
+  transform: rotate(1.2deg);
+  font-variant-numeric: tabular-nums;
+}
+
+.slip-tab {
+  position: absolute;
+  top: -26px;
+  left: 20px;
+  padding: 4px 16px 6px;
+  background: $manila;
+  border-radius: 6px 6px 0 0;
+  font: 600 13px/1.2 $body;
+  color: $ink;
+}
+
+.slip-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid $ink;
+}
+
+.slip-company { font: 700 16px/1.3 $display; }
+.slip-period { font-size: 14px; color: $ink-soft; }
+.slip-person { text-align: right; }
+.slip-name { font-weight: 600; font-size: 15px; }
+.slip-meta { font-size: 13px; color: $ink-soft; }
+
+.slip-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  padding: 16px 0;
+}
+
+.slip-col-title {
+  font: 600 13px/1.4 $body;
+  color: $ink-soft;
+  margin-bottom: 6px;
+}
+
+dl { margin: 0; }
+
+.slip-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 5px 0;
+  font-size: 13.5px;
+  border-bottom: 1px dotted $line;
+  dt { color: $ink-soft; }
+  dd { margin: 0; font-weight: 500; }
+}
+
+.slip-sum {
+  border-bottom: 0;
+  padding-top: 8px;
+  font-weight: 700;
+}
+
+.slip-net {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 14px 16px;
+  background: $paper;
+  border-radius: 4px;
+  span { font-weight: 600; }
+  strong { font: 700 28px/1 $display; letter-spacing: -0.01em; }
+}
+
+/* The single orchestrated motion on the page: the PAID stamp lands once */
+.stamp {
+  position: absolute;
+  // hangs off the bottom edge of the sheet, over the empty middle of the net-pay row
+  left: 38%;
+  bottom: -26px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 18px;
+  border: 3px double $stamp;
+  border-radius: 8px;
+  color: $stamp;
+  transform: rotate(-11deg);
+  background: rgba(#ffffff, 0.6);
+  animation: stamp-land 0.45s cubic-bezier(0.2, 1.4, 0.4, 1) 0.7s both;
+}
+
+.stamp-word {
+  font: 800 30px/1 $display;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.stamp-date { font: 600 11px/1.4 $body; }
+
+@keyframes stamp-land {
+  from { opacity: 0; transform: rotate(-11deg) scale(1.8); }
+  to   { opacity: 0.92; transform: rotate(-11deg) scale(1); }
+}
+
+/* ---------- shared section heading ---------- */
+.section-head {
+  max-width: 44em;
+  h2 {
+    font-size: clamp(28px, 3.4vw, 40px);
+    line-height: 1.12;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+  }
+  p {
+    margin-top: 12px;
+    font-size: 17px;
+    color: $ink-soft;
+  }
+}
+
+/* ---------- journey (a real sequence) ---------- */
+.journey {
+  background: $sheet;
+  border-top: 1px solid $line;
+  border-bottom: 1px solid $line;
+  padding: clamp(56px, 8vw, 96px) 0;
+
+  > * { max-width: $max; margin-left: auto; margin-right: auto; padding-left: $gutter; padding-right: $gutter; }
+}
+
+.stages {
+  list-style: none;
+  padding: 0;
+  margin-top: 48px;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 24px;
+  position: relative;
+}
+
+.stage {
+  position: relative;
+  padding-top: 52px;
+
+  // the line that joins the steps
+  &::before {
+    content: '';
+    position: absolute;
+    top: 17px;
+    left: 0;
+    right: -24px;
+    height: 2px;
+    background: $line;
+  }
+  &:last-child::before { right: 0; }
+
+  h3 { font-size: 18px; line-height: 1.3; font-weight: 700; }
+  p { margin-top: 6px; font-size: 14.5px; line-height: 1.55; color: $ink-soft; }
+}
+
+.stage-no {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: $sheet;
+  border: 2px solid $ink;
+  font: 700 15px/1 $display;
+  z-index: 1;
+}
+
+/* ---------- access table ---------- */
+.access {
+  max-width: $max;
+  margin: 0 auto;
+  padding: clamp(56px, 8vw, 96px) $gutter;
+}
+
+.table-wrap {
+  margin-top: 40px;
+  overflow-x: auto;
+  background: $sheet;
+  border: 1px solid $line;
+  border-radius: 8px;
+  &:focus-visible { @include focus-ring; }
+}
+
+.access-table {
+  width: 100%;
+  min-width: 640px;
+  border-collapse: collapse;
+  font-size: 15px;
+
+  th, td {
+    padding: 14px 18px;
+    text-align: left;
+    border-bottom: 1px solid $line;
+  }
+  thead th {
+    font-weight: 600;
+    font-size: 14px;
+    color: $ink-soft;
+    background: $paper;
+  }
+  tbody th { font-weight: 600; }
+  tbody tr:last-child > * { border-bottom: 0; }
+  td { color: $ink; }
+  td.limited { color: rgba($ink-soft, 0.75); }
+}
+
+/* ---------- security ---------- */
+.security {
+  max-width: $max;
+  margin: 0 auto;
+  padding: 0 $gutter clamp(56px, 8vw, 96px);
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.6fr);
+  gap: clamp(32px, 6vw, 80px);
+
+  h2 {
+    font-size: clamp(28px, 3.4vw, 40px);
+    line-height: 1.12;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+  }
+}
+
+.security-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 40px;
+
+  li {
+    padding: 20px 0;
+    border-top: 2px solid $ink;
+  }
+  h3 { font-size: 18px; font-weight: 700; line-height: 1.3; }
+  p { margin-top: 6px; font-size: 15px; color: $ink-soft; }
+}
+
+/* ---------- closing ---------- */
+.closing {
+  background: $ink;
+  color: #fff;
+  padding: clamp(56px, 8vw, 88px) $gutter;
+  text-align: center;
+
+  h2 {
+    color: #fff;
+    font-size: clamp(28px, 3.6vw, 44px);
+    line-height: 1.12;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+  }
+}
+
+.closing-actions {
+  margin-top: 28px;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.btn-light {
+  @include button-primary;
+  background: #fff;
+  color: $ink;
+  &:hover { background: $manila; }
+}
+
+.btn-outline-light {
+  @include button-quiet;
+  background: transparent;
+  color: #fff;
+  border-color: rgba(#fff, 0.4);
+  &:hover { border-color: #fff; }
+}
+
+.site-footer {
+  max-width: $max;
+  margin: 0 auto;
+  padding: 24px $gutter;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-size: 14px;
+  color: $ink-soft;
+}
+
+/* ---------- responsive ---------- */
+@media (max-width: 960px) {
+  .nav-links { display: none; }
+  .nav-actions { margin-left: auto; }
+  .hero { grid-template-columns: 1fr; }
+  .payslip { transform: none; max-width: 560px; }
+  .stages { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 32px; }
+  .stage::before { display: none; }
+  .security { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 560px) {
+  .nav { gap: 12px; }
+  .nav-signin { display: none; }
+  .stages { grid-template-columns: 1fr; }
+  .slip-columns { grid-template-columns: 1fr; gap: 8px; }
+  .slip-head { flex-direction: column; }
+  .slip-person { text-align: left; }
+  .payslip { margin-bottom: 48px; }
+  .stamp { left: 30%; bottom: -46px; }
+  .security-list { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stamp { animation: none; opacity: 0.92; }
+}

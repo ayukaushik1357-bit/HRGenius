@@ -39,6 +39,7 @@ public class OffboardingService {
     private final ClearanceItemRepository clearanceItemRepository;
     private final FnFSettlementRepository fnfSettlementRepository;
     private final EmployeeRepository employeeRepository;
+    private final com.hrgenius.security.CurrentUserService currentUserService;
     private final SalaryStructureRepository salaryStructureRepository;
     private final LeaveBalanceRepository leaveBalanceRepository;
     private final UserRepository userRepository;
@@ -48,7 +49,8 @@ public class OffboardingService {
 
     @Transactional
     public ExitRequestDto.Response submitResignation(ExitRequestDto.Request request) {
-        final Long targetEmpId = request.getEmployeeId() != null ? request.getEmployeeId() : getCurrentEmployee().getId();
+        // Self by default; filing for someone else is only allowed for HR/Admin or that person's manager
+        final Long targetEmpId = currentUserService.getEmployeeIdForUser(request.getEmployeeId());
 
         Employee emp = employeeRepository.findById(targetEmpId)
                 .orElseThrow(() -> new ResourceNotFoundException("Employee not found with id: " + targetEmpId));
@@ -303,14 +305,11 @@ public class OffboardingService {
                 .toList();
     }
 
+    /**
+     * The signed-in user's own employee record. Never falls back to another employee:
+     * a user without a linked record gets a clear 404 instead of someone else's data.
+     */
     private Employee getCurrentEmployee() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !(auth.getPrincipal() instanceof UserPrincipal up)) {
-            return employeeRepository.findAll().stream().findFirst()
-                    .orElseThrow(() -> new BadRequestException("No employee found in session."));
-        }
-        return employeeRepository.findByUserId(up.getId())
-                .orElseGet(() -> employeeRepository.findAll().stream().findFirst()
-                        .orElseThrow(() -> new BadRequestException("Employee record not linked to user.")));
+        return currentUserService.getCurrentEmployeeOrThrow();
     }
 }

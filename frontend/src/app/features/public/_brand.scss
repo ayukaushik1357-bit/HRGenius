@@ -1,0 +1,57 @@
+// HRGenius public-facing tokens (landing + sign-in pages)
+$ink: #14213d;        // navy ink: text, dark surfaces
+$ink-soft: #3a4763;   // secondary text
+$paper: #f3f5f9;      // page background, cool office paper
+$sheet: #ffffff;      // documents, forms
+$line: #d8dee9;       // rules and borders
+$indigo: #4338ca;     // brand action colour (matches the app shell)
+$indigo-dark: #3730a3;
+$stamp: #0f8a5f;      // approved / paid
+$manila: #e9c46a;     // folder-tab highlight, used sparingly
+$danger: #b42318;
+
+$display: 'Bricolage Grotesque', 'Inter', system-ui, sans-serif;
+$body: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+@mixin focus-ring {
+  outline: 3px solid rgba($indigo, 0.35);
+  outline-offset: 2px;
+}
+
+@mixin button-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 48px;
+  padding: 0 22px;
+  border: 0;
+  border-radius: 10px;
+  background: $indigo;
+  color: #fff;
+  font: 600 15px/1 $body;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  &:hover { background: $indigo-dark; }
+  &:focus-visible { @include focus-ring; }
+  &:disabled { opacity: 0.6; cursor: progress; }
+}
+
+@mixin button-quiet {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 48px;
+  padding: 0 20px;
+  border: 1px solid $line;
+  border-radius: 10px;
+  background: $sheet;
+  color: $ink;
+  font: 600 15px/1 $body;
+  text-decoration: none;
+  cursor: pointer;
+  &:hover { border-color: $ink-soft; }
+  &:focus-visible { @include focus-ring; }
+}

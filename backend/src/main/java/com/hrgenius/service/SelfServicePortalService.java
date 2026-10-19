@@ -37,6 +37,7 @@ import java.util.Map;
 public class SelfServicePortalService {
 
     private final EmployeeRepository employeeRepository;
+    private final com.hrgenius.security.CurrentUserService currentUserService;
     private final AttendanceRepository attendanceRepository;
     private final HolidayRepository holidayRepository;
     private final LeaveBalanceRepository leaveBalanceRepository;
@@ -234,14 +235,11 @@ public class SelfServicePortalService {
                 .build();
     }
 
+    /**
+     * The signed-in user's own employee record. Never falls back to another employee:
+     * a user without a linked record gets a clear 404 instead of someone else's data.
+     */
     private Employee getCurrentEmployee() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !(auth.getPrincipal() instanceof UserPrincipal up)) {
-            return employeeRepository.findAll().stream().findFirst()
-                    .orElseThrow(() -> new BadRequestException("No employee found in context."));
-        }
-        return employeeRepository.findByUserId(up.getId())
-                .orElseGet(() -> employeeRepository.findAll().stream().findFirst()
-                        .orElseThrow(() -> new BadRequestException("Employee record not linked to user.")));
+        return currentUserService.getCurrentEmployeeOrThrow();
     }
 }

@@ -1,0 +1,110 @@
+@use '../public/brand' as *;
+
+form { margin-top: 28px; }
+
+.field { margin-bottom: 18px; }
+
+.field-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+label {
+  display: block;
+  margin-bottom: 6px;
+  font: 600 14px/1.4 $body;
+  color: $ink;
+}
+
+.input-wrap { position: relative; }
+
+input {
+  width: 100%;
+  box-sizing: border-box;
+  height: 48px;
+  padding: 0 14px;
+  border: 1px solid $line;
+  border-radius: 10px;
+  background: $sheet;
+  color: $ink;
+  font: 400 16px/1 $body;
+  &::placeholder { color: rgba($ink-soft, 0.6); }
+  &:hover { border-color: rgba($ink-soft, 0.6); }
+  &:focus { outline: none; border-color: $indigo; box-shadow: 0 0 0 3px rgba($indigo, 0.18); }
+  &[aria-invalid='true'] { border-color: $danger; }
+}
+
+.input-wrap input { padding-right: 72px; }
+
+.toggle {
+  position: absolute;
+  right: 6px;
+  top: 6px;
+  height: 36px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: $indigo;
+  font: 600 13px/1 $body;
+  cursor: pointer;
+  &:hover { background: $paper; }
+  &:focus-visible { @include focus-ring; }
+}
+
+.field-error {
+  margin: 6px 0 0;
+  font-size: 13.5px;
+  color: $danger;
+}
+
+.hint {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: $ink-soft;
+  line-height: 1.5;
+}
+
+.inline-link {
+  font-size: 14px;
+  font-weight: 600;
+  color: $indigo;
+  text-decoration: none;
+  &:hover { text-decoration: underline; }
+  &:focus-visible { @include focus-ring; border-radius: 4px; }
+}
+
+.submit { @include button-primary; width: 100%; margin-top: 8px; }
+
+.alert {
+  margin-top: 20px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-size: 14.5px;
+  line-height: 1.5;
+  &.error { background: #fdecea; color: $danger; }
+  &.success { background: #e7f6ef; color: #0b6b4a; }
+  &.info { background: #eef0fb; color: $indigo-dark; }
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 24px 0;
+  color: $ink-soft;
+  font-size: 13px;
+  &::before, &::after { content: ''; flex: 1; height: 1px; background: $line; }
+}
+
+.switch {
+  margin-top: 28px;
+  font-size: 15px;
+  color: $ink-soft;
+  text-align: center;
+}
+
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+@media (max-width: 480px) { .two-col { grid-template-columns: 1fr; } }

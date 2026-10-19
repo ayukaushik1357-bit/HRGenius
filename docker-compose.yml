@@ -34,6 +34,11 @@ services:
       - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
       - JWT_SECRET=${JWT_SECRET}
       - SPRING_FLYWAY_ENABLED=true
+      - APP_FRONTEND_URL=${APP_FRONTEND_URL:-http://localhost}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - APP_SIGNUP_ALLOWED_DOMAINS=${APP_SIGNUP_ALLOWED_DOMAINS:-}
+      - SPRING_MAIL_HOST=${SPRING_MAIL_HOST:-localhost}
+      - SPRING_MAIL_PORT=${SPRING_MAIL_PORT:-1025}
     depends_on:
       oracle-db:
         condition: service_healthy

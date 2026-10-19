@@ -43,6 +43,8 @@ export class PortalComponent implements OnInit {
   loading: boolean = true;
   hasError: boolean = false;
   errorMessage: string = '';
+  /** Signed-in account that HR has not linked to an employee record yet (HTTP 404). */
+  notLinked = false;
 
   // Profile update request modal
   showUpdateModal: boolean = false;
@@ -80,8 +82,12 @@ export class PortalComponent implements OnInit {
       },
       error: (err) => {
         this.loading = false;
-        this.hasError = true;
         this.errorMessage = err.error?.message || err.message || 'Failed to connect to the backend server';
+        if (err.status === 404) {
+          this.notLinked = true;
+          return;
+        }
+        this.hasError = true;
         this.snackBar.open(this.errorMessage, 'Dismiss', { duration: 5000 });
       }
     });

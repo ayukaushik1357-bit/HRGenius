@@ -202,6 +202,10 @@
             <span>Signed in as <b>{{ username }}</b></span>
           </button>
           <mat-divider></mat-divider>
+          <a mat-menu-item routerLink="/auth/change-password">
+            <mat-icon>password</mat-icon>
+            <span>Change password</span>
+          </a>
           <button mat-menu-item (click)="logout()">
             <mat-icon>logout</mat-icon>
             <span>Sign Out</span>

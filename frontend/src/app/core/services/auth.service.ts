@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, tap, catchError, throwError, of, firstValueFrom, from, map } from 'rxjs';
 import { Router } from '@angular/router';
 import { environment } from '../../../environments/environment';
-import { AuthResponse, CurrentUser, LoginRequest } from '../models/auth.model';
+import { AuthConfig, AuthResponse, CurrentUser, GoogleLoginResponse, LoginRequest, RegisterRequest } from '../models/auth.model';
 
 @Injectable({
   providedIn: 'root'
@@ -52,6 +52,36 @@ export class AuthService {
     }).pipe(
       tap(res => {
         this.setSession(res);
+      })
+    );
+  }
+
+  /** Public settings for the sign-in page (sign-up enabled, Google client ID). */
+  getConfig(): Observable<AuthConfig> {
+    return this.http.get<AuthConfig>(`${this.apiUrl}/config`);
+  }
+
+  register(request: RegisterRequest): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.apiUrl}/register`, request);
+  }
+
+  requestPasswordReset(email: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.apiUrl}/password-reset/request`, { email });
+  }
+
+  confirmPasswordReset(token: string, newPassword: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.apiUrl}/password-reset/confirm`, { token, newPassword });
+  }
+
+  /** Exchanges a Google ID token for an HRGenius session, or registers a pending sign-up. */
+  googleLogin(credential: string): Observable<GoogleLoginResponse> {
+    return this.http.post<GoogleLoginResponse>(`${this.apiUrl}/google`, { credential }, {
+      withCredentials: true
+    }).pipe(
+      tap(res => {
+        if (res.status === 'SIGNED_IN' && res.auth) {
+          this.setSession(res.auth);
+        }
       })
     );
   }

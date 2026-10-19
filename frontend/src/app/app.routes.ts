@@ -5,8 +5,26 @@ import { MainLayoutComponent } from './layout/main-layout/main-layout.component'
 
 export const routes: Routes = [
   {
+    // Public home page; signed-in users get a button to their workspace
+    path: '',
+    pathMatch: 'full',
+    loadComponent: () => import('./features/public/landing/landing.component').then(m => m.LandingComponent)
+  },
+  {
     path: 'auth/login',
     loadComponent: () => import('./features/auth/login/login.component').then(m => m.LoginComponent)
+  },
+  {
+    path: 'auth/register',
+    loadComponent: () => import('./features/auth/register/register.component').then(m => m.RegisterComponent)
+  },
+  {
+    path: 'auth/forgot-password',
+    loadComponent: () => import('./features/auth/forgot-password/forgot-password.component').then(m => m.ForgotPasswordComponent)
+  },
+  {
+    path: 'auth/reset-password',
+    loadComponent: () => import('./features/auth/reset-password/reset-password.component').then(m => m.ResetPasswordComponent)
   },
   {
     path: 'auth/change-password',
@@ -17,11 +35,6 @@ export const routes: Routes = [
     component: MainLayoutComponent,
     canActivate: [authGuard],
     children: [
-      {
-        path: '',
-        pathMatch: 'full',
-        redirectTo: 'portal'
-      },
       {
         path: 'portal',
         loadComponent: () => import('./features/portal/portal.component').then(m => m.PortalComponent)

@@ -1,0 +1,66 @@
+<app-auth-frame heading="Request access"
+                subheading="An administrator checks every request before the account can sign in.">
+  @if (doneMessage) {
+    <div class="alert success" role="status">{{ doneMessage }}</div>
+    <p class="switch"><a class="inline-link" routerLink="/auth/login">Go to sign in</a></p>
+  } @else if (config?.signupEnabled === false) {
+    <div class="alert info" role="status">Self sign-up is turned off. Ask HR to create your account.</div>
+    <p class="switch"><a class="inline-link" routerLink="/auth/login">Go to sign in</a></p>
+  } @else {
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+      <div class="two-col">
+        <div class="field">
+          <label for="firstName">First name</label>
+          <input id="firstName" formControlName="firstName" autocomplete="given-name"
+                 [attr.aria-invalid]="invalid('firstName')">
+          @if (invalid('firstName')) { <p class="field-error">Enter your first name.</p> }
+        </div>
+        <div class="field">
+          <label for="lastName">Last name</label>
+          <input id="lastName" formControlName="lastName" autocomplete="family-name"
+                 [attr.aria-invalid]="invalid('lastName')">
+          @if (invalid('lastName')) { <p class="field-error">Enter your last name.</p> }
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="email">Work email</label>
+        <input id="email" type="email" formControlName="email" autocomplete="email"
+               placeholder="name@company.com" [attr.aria-invalid]="invalid('email')">
+        @if (invalid('email')) { <p class="field-error">Enter a valid email address.</p> }
+      </div>
+
+      <div class="field">
+        <label for="password">Password</label>
+        <div class="input-wrap">
+          <input id="password" [type]="showPassword ? 'text' : 'password'" formControlName="password"
+                 autocomplete="new-password" aria-describedby="password-rules"
+                 [attr.aria-invalid]="invalid('password')">
+          <button type="button" class="toggle" (click)="showPassword = !showPassword"
+                  [attr.aria-pressed]="showPassword" aria-controls="password">
+            {{ showPassword ? 'Hide' : 'Show' }}
+          </button>
+        </div>
+        <ul class="rules" id="password-rules">
+          @for (rule of rules; track rule.label) {
+            <li [class.met]="passes(rule.test)">{{ rule.label }}</li>
+          }
+        </ul>
+      </div>
+
+      @if (errorMessage) { <div class="alert error" role="alert">{{ errorMessage }}</div> }
+
+      <button class="submit" type="submit" [disabled]="isLoading">
+        {{ isLoading ? 'Sending request…' : 'Request access' }}
+      </button>
+    </form>
+
+    @if (config?.googleEnabled && config?.googleClientId) {
+      <div class="divider">or</div>
+      <app-google-button [clientId]="config!.googleClientId!" text="signup_with"
+                         (credential)="onGoogleCredential($event)" />
+    }
+
+    <p class="switch">Already have an account? <a class="inline-link" routerLink="/auth/login">Sign in</a></p>
+  }
+</app-auth-frame>

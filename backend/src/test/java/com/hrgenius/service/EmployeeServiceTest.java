@@ -122,7 +122,7 @@ class EmployeeServiceTest {
     @Test
     void testCreateEmployee_Success() {
         when(employeeRepository.existsByEmail("john.doe@hrgenius.com")).thenReturn(false);
-        when(userRepository.existsByEmail("john.doe@hrgenius.com")).thenReturn(false);
+        when(userRepository.findByEmailIgnoreCase("john.doe@hrgenius.com")).thenReturn(Optional.empty());
         when(employeeRepository.findMaxEmployeeCodeNumber()).thenReturn(0);
         when(departmentRepository.findById(1L)).thenReturn(Optional.of(department));
         when(designationRepository.findById(1L)).thenReturn(Optional.of(designation));

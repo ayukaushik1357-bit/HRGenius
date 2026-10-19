@@ -1,0 +1,36 @@
+@use '../../public/brand' as *;
+@use '../auth-form';
+
+:host { display: block; }
+
+.rules {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 12px;
+
+  li {
+    position: relative;
+    padding-left: 20px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: $ink-soft;
+
+    &::before {
+      content: '';
+      position: absolute;
+      left: 2px;
+      top: 6px;
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      border: 2px solid $line;
+    }
+    &.met { color: $stamp; }
+    &.met::before { background: $stamp; border-color: $stamp; }
+  }
+}
+
+@media (max-width: 480px) { .rules { grid-template-columns: 1fr; } }

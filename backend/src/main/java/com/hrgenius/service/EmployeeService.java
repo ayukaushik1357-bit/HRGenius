@@ -123,7 +123,9 @@ public class EmployeeService {
         if (employeeRepository.existsByEmail(request.getEmail())) {
             throw new DuplicateResourceException("Employee with email '" + request.getEmail() + "' already exists");
         }
-        if (userRepository.existsByEmail(request.getEmail())) {
+        // A self-registered (sign-up / Google) account with this email gets linked instead of a new login
+        User existingUser = userRepository.findByEmailIgnoreCase(request.getEmail()).orElse(null);
+        if (existingUser != null && existingUser.getEmployee() != null) {
             throw new DuplicateResourceException("User with email '" + request.getEmail() + "' already exists");
         }
 
@@ -131,27 +133,35 @@ public class EmployeeService {
         String employeeCode = generateNextEmployeeCode();
         employee.setEmployeeCode(employeeCode);
 
-        // Create linked User with role EMPLOYEE and temporary password (must-change flag on)
-        Role employeeRole = roleRepository.findByName(Role.RoleName.EMPLOYEE)
-                .orElseThrow(() -> new ResourceNotFoundException("Role", "name", Role.RoleName.EMPLOYEE));
+        User savedUser;
+        if (existingUser != null) {
+            // HR creating the employee record counts as approving the sign-up request
+            existingUser.setEnabled(true);
+            existingUser.setPendingApproval(false);
+            savedUser = userRepository.save(existingUser);
+        } else {
+            // Create linked User with role EMPLOYEE and temporary password (must-change flag on)
+            Role employeeRole = roleRepository.findByName(Role.RoleName.EMPLOYEE)
+                    .orElseThrow(() -> new ResourceNotFoundException("Role", "name", Role.RoleName.EMPLOYEE));
 
-        String username = employeeCode.toLowerCase();
-        if (userRepository.existsByUsername(username)) {
-            username = request.getEmail().split("@")[0].toLowerCase();
+            String username = employeeCode.toLowerCase();
             if (userRepository.existsByUsername(username)) {
-                username = employeeCode.toLowerCase() + "_" + (System.currentTimeMillis() % 1000);
+                username = request.getEmail().split("@")[0].toLowerCase();
+                if (userRepository.existsByUsername(username)) {
+                    username = employeeCode.toLowerCase() + "_" + (System.currentTimeMillis() % 1000);
+                }
             }
-        }
-        String tempPassword = "Temp@" + employeeCode + "!1";
+            String tempPassword = "Temp@" + employeeCode + "!1";
 
-        User user = new User();
-        user.setUsername(username);
-        user.setEmail(employee.getEmail());
-        user.setPassword(passwordEncoder.encode(tempPassword));
-        user.setEnabled(true);
-        user.setMustChangePassword(true);
-        user.setRoles(Collections.singleton(employeeRole));
-        User savedUser = userRepository.save(user);
+            User user = new User();
+            user.setUsername(username);
+            user.setEmail(employee.getEmail());
+            user.setPassword(passwordEncoder.encode(tempPassword));
+            user.setEnabled(true);
+            user.setMustChangePassword(true);
+            user.setRoles(Collections.singleton(employeeRole));
+            savedUser = userRepository.save(user);
+        }
 
         employee.setUser(savedUser);
 

@@ -6,6 +6,10 @@ import { catchError, switchMap, throwError, BehaviorSubject, filter, take } from
 import { Router } from '@angular/router';
 
 let isRefreshing = false;
+
+/** Public auth endpoints: no bearer token, no refresh-and-retry, no global error toast. */
+const PUBLIC_AUTH = ['/auth/login', '/auth/refresh', '/auth/register', '/auth/google', '/auth/password-reset', '/auth/config'];
+const isPublicAuth = (url: string) => PUBLIC_AUTH.some(path => url.includes(path));
 let refreshTokenSubject = new BehaviorSubject<string | null>(null);
 
 export const jwtInterceptor: HttpInterceptorFn = (req: HttpRequest<unknown>, next: HttpHandlerFn) => {
@@ -18,7 +22,7 @@ export const jwtInterceptor: HttpInterceptorFn = (req: HttpRequest<unknown>, nex
   });
 
   const token = authService.getAccessToken();
-  if (token && !req.url.includes('/auth/login') && !req.url.includes('/auth/refresh')) {
+  if (token && !isPublicAuth(req.url)) {
     clonedReq = clonedReq.clone({
       setHeaders: {
         Authorization: `Bearer ${token}`
@@ -28,11 +32,14 @@ export const jwtInterceptor: HttpInterceptorFn = (req: HttpRequest<unknown>, nex
 
   return next(clonedReq).pipe(
     catchError((error: HttpErrorResponse) => {
+      if (isPublicAuth(req.url)) {
+        return throwError(() => error);
+      }
       if (error.status === 403) {
         notificationService.error("You don't have permission");
         return throwError(() => error);
       }
-      if (error.status === 401 && !req.url.includes('/auth/login') && !req.url.includes('/auth/refresh')) {
+      if (error.status === 401) {
         return handle401Error(clonedReq, next, authService, router);
       }
       return throwError(() => error);
