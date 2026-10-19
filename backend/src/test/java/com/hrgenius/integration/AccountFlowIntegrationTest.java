@@ -34,11 +34,12 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Sign-up with approval, email login, lockout, password reset and Google sign-in against the real
+ * Instant sign-up, email login, lockout, password reset and Google sign-in against the real
  * (H2) database. Only the Google token check and outgoing email are mocked.
  * Each test uses its own client IP so the per-IP rate limiter does not interfere.
  */
@@ -78,31 +79,27 @@ class AccountFlowIntegrationTest {
     }
 
     @Test
-    @DisplayName("Sign-up stays blocked until an admin approves it, then the user can sign in")
-    void signupNeedsApproval() throws Exception {
+    @DisplayName("Sign-up signs the person in straight away and gives them their own employee profile")
+    void signupSignsInAndCreatesProfile() throws Exception {
         String email = unique("newjoiner");
-        register(email, STRONG, "10.0.2.1").andExpect(status().isCreated());
+        register(email, STRONG, "10.0.2.1")
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.status").value("SIGNED_IN"))
+                .andExpect(jsonPath("$.auth.accessToken").isNotEmpty())
+                .andExpect(cookie().exists("hrgenius_refresh_token"));
 
-        // Correct password -> clear "pending approval" message; wrong password -> generic 401
-        login(email, STRONG, "10.0.2.1").andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("approval")));
-        login(email, "Wrong!Pass1", "10.0.2.1").andExpect(status().isUnauthorized());
-
-        // Duplicate sign-up is rejected
-        register(email, STRONG, "10.0.2.1").andExpect(status().isConflict());
-
-        // Admin approves in User Management
-        User pending = userRepository.findByEmailIgnoreCase(email).orElseThrow();
-        assertThat(pending.isPendingApproval()).isTrue();
-        assertThat(pending.isEnabled()).isFalse();
-        mockMvc.perform(put("/users/" + pending.getId() + "/status")
-                        .header("Authorization", "Bearer " + accessToken("admin", "Admin@123", "10.0.2.2"))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"enabled\":true}"))
+        String token = accessToken(email, STRONG, "10.0.2.1");
+        mockMvc.perform(get("/portal/dashboard").header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.pendingApproval").value(false));
+                .andExpect(jsonPath("$.profile.email").value(email))
+                .andExpect(jsonPath("$.profile.firstName").value("Test"));
 
-        login(email, STRONG, "10.0.2.1").andExpect(status().isOk());
+        // A new account is an ordinary employee: no HR or admin pages
+        mockMvc.perform(get("/employees").header("Authorization", "Bearer " + token)).andExpect(status().isForbidden());
+        mockMvc.perform(get("/users").header("Authorization", "Bearer " + token)).andExpect(status().isForbidden());
+
+        // Same email cannot sign up twice
+        register(email, STRONG, "10.0.2.1").andExpect(status().isConflict());
     }
 
     @Test
@@ -150,7 +147,7 @@ class AccountFlowIntegrationTest {
     }
 
     @Test
-    @DisplayName("Google: existing account signs in, unknown account becomes a pending sign-up, bad token is rejected")
+    @DisplayName("Google: existing account signs in, a new Google user gets an account, bad token is rejected")
     void googleSignIn() throws Exception {
         when(googleTokenVerifier.verify("good-existing"))
                 .thenReturn(new GoogleTokenVerifier.GoogleIdentity("manager@hrgenius.com", "Vikram", "Malhotra"));
@@ -164,28 +161,15 @@ class AccountFlowIntegrationTest {
                 .andExpect(jsonPath("$.auth.username").value("manager"))
                 .andExpect(jsonPath("$.auth.accessToken").isNotEmpty());
 
-        google("good-new", "10.0.6.1").andExpect(status().isAccepted())
-                .andExpect(jsonPath("$.status").value("PENDING_APPROVAL"));
-        assertThat(userRepository.findByEmailIgnoreCase(newEmail)).get()
-                .extracting(User::isPendingApproval).isEqualTo(true);
-        google("good-new", "10.0.6.1").andExpect(status().isForbidden());
+        google("good-new", "10.0.6.1").andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("SIGNED_IN"))
+                .andExpect(jsonPath("$.auth.accessToken").isNotEmpty());
+        assertThat(employeeRepository.findByEmail(newEmail)).isPresent();
+        // Signing in with Google again uses the same account
+        google("good-new", "10.0.6.1").andExpect(status().isOk());
+        assertThat(userRepository.findAll().stream().filter(u -> newEmail.equals(u.getEmail())).count()).isEqualTo(1);
 
         google("forged", "10.0.6.1").andExpect(status().isUnauthorized());
-    }
-
-    @Test
-    @DisplayName("A user with no employee record gets 404 on the portal, never another employee's data")
-    void portalWithoutEmployeeRecordDoesNotLeakData() throws Exception {
-        String email = approvedUser("unlinked", "10.0.7.1");
-        String token = accessToken(email, STRONG, "10.0.7.1");
-
-        mockMvc.perform(get("/portal/dashboard").header("Authorization", "Bearer " + token))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("not linked")));
-        mockMvc.perform(post("/portal/profile-update").header("Authorization", "Bearer " + token)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"requestedChanges\":\"{\\\"phone\\\":\\\"+91 9000000000\\\"}\"}"))
-                .andExpect(status().isNotFound());
     }
 
     @Test
@@ -207,7 +191,8 @@ class AccountFlowIntegrationTest {
         mockMvc.perform(get("/auth/config"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.signupEnabled").value(true))
-                .andExpect(jsonPath("$.googleEnabled").value(false));
+                .andExpect(jsonPath("$.googleEnabled").value(true))
+                .andExpect(jsonPath("$.googleClientId").value(org.hamcrest.Matchers.endsWith(".apps.googleusercontent.com")));
     }
 
     // ---------------------------------------------------------------- helpers

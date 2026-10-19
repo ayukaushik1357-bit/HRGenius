@@ -22,11 +22,11 @@
 | | |
 |---|---|
 | 🔐 **Real authentication** | Sign in with email or username, or with Google. Short-lived JWTs kept in memory, rotating refresh tokens in an HttpOnly cookie, stolen-token detection, lockout, password reset by email |
-| 🙋 **Self sign-up with approval** | Anyone can request an account; nobody gets in until an administrator approves it |
+| 🙋 **Open sign-up** | Anyone can create an account with email or Google and use their own employee portal straight away; HR and admin pages stay with HR and the admin |
 | 🛡️ **Real authorization** | Role checks **plus** ownership checks on every endpoint: employees see only their own data, managers only their direct reports |
 | 🇮🇳 **Indian payroll engine** | PF, ESI, Professional Tax, slab-based TDS and loss-of-pay, with PDF payslips |
 | 📊 **HR analytics** | Headcount, attrition, tenure, payroll cost, hiring funnel and rating distribution, exportable to Excel and PDF |
-| 🧪 **Tested** | 216 backend tests (incl. a 61-case authorization matrix and unmocked end-to-end account flows), 16 frontend tests, CI on every push |
+| 🧪 **Tested** | 217 backend tests (incl. a 61-case authorization matrix and unmocked end-to-end account flows), 16 frontend tests, CI on every push |
 | 🐳 **One-command deploy** | Docker Compose runs Oracle XE, Spring Boot and Angular behind Nginx |
 
 ---
@@ -160,30 +160,30 @@ sequenceDiagram
 
 ```mermaid
 flowchart LR
-    A["🙋 Request access<br/>name · email · password"] --> P["⏳ Waiting for approval<br/>account disabled"]
-    G["🌐 Sign in with Google<br/>(new email)"] --> P
-    P --> AD{"👩‍💼 Admin<br/>User Management"}
-    AD -- Approve --> OK["✅ Can sign in<br/>email or username"]
-    OK --> L["🔗 HR creates the employee record<br/>with the same email → linked automatically"]
-    H["🧑‍💼 HR creates an employee"] --> T["🔑 Login with a temporary password<br/>must change on first sign-in"]
+    A["✍️ Create account<br/>name · email · password"] --> N["🆕 Account + own employee profile<br/>role: Employee"]
+    G["🌐 Continue with Google<br/>(new email)"] --> N
+    N --> IN["✅ Signed in<br/>portal, attendance, leave"]
+    H["🧑‍💼 HR adds an employee"] --> T["🔑 Temporary password<br/>must change on first sign-in"]
+    T --> IN
+    AD["👩‍💼 Admin"] -. "promote to Manager or HR<br/>in User Management" .-> N
 
-    classDef wait fill:#FEF3C7,stroke:#D97706,color:#78350F
     classDef ok fill:#DCFCE7,stroke:#16A34A,color:#14532D
     classDef step fill:#EEF2FF,stroke:#4F46E5,color:#1E1B4B
-    class P wait
-    class OK,L,T ok
-    class A,G,AD,H step
+    class N,IN ok
+    class A,G,H,T,AD step
 ```
 
 | Way in | How it works |
 | :--- | :--- |
+| **Create account** | Anyone can sign up with a name, email and strong password. They are signed in straight away as an **Employee** with their own profile (leave quota, attendance, payslips). Someone HR has already added should sign in instead (or use **Forgot password**). |
+| **Continue with Google** | Google's ID token is verified on the server (signature, issuer, audience, expiry, verified email). A known email signs in; a new email gets an account the same way as above. |
 | **Email or username + password** | One field accepts either. 5 wrong passwords lock the account for 15 minutes; each network address is rate limited. |
 | **Forgot password** | Sends a one-time link (valid 30 minutes, only its SHA-256 hash is stored). The answer is the same whether or not the email exists. Using it ends all other sessions. |
-| **Sign in with Google** | Google's ID token is verified on the server (signature, issuer, audience, expiry, verified email). A known email signs in; an unknown email becomes a sign-up request. |
-| **Request access** | Creates a disabled account and notifies administrators. It works only after an admin approves it. Optionally limited to company email domains. |
-| **Created by HR** | Gets a temporary password that must be changed on first sign-in. |
+| **Added by HR** | Gets a temporary password that must be changed on first sign-in. |
 
-A signed-in user who has no employee record yet sees a clear "not linked yet" message, never another employee's data.
+New accounts can never see HR, payroll or admin pages; the admin promotes people to Manager or HR in **User Management**. To make new sign-ups wait for an administrator instead, set `APP_SIGNUP_REQUIRES_APPROVAL=true`.
+
+If an account ever has no employee record, it sees a clear "not linked yet" message, never another employee's data.
 
 ---
 
@@ -307,7 +307,7 @@ Monthly payroll runs (`DRAFT` → `PROCESSED` → `PAID`, locked once paid) and 
 
 | Area | ADMIN | HR_MANAGER | MANAGER | EMPLOYEE |
 | :--- | :---: | :---: | :---: | :---: |
-| User accounts, roles, unlock, approve sign-ups | ✅ | ❌ | ❌ | ❌ |
+| User accounts, roles, unlock | ✅ | ❌ | ❌ | ❌ |
 | Audit log | ✅ | ✅ | ❌ | ❌ |
 | Employee list | ✅ all | ✅ all | 👥 team | ❌ |
 | Employee profile | ✅ | ✅ | 👥 team | 🙋 self |
@@ -329,16 +329,13 @@ Rules are enforced on the **backend** (`@PreAuthorize` + the `@authz` ownership 
 
 ---
 
-## 🔑 Demo Accounts
+## 🔑 Accounts
 
-The `h2` profile seeds **50 employees** across 5 departments, salary structures, leave balances, a payroll run, an appraisal cycle and audit entries.
+**Everyone:** open the app and choose **Create account** (or **Continue with Google**).
 
-| Role | Username | Password |
-| :--- | :--- | :--- |
-| Admin | `admin` | `Admin@123` |
-| HR Manager | `hrmanager` | `Hr@123` |
-| Manager | `manager` | `Manager@123` |
-| Employee | `employee` | `Employee@123` |
+**Admin:** the built-in `admin` account gets its password from the `ADMIN_PASSWORD` setting, which is never shown in the app. Set it before starting the backend (see below). The admin can then give people the Manager or HR role in **User Management**.
+
+**Local demo data:** the `h2` profile also seeds **50 sample employees** with salaries, leave, a payroll run and an appraisal cycle, plus three sample logins for trying each role on your own machine: `hrmanager` / `Hr@123`, `manager` / `Manager@123`, `employee` / `Employee@123`. Demo data is never loaded in `prod`; don't deploy the `h2` profile publicly.
 
 ---
 
@@ -351,7 +348,8 @@ The `h2` profile seeds **50 employees** across 5 departments, salary structures,
 ```bash
 # Terminal 1 – backend (http://localhost:8080/api)
 cd backend
-./mvnw spring-boot:run          # Windows: .\mvnw.cmd spring-boot:run
+export ADMIN_PASSWORD='Choose-a-strong-one1!'   # Windows PowerShell: $env:ADMIN_PASSWORD="Choose-a-strong-one1!"
+./mvnw spring-boot:run                          # Windows: .\mvnw.cmd spring-boot:run
 
 # Terminal 2 – frontend (http://localhost:4200)
 cd frontend
@@ -365,7 +363,7 @@ npm start
 ### Option 2 · Everything in Docker (Oracle + backend + frontend)
 
 ```bash
-cp .env.example .env            # then set your own JWT_SECRET and passwords
+cp .env.example .env            # then set JWT_SECRET, ADMIN_PASSWORD and the database passwords
 docker compose up --build
 ```
 
@@ -377,13 +375,14 @@ docker compose up --build
 
 Stop with `docker compose down` (add `-v` to delete the database volume).
 
-### Optional · Sign in with Google
+### Sign in with Google
 
-1. In [Google Cloud Console](https://console.cloud.google.com/apis/credentials) set up the **OAuth consent screen**, then **Create credentials → OAuth client ID → Web application**.
-2. Under **Authorized JavaScript origins** add `http://localhost:4200` (and `http://localhost` for Docker). No redirect URI is needed.
-3. Start the backend with the client ID: `GOOGLE_CLIENT_ID=<your-client-id>.apps.googleusercontent.com` (or put it in `.env` for Docker).
+The project already contains a Google OAuth client ID for `http://localhost:4200` and `http://localhost`, so the button works out of the box. To use your own:
 
-The "Sign in with Google" button appears automatically once the ID is set.
+1. In [Google Cloud Console](https://console.cloud.google.com/apis/credentials) open **Google Auth Platform**, fill in **Branding** (no logo needed) and choose **External** audience.
+2. **Clients → Create client → Web application**. Under **Authorized JavaScript origins** add every address the app is opened from, e.g. `http://localhost:4200`, `http://localhost`, `https://your-domain`. No redirect URI is needed, and the client secret is not used.
+3. **Audience → Publish app**, so any Google account can sign in (not only test users). Only the basic email and profile scopes are used, so Google does not require verification.
+4. Start the backend with `GOOGLE_CLIENT_ID=<id>.apps.googleusercontent.com` (or put it in `.env` for Docker).
 
 ### Password reset emails
 
@@ -402,7 +401,7 @@ Set `SPRING_MAIL_HOST` / `SPRING_MAIL_PORT` (and username/password if needed). L
 ## 🧪 Testing
 
 ```bash
-cd backend && ./mvnw verify     # 216 tests
+cd backend && ./mvnw verify     # 217 tests
 cd frontend && npm test         # 16 tests
 ```
 
@@ -410,7 +409,8 @@ cd frontend && npm test         # 16 tests
 | :--- | :--- |
 | `SecurityRulesParameterizedTest` | 61 role / self / team / IDOR cases across all 17 controllers, using real JWTs |
 | `RealFlowIntegrationTest` | Unmocked flows: stolen-token detection, reload race, analytics on real data |
-| `AccountFlowIntegrationTest` | Email login, sign-up approval, lockout, password reset, Google sign-in, no data leak for unlinked accounts, no resigning on someone else's behalf |
+| `AccountFlowIntegrationTest` | Instant sign-up with own profile, email login, lockout, password reset, Google sign-in, no resigning on someone else's behalf |
+| `SignupApprovalModeIntegrationTest` | `ADMIN_PASSWORD` replaces the default admin password; optional approval mode; no data leak for accounts without an employee record |
 | Service tests | Payroll (PF/ESI/PT/TDS/LOP), leave balances, appraisal scoring, FnF, lockout |
 
 GitHub Actions runs the backend tests, the Angular production build and both Docker image builds on every push and pull request.
@@ -453,10 +453,10 @@ All paths are under `/api`. Full interactive docs are in Swagger UI.
 | `POST` | `/auth/login` · `/auth/refresh` · `/auth/logout` · `/auth/logout-all` | public / logged in |
 | `POST` | `/auth/change-password` | logged in |
 | `GET` | `/auth/config` | public (is sign-up on, Google client ID) |
-| `POST` | `/auth/register` | public, rate limited |
+| `POST` | `/auth/register` | public, rate limited (creates the account and signs in) |
 | `POST` | `/auth/password-reset/request` · `/auth/password-reset/confirm` | public, rate limited |
 | `POST` | `/auth/google` | public, rate limited |
-| `PUT` | `/users/{id}/status` | Admin (also approves sign-ups) |
+| `PUT` | `/users/{id}/status` | Admin (enable / disable; approves sign-ups in approval mode) |
 | `GET` | `/employees` · `/employees/{id}` | HR, Admin, Manager (team), self |
 | `POST` | `/attendance/check-in` · `/attendance/check-out` | logged in |
 | `POST` | `/leaves` · `GET /leaves/balance` | logged in (self) |

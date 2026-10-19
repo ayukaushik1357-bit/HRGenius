@@ -18,8 +18,14 @@ public class AccountProperties {
     /** Public URL of the Angular app, used to build password reset links. */
     private String frontendUrl = "http://localhost:4200";
 
-    /** Allow people to request an account themselves (still needs admin approval). */
+    /** Allow people to create an account themselves. */
     private boolean signupEnabled = true;
+
+    /** If true, new sign-ups stay disabled until an administrator approves them. Off by default. */
+    private boolean signupRequiresApproval = false;
+
+    /** Password for the built-in "admin" account (ADMIN_PASSWORD). Applied at startup when set. */
+    private String adminPassword = "";
 
     /** If not empty, only these email domains may sign up (e.g. "company.com"). */
     private List<String> signupAllowedDomains = new ArrayList<>();

@@ -1,9 +1,9 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { AuthService } from '../../../core/services/auth.service';
-import { AuthConfig } from '../../../core/models/auth.model';
+import { AuthConfig, SignInResult } from '../../../core/models/auth.model';
 import { AuthFrameComponent } from '../auth-frame/auth-frame.component';
 import { GoogleButtonComponent } from '../google-button/google-button.component';
 import { passwordRules, strongPassword } from '../password-rules';
@@ -18,6 +18,7 @@ import { passwordRules, strongPassword } from '../password-rules';
 export class RegisterComponent implements OnInit {
   private fb = inject(FormBuilder);
   private authService = inject(AuthService);
+  private router = inject(Router);
 
   readonly form = this.fb.nonNullable.group({
     firstName: ['', [Validators.required, Validators.maxLength(50)]],
@@ -57,15 +58,12 @@ export class RegisterComponent implements OnInit {
     this.isLoading = true;
     this.errorMessage = '';
     this.authService.register(this.form.getRawValue()).subscribe({
-      next: res => {
-        this.isLoading = false;
-        this.doneMessage = res.message;
-      },
+      next: res => this.afterSignUp(res),
       error: (err: HttpErrorResponse) => {
         this.isLoading = false;
         this.errorMessage = err.status === 0
           ? 'Cannot reach the server. Try again in a moment.'
-          : err.error?.message ?? 'The request could not be sent. Try again.';
+          : err.error?.message ?? 'Your account could not be created. Try again.';
       }
     });
   }
@@ -74,16 +72,21 @@ export class RegisterComponent implements OnInit {
     this.isLoading = true;
     this.errorMessage = '';
     this.authService.googleLogin(credential).subscribe({
-      next: res => {
-        this.isLoading = false;
-        this.doneMessage = res.status === 'SIGNED_IN'
-          ? 'You already have an account. Go to sign in.'
-          : res.message ?? 'Your request has been sent for approval.';
-      },
+      next: res => this.afterSignUp(res),
       error: (err: HttpErrorResponse) => {
         this.isLoading = false;
         this.errorMessage = err.error?.message ?? 'Google sign-up failed. Try again.';
       }
     });
+  }
+
+  /** Signed in straight away: open the workspace. If approval is switched on, say so. */
+  private afterSignUp(res: SignInResult): void {
+    this.isLoading = false;
+    if (res.status === 'SIGNED_IN') {
+      this.router.navigate(['/portal']);
+    } else {
+      this.doneMessage = res.message ?? 'Your account is waiting for administrator approval.';
+    }
   }
 }

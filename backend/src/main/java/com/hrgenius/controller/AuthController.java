@@ -3,11 +3,11 @@ package com.hrgenius.controller;
 import com.hrgenius.dto.auth.AuthConfigResponse;
 import com.hrgenius.dto.auth.AuthResponse;
 import com.hrgenius.dto.auth.GoogleLoginRequest;
-import com.hrgenius.dto.auth.GoogleLoginResponse;
 import com.hrgenius.dto.auth.LoginRequest;
 import com.hrgenius.dto.auth.PasswordResetConfirmRequest;
 import com.hrgenius.dto.auth.PasswordResetRequest;
 import com.hrgenius.dto.auth.RegisterRequest;
+import com.hrgenius.dto.auth.SignInResult;
 import com.hrgenius.service.AccountService;
 import com.hrgenius.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -47,9 +47,10 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    @Operation(summary = "Request an account. It stays disabled until an administrator approves it")
-    public ResponseEntity<Map<String, String>> register(@Valid @RequestBody RegisterRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("message", accountService.register(request)));
+    @Operation(summary = "Create an account and sign in (or wait for approval if that is switched on)")
+    public ResponseEntity<SignInResult> register(@Valid @RequestBody RegisterRequest request,
+                                                 HttpServletResponse response) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(accountService.register(request, response));
     }
 
     @PostMapping("/password-reset/request")
@@ -66,10 +67,10 @@ public class AuthController {
     }
 
     @PostMapping("/google")
-    @Operation(summary = "Sign in with a Google ID token; unknown accounts become sign-up requests")
-    public ResponseEntity<GoogleLoginResponse> google(@Valid @RequestBody GoogleLoginRequest request,
-                                                      HttpServletResponse response) {
-        GoogleLoginResponse result = accountService.googleLogin(request.getCredential(), response);
+    @Operation(summary = "Sign in with a Google ID token; a new Google user gets an account")
+    public ResponseEntity<SignInResult> google(@Valid @RequestBody GoogleLoginRequest request,
+                                               HttpServletResponse response) {
+        SignInResult result = accountService.googleLogin(request.getCredential(), response);
         return ResponseEntity.status("PENDING_APPROVAL".equals(result.status()) ? HttpStatus.ACCEPTED : HttpStatus.OK)
                 .body(result);
     }

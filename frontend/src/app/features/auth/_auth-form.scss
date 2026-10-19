@@ -2,6 +2,9 @@
 
 form { margin-top: 28px; }
 
+app-google-button { display: block; margin-top: 28px; }
+.divider + form { margin-top: 0; }
+
 .field { margin-bottom: 18px; }
 
 .field-label-row {

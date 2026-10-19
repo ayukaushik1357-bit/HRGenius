@@ -37,7 +37,8 @@ export interface RegisterRequest {
   password: string;
 }
 
-export interface GoogleLoginResponse {
+/** Result of creating an account or signing in with Google. */
+export interface SignInResult {
   status: 'SIGNED_IN' | 'PENDING_APPROVAL';
   message?: string;
   auth?: AuthResponse;

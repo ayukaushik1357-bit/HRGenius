@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, tap, catchError, throwError, of, firstValueFrom, from, map } from 'rxjs';
 import { Router } from '@angular/router';
 import { environment } from '../../../environments/environment';
-import { AuthConfig, AuthResponse, CurrentUser, GoogleLoginResponse, LoginRequest, RegisterRequest } from '../models/auth.model';
+import { AuthConfig, AuthResponse, CurrentUser, LoginRequest, RegisterRequest, SignInResult } from '../models/auth.model';
 
 @Injectable({
   providedIn: 'root'
@@ -61,8 +61,15 @@ export class AuthService {
     return this.http.get<AuthConfig>(`${this.apiUrl}/config`);
   }
 
-  register(request: RegisterRequest): Observable<{ message: string }> {
-    return this.http.post<{ message: string }>(`${this.apiUrl}/register`, request);
+  /** Creates an account and, unless approval is switched on, signs the person in. */
+  register(request: RegisterRequest): Observable<SignInResult> {
+    return this.http.post<SignInResult>(`${this.apiUrl}/register`, request, { withCredentials: true }).pipe(
+      tap(res => {
+        if (res.status === 'SIGNED_IN' && res.auth) {
+          this.setSession(res.auth);
+        }
+      })
+    );
   }
 
   requestPasswordReset(email: string): Observable<{ message: string }> {
@@ -73,9 +80,9 @@ export class AuthService {
     return this.http.post<{ message: string }>(`${this.apiUrl}/password-reset/confirm`, { token, newPassword });
   }
 
-  /** Exchanges a Google ID token for an HRGenius session, or registers a pending sign-up. */
-  googleLogin(credential: string): Observable<GoogleLoginResponse> {
-    return this.http.post<GoogleLoginResponse>(`${this.apiUrl}/google`, { credential }, {
+  /** Exchanges a Google ID token for an HRGenius session; a new Google user gets an account. */
+  googleLogin(credential: string): Observable<SignInResult> {
+    return this.http.post<SignInResult>(`${this.apiUrl}/google`, { credential }, {
       withCredentials: true
     }).pipe(
       tap(res => {

@@ -1,6 +1,12 @@
 <app-auth-frame heading="Sign in" subheading="Use your work email or username.">
   @if (infoMessage) { <div class="alert success" role="status">{{ infoMessage }}</div> }
 
+  @if (config?.googleEnabled && config?.googleClientId) {
+    <app-google-button [clientId]="config!.googleClientId!" text="continue_with"
+                       (credential)="onGoogleCredential($event)" />
+    <div class="divider">or sign in with email</div>
+  }
+
   <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
     <div class="field">
       <label for="identifier">Email or username</label>
@@ -38,30 +44,9 @@
     </button>
   </form>
 
-  @if (config?.googleEnabled && config?.googleClientId) {
-    <div class="divider">or</div>
-    <app-google-button [clientId]="config!.googleClientId!" text="signin_with"
-                       (credential)="onGoogleCredential($event)" />
-  }
 
   @if (config?.signupEnabled !== false) {
-    <p class="switch">New to HRGenius? <a class="inline-link" routerLink="/auth/register">Request access</a></p>
+    <p class="switch">New to HRGenius? <a class="inline-link" routerLink="/auth/register">Create an account</a></p>
   }
 
-  @if (showDemo) {
-    <section class="demo" aria-labelledby="demo-title">
-      <h2 id="demo-title">Demo accounts</h2>
-      <p class="demo-note">Seeded in the local H2 database. Choose one to fill the form.</p>
-      <ul>
-        @for (account of demoAccounts; track account.username) {
-          <li>
-            <button type="button" (click)="useDemo(account)">
-              <span class="demo-role">{{ account.role }}</span>
-              <span class="demo-user">{{ account.username }}</span>
-            </button>
-          </li>
-        }
-      </ul>
-    </section>
-  }
 </app-auth-frame>

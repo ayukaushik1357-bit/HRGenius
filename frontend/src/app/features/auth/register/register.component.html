@@ -1,5 +1,5 @@
-<app-auth-frame heading="Request access"
-                subheading="An administrator checks every request before the account can sign in.">
+<app-auth-frame heading="Create your account"
+                subheading="Use your work email, or continue with Google.">
   @if (doneMessage) {
     <div class="alert success" role="status">{{ doneMessage }}</div>
     <p class="switch"><a class="inline-link" routerLink="/auth/login">Go to sign in</a></p>
@@ -7,6 +7,12 @@
     <div class="alert info" role="status">Self sign-up is turned off. Ask HR to create your account.</div>
     <p class="switch"><a class="inline-link" routerLink="/auth/login">Go to sign in</a></p>
   } @else {
+    @if (config?.googleEnabled && config?.googleClientId) {
+      <app-google-button [clientId]="config!.googleClientId!" text="continue_with"
+                         (credential)="onGoogleCredential($event)" />
+      <div class="divider">or create an account with email</div>
+    }
+
     <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
       <div class="two-col">
         <div class="field">
@@ -51,15 +57,10 @@
       @if (errorMessage) { <div class="alert error" role="alert">{{ errorMessage }}</div> }
 
       <button class="submit" type="submit" [disabled]="isLoading">
-        {{ isLoading ? 'Sending request…' : 'Request access' }}
+        {{ isLoading ? 'Creating account…' : 'Create account' }}
       </button>
     </form>
 
-    @if (config?.googleEnabled && config?.googleClientId) {
-      <div class="divider">or</div>
-      <app-google-button [clientId]="config!.googleClientId!" text="signup_with"
-                         (credential)="onGoogleCredential($event)" />
-    }
 
     <p class="switch">Already have an account? <a class="inline-link" routerLink="/auth/login">Sign in</a></p>
   }

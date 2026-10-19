@@ -68,9 +68,15 @@ public class SelfServicePortalService {
                 .orElse(null);
 
         // 3. Leave Balance
+        // No balance row yet (new joiner): show the standard yearly quota, same as the Leaves page does
         LeaveBalanceResponse leaveBal = leaveBalanceRepository.findByEmployeeIdAndYear(emp.getId(), today.getYear())
                 .map(leaveMapper::toBalanceResponse)
-                .orElse(null);
+                .orElseGet(() -> {
+                    com.hrgenius.entity.leave.LeaveBalance fresh = new com.hrgenius.entity.leave.LeaveBalance();
+                    fresh.setEmployee(emp);
+                    fresh.setYear(today.getYear());
+                    return leaveMapper.toBalanceResponse(fresh);
+                });
 
         // 4. Latest Payslip
         List<com.hrgenius.entity.payroll.Payslip> payslips = payslipRepository.findByEmployeeIdOrderByYearDescMonthDesc(emp.getId());

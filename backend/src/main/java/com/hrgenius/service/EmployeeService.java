@@ -203,6 +203,37 @@ public class EmployeeService {
         employeeRepository.deleteById(id);
     }
 
+    /**
+     * Gives a self-registered user their own employee record so the portal, attendance and leave work
+     * straight away. If HR already created a record with this email (and no login yet), that record is
+     * linked instead of creating a duplicate.
+     */
+    @Transactional
+    public Employee createSelfServiceProfile(User user, String firstName, String lastName) {
+        Employee existing = employeeRepository.findByEmail(user.getEmail()).orElse(null);
+        if (existing != null) {
+            if (existing.getUser() == null) {
+                existing.setUser(user);
+                return employeeRepository.save(existing);
+            }
+            return existing;
+        }
+        Employee employee = new Employee();
+        employee.setEmployeeCode(generateNextEmployeeCode());
+        employee.setFirstName(nameOr(firstName, user.getUsername()));
+        employee.setLastName(nameOr(lastName, "-"));
+        employee.setEmail(user.getEmail());
+        employee.setJoiningDate(java.time.LocalDate.now());
+        employee.setStatus(Employee.EmployeeStatus.ACTIVE);
+        employee.setUser(user);
+        return employeeRepository.save(employee);
+    }
+
+    private static String nameOr(String value, String fallback) {
+        String v = value == null || value.isBlank() ? fallback : value.trim();
+        return v.length() > 50 ? v.substring(0, 50) : v;
+    }
+
     private synchronized String generateNextEmployeeCode() {
         int maxCode = 0;
         try {

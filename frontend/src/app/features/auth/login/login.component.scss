@@ -2,39 +2,3 @@
 @use '../auth-form';
 
 :host { display: block; }
-
-.demo {
-  margin-top: 36px;
-  padding-top: 20px;
-  border-top: 1px dashed $line;
-
-  h2 { margin: 0; font: 600 14px/1.4 $body; color: $ink; }
-  .demo-note { margin: 4px 0 12px; font-size: 13px; color: $ink-soft; }
-
-  ul {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-  }
-
-  button {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 2px;
-    padding: 10px 12px;
-    border: 1px solid $line;
-    border-radius: 10px;
-    background: $sheet;
-    cursor: pointer;
-    text-align: left;
-    &:hover { border-color: $indigo; }
-    &:focus-visible { @include focus-ring; }
-  }
-  .demo-role { font: 600 14px/1.3 $body; color: $ink; }
-  .demo-user { font-size: 13px; color: $ink-soft; }
-}

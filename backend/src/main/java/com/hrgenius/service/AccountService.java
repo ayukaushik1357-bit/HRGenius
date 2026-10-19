@@ -2,7 +2,7 @@ package com.hrgenius.service;
 
 import com.hrgenius.config.AccountProperties;
 import com.hrgenius.dto.auth.AuthConfigResponse;
-import com.hrgenius.dto.auth.GoogleLoginResponse;
+import com.hrgenius.dto.auth.SignInResult;
 import com.hrgenius.dto.auth.PasswordResetConfirmRequest;
 import com.hrgenius.dto.auth.RegisterRequest;
 import com.hrgenius.entity.PasswordResetToken;
@@ -35,8 +35,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Account self-service: sign-up (with administrator approval), password reset by email,
- * and "Sign in with Google".
+ * Account self-service: sign-up (instant by default, optional administrator approval),
+ * password reset by email, and "Sign in with Google".
  */
 @Service
 @RequiredArgsConstructor
@@ -59,6 +59,7 @@ public class AccountService {
     private final GoogleTokenVerifier googleTokenVerifier;
     private final AuthService authService;
     private final AccountProperties props;
+    private final EmployeeService employeeService;
 
     public AuthConfigResponse publicConfig() {
         return new AuthConfigResponse(props.isSignupEnabled(), props.isGoogleEnabled(),
@@ -68,7 +69,7 @@ public class AccountService {
     // ------------------------------------------------------------------ sign-up
 
     @Transactional
-    public String register(RegisterRequest request) {
+    public SignInResult register(RegisterRequest request, HttpServletResponse response) {
         if (!props.isSignupEnabled()) {
             throw new BadRequestException("Self sign-up is disabled. Please contact HR.");
         }
@@ -81,9 +82,35 @@ public class AccountService {
         }
         AuthService.validatePasswordStrength(request.getPassword());
 
-        createPendingUser(email, request.getFirstName(), request.getLastName(),
+        User user = createAccount(email, request.getFirstName(), request.getLastName(),
                 passwordEncoder.encode(request.getPassword()));
-        return PENDING_MESSAGE;
+        return user.isEnabled()
+                ? SignInResult.signedIn(authService.issueSession(user, response))
+                : SignInResult.pending(PENDING_MESSAGE);
+    }
+
+    /**
+     * Creates an EMPLOYEE account. By default it is active straight away and gets its own employee
+     * profile; with app.account.signup-requires-approval=true it waits for an administrator instead.
+     */
+    private User createAccount(String email, String firstName, String lastName, String passwordHash) {
+        if (props.isSignupRequiresApproval()) {
+            return createPendingUser(email, firstName, lastName, passwordHash);
+        }
+        Role employeeRole = roleRepository.findByName(Role.RoleName.EMPLOYEE)
+                .orElseThrow(() -> new ResourceNotFoundException("Role", "name", Role.RoleName.EMPLOYEE));
+        User user = new User();
+        user.setUsername(uniqueUsernameFor(email));
+        user.setEmail(email);
+        user.setPassword(passwordHash);
+        user.setEnabled(true);
+        user.setPendingApproval(false);
+        user.setMustChangePassword(false);
+        user.setRoles(Collections.singleton(employeeRole));
+        User saved = userRepository.save(user);
+        employeeService.createSelfServiceProfile(saved, firstName, lastName);
+        log.info("New account '{}' created by self sign-up", saved.getUsername());
+        return saved;
     }
 
     private User createPendingUser(String email, String firstName, String lastName, String passwordHash) {
@@ -185,7 +212,7 @@ public class AccountService {
     // ---------------------------------------------------------- Google sign-in
 
     @Transactional
-    public GoogleLoginResponse googleLogin(String credential, HttpServletResponse response) {
+    public SignInResult googleLogin(String credential, HttpServletResponse response) {
         GoogleTokenVerifier.GoogleIdentity identity = googleTokenVerifier.verify(credential);
         String email = identity.email().trim().toLowerCase(Locale.ROOT);
 
@@ -198,10 +225,10 @@ public class AccountService {
             if (!user.isEnabled()) {
                 throw new DisabledException("Account is disabled");
             }
-            return GoogleLoginResponse.signedIn(authService.issueSession(user, response));
+            return SignInResult.signedIn(authService.issueSession(user, response));
         }
 
-        // Unknown Google account: treat it as a sign-up request
+        // Unknown Google account: create it (Google has already verified the email)
         if (!props.isSignupEnabled()) {
             throw new BadRequestException("No HRGenius account is linked to " + email + ". Please contact HR.");
         }
@@ -209,8 +236,10 @@ public class AccountService {
             throw new BadRequestException("Please use your company Google account.");
         }
         // Random password nobody knows; the user can set one later with "Forgot password"
-        createPendingUser(email, identity.givenName(), identity.familyName(),
+        User user = createAccount(email, identity.givenName(), identity.familyName(),
                 passwordEncoder.encode(UUID.randomUUID() + "Aa1!"));
-        return GoogleLoginResponse.pending(PENDING_MESSAGE);
+        return user.isEnabled()
+                ? SignInResult.signedIn(authService.issueSession(user, response))
+                : SignInResult.pending(PENDING_MESSAGE);
     }
 }

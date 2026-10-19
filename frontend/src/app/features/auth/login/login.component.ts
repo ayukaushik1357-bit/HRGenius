@@ -4,11 +4,8 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { AuthService } from '../../../core/services/auth.service';
 import { AuthConfig, AuthResponse } from '../../../core/models/auth.model';
-import { environment } from '../../../../environments/environment';
 import { AuthFrameComponent } from '../auth-frame/auth-frame.component';
 import { GoogleButtonComponent } from '../google-button/google-button.component';
-
-interface DemoAccount { role: string; username: string; password: string; }
 
 @Component({
   selector: 'app-login',
@@ -34,14 +31,6 @@ export class LoginComponent implements OnInit {
   errorMessage = '';
   infoMessage = '';
 
-  readonly showDemo = environment.showDemoAccounts;
-  readonly demoAccounts: DemoAccount[] = [
-    { role: 'Admin', username: 'admin', password: 'Admin@123' },
-    { role: 'HR manager', username: 'hrmanager', password: 'Hr@123' },
-    { role: 'Manager', username: 'manager', password: 'Manager@123' },
-    { role: 'Employee', username: 'employee', password: 'Employee@123' }
-  ];
-
   ngOnInit(): void {
     if (this.route.snapshot.queryParamMap.get('reset') === 'done') {
       this.infoMessage = 'Your password has been changed. Sign in with the new one.';
@@ -55,11 +44,6 @@ export class LoginComponent implements OnInit {
   fieldInvalid(name: 'username' | 'password'): boolean {
     const control = this.form.controls[name];
     return control.invalid && control.touched;
-  }
-
-  useDemo(account: DemoAccount): void {
-    this.form.setValue({ username: account.username, password: account.password });
-    this.errorMessage = '';
   }
 
   onSubmit(): void {
