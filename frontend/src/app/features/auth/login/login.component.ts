@@ -94,7 +94,12 @@ export class LoginComponent implements OnInit {
 
   private describeError(err: HttpErrorResponse): string {
     switch (err.status) {
-      case 0: return 'Cannot reach the server. Check that the backend is running, then try again.';
+      case 0:
+      case 502:
+      case 503:
+      case 504:
+        // Free hosting puts the server to sleep when idle; the first request wakes it up
+        return 'The server is starting up. Wait about a minute, then try again.';
       case 401: return 'That email, username or password is not right. Check them and try again.';
       case 403: return err.error?.message ?? 'Your account is waiting for administrator approval.';
       case 423: return 'Too many wrong passwords. Your account is locked for 15 minutes, or reset your password now.';

@@ -1,5 +1,7 @@
 package com.hrgenius.entity.payroll;
 
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import com.hrgenius.entity.BaseEntity;
 import com.hrgenius.entity.Employee;
 import jakarta.persistence.Column;
@@ -41,10 +43,12 @@ public class Payslip extends BaseEntity {
     @Column(name = "total_working_days", nullable = false)
     private Integer totalWorkingDays;
 
-    @Column(name = "present_days", nullable = false, columnDefinition = "NUMBER(4,1)")
+    @JdbcTypeCode(SqlTypes.NUMERIC)
+    @Column(name = "present_days", nullable = false, precision = 4, scale = 1)
     private Double presentDays;
 
-    @Column(name = "unpaid_leave_days", nullable = false, columnDefinition = "NUMBER(4,1)")
+    @JdbcTypeCode(SqlTypes.NUMERIC)
+    @Column(name = "unpaid_leave_days", nullable = false, precision = 4, scale = 1)
     private Double unpaidLeaveDays = 0.0;
 
     // Earnings

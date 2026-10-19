@@ -26,7 +26,7 @@
 | 🛡️ **Real authorization** | Role checks **plus** ownership checks on every endpoint: employees see only their own data, managers only their direct reports |
 | 🇮🇳 **Indian payroll engine** | PF, ESI, Professional Tax, slab-based TDS and loss-of-pay, with PDF payslips |
 | 📊 **HR analytics** | Headcount, attrition, tenure, payroll cost, hiring funnel and rating distribution, exportable to Excel and PDF |
-| 🧪 **Tested** | 222 backend tests (incl. a 61-case authorization matrix and unmocked end-to-end account flows), 16 frontend tests, CI on every push |
+| 🧪 **Tested** | 223 backend tests (incl. a 61-case authorization matrix and unmocked end-to-end account flows), 16 frontend tests, CI on every push |
 | 🐳 **One-command deploy** | Docker Compose runs Oracle XE, Spring Boot and Angular behind Nginx |
 
 ---
@@ -221,12 +221,12 @@ flowchart LR
 | **Backend** | Java 17, Spring Boot 3.2.5, Spring Security 6, Spring Data JPA, Hibernate 6, Bean Validation |
 | **Auth** | JJWT 0.12 (HS512), BCrypt, HttpOnly refresh cookie, per-IP rate limit, account lockout, Google Identity Services + Spring Security OAuth2 JOSE (ID-token verification) |
 | **Frontend** | Angular 21 (standalone components, signals), Angular Material, RxJS, Chart.js 4, SCSS |
-| **Database** | Oracle XE 21c (`dev`, `prod`, Docker) · H2 file database (`h2` profile) · H2 in-memory (tests) |
+| **Database** | Oracle XE 21c (`dev`, `prod`, Docker) · PostgreSQL (`cloud`, hosted demo on Neon) · H2 file database (`h2` profile) · H2 in-memory (tests) |
 | **Migrations** | Flyway, 12 versioned scripts (`V1`–`V12`) |
 | **Reports** | Apache POI 5.2 (Excel), OpenPDF 1.3 (payslips and analytics PDF) |
 | **API docs** | springdoc-openapi (Swagger UI) |
 | **Testing** | JUnit 5, Mockito, MockMvc, Spring Security Test · Vitest (frontend) |
-| **DevOps** | Multi-stage Dockerfiles (Temurin 17, Node 22, Nginx), Docker Compose, GitHub Actions |
+| **DevOps** | Multi-stage Dockerfiles (Temurin 17, Node 22, Nginx), Docker Compose, GitHub Actions · Render + Vercel + Neon with auto-deploy on push |
 
 ---
 
@@ -396,13 +396,43 @@ Set `SPRING_MAIL_HOST` / `SPRING_MAIL_PORT` (and username/password if needed). L
 | `h2` *(default)* | H2 file in `backend/data` (kept across restarts) | Hibernate `update` | ✅ |
 | `dev` | Oracle XE on localhost | Flyway + `validate` | optional (`APP_SEED_DEMO_DATA=true`) |
 | `prod` | Oracle via `ORACLE_URL` | Flyway + `validate` | ❌ · fails fast without a strong `JWT_SECRET` |
+| `cloud` | PostgreSQL via `DB_URL` (Neon) | Hibernate `update` | ✅ (`APP_SEED_DEMO_DATA=false` to turn off) · needs a strong `JWT_SECRET` |
+
+### Option 3 · Free hosted demo (auto-deploys on every push)
+
+```mermaid
+flowchart LR
+    U(["🌐 Browser"]) -->|"https://your-app.vercel.app"| V["▲ Vercel<br/>Angular app"]
+    V -->|"/api/* (same origin, proxied)"| R["Render<br/>Spring Boot · Docker"]
+    R -->|"JDBC + TLS"| N[("Neon<br/>PostgreSQL")]
+    G["GitHub main"] -. "push" .-> V
+    G -. "push" .-> R
+```
+
+Vercel serves the Angular app and forwards `/api/*` to the backend, so the browser sees one site and the refresh cookie stays first-party. Pushing to `main` redeploys both.
+
+1. **Database (Neon):** create a project, open **Connect**, and note host, database, user and password. The JDBC URL is `jdbc:postgresql://<host>/<database>?sslmode=require`.
+2. **Backend (Render):** *New → Web Service*, pick this repository, **Root Directory** `backend`, **Language** Docker, **Instance** Free, **Health Check Path** `/api/auth/config`. Environment variables:
+
+   | Variable | Value |
+   | :--- | :--- |
+   | `SPRING_PROFILES_ACTIVE` | `cloud` |
+   | `DB_URL` / `DB_USERNAME` / `DB_PASSWORD` | from Neon |
+   | `JWT_SECRET` | 64+ random characters |
+   | `ADMIN_PASSWORD` | password of the `admin` account |
+   | `APP_FRONTEND_URL` | your Vercel URL (used in reset-password emails) |
+   | `CORS_ALLOWED_ORIGINS` | your Vercel URL, e.g. `https://hrgenius.vercel.app` (requests arrive through Vercel's proxy) |
+
+3. **Frontend (Vercel):** put the Render URL in `frontend/vercel.json` (the `/api/:path*` rewrite), push, then *Add New → Project*, import this repository and set **Root Directory** `frontend`. Everything else comes from `vercel.json`.
+4. **Google sign-in:** add the Vercel URL to the client's **Authorized JavaScript origins**.
+5. *(Optional)* Free Render services sleep after 15 idle minutes. Set the repository variable `BACKEND_URL` to the Render URL and the `Keep demo awake` workflow pings it every 10 minutes.
 
 ---
 
 ## 🧪 Testing
 
 ```bash
-cd backend && ./mvnw verify     # 222 tests
+cd backend && ./mvnw verify     # 223 tests
 cd frontend && npm test         # 16 tests
 ```
 

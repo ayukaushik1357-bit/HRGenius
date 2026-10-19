@@ -1,5 +1,7 @@
 package com.hrgenius.entity.audit;
 
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -33,11 +35,11 @@ public class AuditLog {
     @Column(name = "changed_at", nullable = false)
     private LocalDateTime changedAt = LocalDateTime.now();
 
-    @Lob
+    @JdbcTypeCode(SqlTypes.LONG32VARCHAR)
     @Column(name = "old_value")
     private String oldValue;
 
-    @Lob
+    @JdbcTypeCode(SqlTypes.LONG32VARCHAR)
     @Column(name = "new_value")
     private String newValue;
 

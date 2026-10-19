@@ -304,6 +304,8 @@ public class PayrollService {
     }
 
     // --- PDF Generation with OpenPDF ---
+    // Read-only transaction: the PDF reads the employee, department and designation (lazy associations)
+    @Transactional(readOnly = true)
     public byte[] generatePayslipPdf(Long payslipId) throws DocumentException {
         Payslip payslip = payslipRepository.findById(payslipId)
                 .orElseThrow(() -> new ResourceNotFoundException("Payslip", "id", payslipId));

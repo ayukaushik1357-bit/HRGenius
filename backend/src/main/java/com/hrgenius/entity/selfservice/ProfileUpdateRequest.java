@@ -1,5 +1,7 @@
 package com.hrgenius.entity.selfservice;
 
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import com.hrgenius.entity.BaseEntity;
 import com.hrgenius.entity.Employee;
 import jakarta.persistence.*;
@@ -24,7 +26,7 @@ public class ProfileUpdateRequest extends BaseEntity {
     @JoinColumn(name = "employee_id", nullable = false)
     private Employee employee;
 
-    @Lob
+    @JdbcTypeCode(SqlTypes.LONG32VARCHAR)
     @Column(name = "requested_changes", nullable = false)
     private String requestedChanges; // JSON string containing changed fields
 

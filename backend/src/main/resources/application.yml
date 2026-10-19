@@ -2,7 +2,8 @@
 # HRGenius — Common Configuration
 # ============================================================
 server:
-  port: 8080
+  # Hosting platforms such as Render pass the port in PORT
+  port: ${PORT:8080}
   # Trust X-Forwarded-For only from internal proxies (Nginx); client-sent values are ignored
   forward-headers-strategy: native
   servlet:
@@ -185,4 +186,44 @@ app:
   cookie:
     secure: ${REFRESH_COOKIE_SECURE:true}
     same-site: ${REFRESH_COOKIE_SAME_SITE:Strict}
+    path: /api/auth
+
+---
+# ============================================================
+# Profile: cloud  (free hosted demo: Render + Neon PostgreSQL + Vercel)
+# Tables are created by Hibernate; the Oracle Flyway scripts are used by dev/prod.
+# ============================================================
+spring:
+  config:
+    activate:
+      on-profile: cloud
+
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    hikari:
+      # Let idle connections close so the free database can sleep when nobody is using the app
+      minimum-idle: 0
+      maximum-pool-size: 5
+      idle-timeout: 60000
+      max-lifetime: 300000
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+
+  flyway:
+    enabled: false
+
+app:
+  jwt:
+    secret: ${JWT_SECRET}
+  seed-demo-data: ${APP_SEED_DEMO_DATA:true}
+  account:
+    log-password-reset-link: false
+  cookie:
+    secure: ${REFRESH_COOKIE_SECURE:true}
+    same-site: ${REFRESH_COOKIE_SAME_SITE:Lax}
     path: /api/auth

@@ -1,5 +1,7 @@
 package com.hrgenius.entity.performance;
 
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import com.hrgenius.entity.BaseEntity;
 import com.hrgenius.entity.Employee;
 import jakarta.persistence.*;
@@ -28,9 +30,11 @@ public class Goal extends BaseEntity {
     @Column(length = 1000)
     private String description;
 
-    @Column(nullable = false, columnDefinition = "NUMBER(5,2)")
+    @JdbcTypeCode(SqlTypes.NUMERIC)
+    @Column(nullable = false, precision = 5, scale = 2)
     private Double weightage = 0.0; // e.g. 25.0 %
 
-    @Column(name = "progress_percentage", nullable = false, columnDefinition = "NUMBER(5,2)")
+    @JdbcTypeCode(SqlTypes.NUMERIC)
+    @Column(name = "progress_percentage", nullable = false, precision = 5, scale = 2)
     private Double progressPercentage = 0.0; // 0 to 100%
 }

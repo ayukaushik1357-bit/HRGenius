@@ -20,7 +20,7 @@ class JwtPropertiesTest {
 
         assertThatThrownBy(properties::validateSecret)
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("JWT_SECRET must be configured in prod profile");
+                .hasMessageContaining("JWT_SECRET must be configured when deployed");
     }
 
     @Test

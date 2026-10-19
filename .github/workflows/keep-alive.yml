@@ -1,0 +1,23 @@
+name: Keep demo awake
+
+# Free Render services sleep after 15 minutes without traffic and take about a minute to wake.
+# This pings the backend every 10 minutes so visitors don't wait. It only runs once you set the
+# repository variable BACKEND_URL (Settings > Secrets and variables > Actions > Variables),
+# e.g. https://hrgenius-api.onrender.com. The ping endpoint does not touch the database,
+# so the free Neon database can still sleep.
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    if: vars.BACKEND_URL != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Ping backend
+        run: |
+          curl -fsS --max-time 180 "${{ vars.BACKEND_URL }}/api/auth/config" > /dev/null \
+            && echo "Backend is awake" \
+            || echo "Backend did not answer yet (it may still be starting)"

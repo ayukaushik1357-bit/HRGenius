@@ -1,5 +1,7 @@
 package com.hrgenius.entity.attendance;
 
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import com.hrgenius.entity.BaseEntity;
 import com.hrgenius.entity.Employee;
 import com.hrgenius.entity.converter.LocalTimeStringConverter;
@@ -48,7 +50,8 @@ public class Attendance extends BaseEntity {
     @Convert(converter = LocalTimeStringConverter.class)
     private LocalTime checkOutTime;
 
-    @Column(name = "working_hours", columnDefinition = "NUMBER(5,2)")
+    @JdbcTypeCode(SqlTypes.NUMERIC)
+    @Column(name = "working_hours", precision = 5, scale = 2)
     private Double workingHours;
 
     @Enumerated(EnumType.STRING)

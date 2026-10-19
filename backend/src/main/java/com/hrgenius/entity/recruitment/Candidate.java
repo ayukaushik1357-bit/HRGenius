@@ -1,5 +1,7 @@
 package com.hrgenius.entity.recruitment;
 
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import com.hrgenius.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -35,7 +37,8 @@ public class Candidate extends BaseEntity {
     @Column(name = "resume_file_path", length = 500)
     private String resumeFilePath;
 
-    @Column(name = "experience_years", columnDefinition = "NUMBER(5,2)")
+    @JdbcTypeCode(SqlTypes.NUMERIC)
+    @Column(name = "experience_years", precision = 5, scale = 2)
     private Double experienceYears;
 
     @Column(name = "current_company", length = 100)

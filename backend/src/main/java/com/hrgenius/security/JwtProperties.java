@@ -32,13 +32,15 @@ public class JwtProperties {
 
     @PostConstruct
     public void validateSecret() {
-        boolean isProd = environment != null && Arrays.asList(environment.getActiveProfiles()).contains("prod");
+        // Deployed profiles must not run with the development default secret
+        boolean isProd = environment != null && Arrays.stream(environment.getActiveProfiles())
+                .anyMatch(p -> p.equals("prod") || p.equals("cloud"));
         if (isProd) {
             if (secret == null || secret.trim().isEmpty()) {
-                throw new IllegalStateException("JWT_SECRET must be configured in prod profile");
+                throw new IllegalStateException("JWT_SECRET must be configured when deployed (prod/cloud profile)");
             }
             if (secret.getBytes(StandardCharsets.UTF_8).length < 32) {
-                throw new IllegalStateException("JWT_SECRET must be at least 256 bits (32 bytes) in prod profile");
+                throw new IllegalStateException("JWT_SECRET must be at least 256 bits (32 bytes) when deployed (prod/cloud profile)");
             }
         }
     }

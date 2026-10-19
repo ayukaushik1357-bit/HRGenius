@@ -1,5 +1,7 @@
 package com.hrgenius.entity.performance;
 
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import com.hrgenius.entity.BaseEntity;
 import com.hrgenius.entity.Employee;
 import jakarta.persistence.*;
@@ -40,19 +42,22 @@ public class PerformanceReview extends BaseEntity {
     @Column(nullable = false, length = 30)
     private ReviewStatus status = ReviewStatus.NOT_STARTED;
 
-    @Column(name = "self_rating", columnDefinition = "NUMBER(3,1)")
+    @JdbcTypeCode(SqlTypes.NUMERIC)
+    @Column(name = "self_rating", precision = 3, scale = 1)
     private Double selfRating; // 1.0 to 5.0
 
     @Column(name = "self_comments", length = 2000)
     private String selfComments;
 
-    @Column(name = "manager_rating", columnDefinition = "NUMBER(3,1)")
+    @JdbcTypeCode(SqlTypes.NUMERIC)
+    @Column(name = "manager_rating", precision = 3, scale = 1)
     private Double managerRating; // 1.0 to 5.0
 
     @Column(name = "manager_comments", length = 2000)
     private String managerComments;
 
-    @Column(name = "final_rating", columnDefinition = "NUMBER(3,2)")
+    @JdbcTypeCode(SqlTypes.NUMERIC)
+    @Column(name = "final_rating", precision = 3, scale = 2)
     private Double finalRating; // Calculated or consensus
 
     @Column(name = "submitted_at")

@@ -1,0 +1,11 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "angular",
+  "installCommand": "npx --yes npm@11.6.0 ci",
+  "buildCommand": "npm run build -- --configuration production",
+  "outputDirectory": "dist/frontend/browser",
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "https://hrgenius-api.onrender.com/api/:path*" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
