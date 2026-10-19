@@ -33,44 +33,9 @@
 
 ## 🏛️ Architecture
 
-### The big picture
-
-```mermaid
-flowchart TB
-    U(["👤 Employee · Manager · HR · Admin"])
-
-    subgraph CLIENT["🅰️ Angular 21 SPA"]
-        direction LR
-        P["Landing · Sign-in<br/>14 app pages"] --> GU["Route guards<br/>hide what you can't open"] --> IC["HTTP interceptor<br/>Bearer token · silent refresh"]
-    end
-
-    subgraph SERVER["🍃 Spring Boot 3 API"]
-        direction LR
-        F["Security filters<br/>CORS · rate limit · JWT"] --> C["17 REST controllers<br/>@PreAuthorize + @authz"] --> S["Services<br/>@Transactional rules"] --> R["Spring Data JPA<br/>Hibernate 6"]
-    end
-
-    subgraph DATA["🗄️ One codebase, three databases"]
-        direction LR
-        O[("Oracle XE<br/>Flyway V1–V12")] ~~~ PG[("PostgreSQL<br/>cloud demo")] ~~~ H[("H2<br/>local · tests")]
-    end
-
-    EXT["📧 SMTP · 🌐 Google ID tokens · 📑 PDF / Excel"]
-
-    U --> P
-    IC == "/api · JSON over HTTPS" ==> F
-    R ==> DATA
-    S -.-> EXT
-
-    style CLIENT fill:#FFF1F2,stroke:#DD0031,stroke-width:2px,color:#881337
-    style SERVER fill:#F0FDF4,stroke:#6DB33F,stroke-width:2px,color:#14532D
-    style DATA fill:#EFF6FF,stroke:#2563EB,stroke-width:2px,color:#1E3A8A
-    classDef box fill:#FFFFFF,stroke:#94A3B8,color:#0F172A
-    classDef ext fill:#FEFCE8,stroke:#CA8A04,color:#713F12
-    classDef user fill:#EEF2FF,stroke:#4F46E5,stroke-width:2px,color:#1E1B4B
-    class P,GU,IC,F,C,S,R box
-    class EXT ext
-    class U user
-```
+<p align="center">
+  <a href="docs/architecture.png"><img src="docs/architecture.png" alt="HRGenius system architecture: users and roles, Angular frontend, Spring Boot backend, data layer, external systems, security, deployment and key data flows" width="100%"></a>
+</p>
 
 The same backend runs on three databases, picked by Spring profile:
 
@@ -79,42 +44,6 @@ The same backend runs on three databases, picked by Spring profile:
 | `h2` *(default)* | H2 file in `backend/data` | Hibernate `update` | Local run, no setup, data kept across restarts |
 | `dev` / `prod` | Oracle XE 21c | Flyway + `validate` | Docker Compose and production |
 | `cloud` | PostgreSQL (Neon) | Hibernate `update` | Free hosted demo |
-
-### Inside the backend
-
-```mermaid
-flowchart TB
-    REQ(["HTTP request"]) --> SEC
-
-    subgraph SEC["🛡️ Security layer"]
-        direction LR
-        CO["CORS"] --> RL["Rate limiter<br/>sign-in endpoints"] --> JW["JWT filter"]
-    end
-
-    SEC --> CTRL
-
-    subgraph CTRL["🎯 Web layer"]
-        direction LR
-        CT["Controllers<br/>DTOs + Bean Validation"] --> AZ["@authz<br/>self / team / HR checks"]
-    end
-
-    CTRL --> SVC
-
-    subgraph SVC["⚙️ Service layer"]
-        direction LR
-        EMP["Employees<br/>Org"] ~~~ ATT["Attendance<br/>Leave"] ~~~ PAY["Payroll<br/>engine"] ~~~ PERF["Performance"] ~~~ EXIT["Offboarding<br/>FnF"] ~~~ ANA["Analytics"]
-    end
-
-    SVC --> REPO["🗃️ Repositories · JPQL aggregates"] --> DB[("Database")]
-    SVC -. "events" .-> SIDE["📝 Audit log · 🔔 Notifications · 📧 Async email"]
-    CTRL -. "errors" .-> GEH["Global exception handler<br/>400 · 401 · 403 · 404 · 409 · 423 JSON"]
-
-    style SEC fill:#FEF2F2,stroke:#DC2626,color:#7F1D1D
-    style CTRL fill:#EEF2FF,stroke:#4F46E5,color:#1E1B4B
-    style SVC fill:#F0FDF4,stroke:#16A34A,color:#14532D
-    classDef box fill:#FFFFFF,stroke:#94A3B8,color:#0F172A
-    class CO,RL,JW,CT,AZ,EMP,ATT,PAY,PERF,EXIT,ANA,REPO,SIDE,GEH box
-```
 
 ### Data model (core)
 
@@ -223,22 +152,6 @@ New sign-ups start as **Employee**; the admin promotes people in **User Manageme
 ---
 
 ## 🧩 Features
-
-```mermaid
-flowchart LR
-    J["📢 Job posting"] --> I["🗓️ Interviews"] --> H["✅ Hire<br/>employee + login"] --> O["🧭 Onboarding"]
-    O --> W["⏱️ Attendance<br/>& leave"]
-    W --> P["💰 Payroll"] --> W
-    W --> A["⭐ Appraisal"] --> W
-    W --> E["🚪 Exit"] --> F["🧾 Full & final"]
-
-    classDef hire fill:#EEF2FF,stroke:#4F46E5,color:#1E1B4B
-    classDef run fill:#ECFDF5,stroke:#059669,color:#064E3B
-    classDef exit fill:#FFF7ED,stroke:#EA580C,color:#7C2D12
-    class J,I,H,O hire
-    class W,P,A run
-    class E,F exit
-```
 
 | Module | What it does |
 | :--- | :--- |
