@@ -2,16 +2,17 @@
 
 # 🧠 HRGenius
 
-### Full-Stack Human Resource Management System
-
-*Recruitment → Onboarding → Attendance & Leave → Payroll → Performance → Exit — in one secure platform.*
+**A full-stack HR platform: hiring, attendance, leave, Indian payroll, appraisals and exits in one secure system.**
 
 [![CI](https://github.com/ayukaushik1357-bit/HRGenius/actions/workflows/ci.yml/badge.svg)](https://github.com/ayukaushik1357-bit/HRGenius/actions)
 ![Java](https://img.shields.io/badge/Java-17-ED8B00?logo=openjdk&logoColor=white)
-![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2.5-6DB33F?logo=springboot&logoColor=white)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2-6DB33F?logo=springboot&logoColor=white)
 ![Angular](https://img.shields.io/badge/Angular-21-DD0031?logo=angular&logoColor=white)
 ![Oracle](https://img.shields.io/badge/Oracle-XE%2021c-F80000?logo=oracle&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon-4169E1?logo=postgresql&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
+
+[Architecture](#-architecture) · [Security](#-security) · [Features](#-features) · [Run it](#-run-it) · [Deploy](#-deploy-free-auto-deploys-on-push)
 
 </div>
 
@@ -21,430 +22,349 @@
 
 | | |
 |---|---|
-| 🔐 **Real authentication** | Sign in with email or username, or with Google. Short-lived JWTs kept in memory, rotating refresh tokens in an HttpOnly cookie, stolen-token detection, lockout, password reset by email |
-| 🙋 **Open sign-up** | Anyone can create an account with email or Google and use their own employee portal straight away; HR and admin pages stay with HR and the admin |
-| 🛡️ **Real authorization** | Role checks **plus** ownership checks on every endpoint: employees see only their own data, managers only their direct reports |
-| 🇮🇳 **Indian payroll engine** | PF, ESI, Professional Tax, slab-based TDS and loss-of-pay, with PDF payslips |
-| 📊 **HR analytics** | Headcount, attrition, tenure, payroll cost, hiring funnel and rating distribution, exportable to Excel and PDF |
-| 🧪 **Tested** | 223 backend tests (incl. a 61-case authorization matrix and unmocked end-to-end account flows), 16 frontend tests, CI on every push |
-| 🐳 **One-command deploy** | Docker Compose runs Oracle XE, Spring Boot and Angular behind Nginx |
+| 🔐 **Real auth** | Email/username or Google sign-in, open sign-up, 15-min JWTs in memory, rotating HttpOnly refresh cookie with stolen-token detection, lockout, password reset |
+| 🛡️ **Real authorization** | Every endpoint checks the **role** and the **owner**: employees see only themselves, managers only their team |
+| 🇮🇳 **Indian payroll** | PF, ESI, professional tax, slab-based TDS, loss of pay, PDF payslips |
+| 📊 **Analytics** | Headcount, attrition, tenure, payroll cost, hiring funnel; Excel and PDF export |
+| 🧪 **Tested** | 223 backend tests incl. a 61-case access matrix, 16 frontend tests, CI on every push |
+| 🚀 **Runs anywhere** | One-command Docker (Oracle), free cloud demo (Vercel + Render + Neon), or zero-setup local H2 |
 
 ---
 
-## 🏛️ System Architecture
+## 🏛️ Architecture
+
+### The big picture
 
 ```mermaid
 flowchart TB
-    U(["👤 Admin · HR Manager · Manager · Employee"])
+    U(["👤 Employee · Manager · HR · Admin"])
 
-    subgraph FE["🅰️  FRONTEND — Angular 21 + Angular Material"]
+    subgraph CLIENT["🅰️ Angular 21 SPA"]
         direction LR
-        UI["🖥️ 14 feature pages<br/>Portal · Employees · Leaves<br/>Payroll · Performance · Analytics"]
-        G["🚦 Route guards<br/>authGuard · roleGuard"]
-        I["🔁 JWT interceptor<br/>adds token · silent refresh"]
-        UI --> G --> I
+        P["Landing · Sign-in<br/>14 app pages"] --> GU["Route guards<br/>hide what you can't open"] --> IC["HTTP interceptor<br/>Bearer token · silent refresh"]
     end
 
-    subgraph EDGE["🌐  NGINX"]
-        N["Serves the Angular build · proxies /api to the backend"]
-    end
-
-    subgraph BE["🍃  BACKEND — Spring Boot 3 · Spring Security 6"]
+    subgraph SERVER["🍃 Spring Boot 3 API"]
         direction LR
-        SEC["🛡️ Security filters<br/>CORS · rate limit · JWT"]
-        C["🎯 17 REST controllers<br/>@PreAuthorize + @authz"]
-        S["⚙️ Services<br/>@Transactional business rules"]
-        R["🗃️ Spring Data JPA<br/>Hibernate 6"]
-        SEC --> C --> S --> R
-        S --> X["📑 Excel / PDF · 🔔 notifications · 📝 audit log"]
+        F["Security filters<br/>CORS · rate limit · JWT"] --> C["17 REST controllers<br/>@PreAuthorize + @authz"] --> S["Services<br/>@Transactional rules"] --> R["Spring Data JPA<br/>Hibernate 6"]
     end
 
-    subgraph DB["🗄️  DATA"]
+    subgraph DATA["🗄️ One codebase, three databases"]
         direction LR
-        F["🧬 Flyway V1–V12"]
-        O[("Oracle XE 21c<br/>dev · prod · Docker")]
-        H[("H2 file DB<br/>local run · tests in memory")]
-        F --> O
+        O[("Oracle XE<br/>Flyway V1–V12")] ~~~ PG[("PostgreSQL<br/>cloud demo")] ~~~ H[("H2<br/>local · tests")]
     end
 
-    U --> UI
-    I == "HTTPS · Bearer JWT + HttpOnly refresh cookie" ==> N
-    N ==> SEC
-    R ==> O
-    R -.-> H
+    EXT["📧 SMTP · 🌐 Google ID tokens · 📑 PDF / Excel"]
 
-    style FE fill:#FFF1F2,stroke:#DD0031,stroke-width:2px,color:#881337
-    style EDGE fill:#ECFDF5,stroke:#059669,stroke-width:2px,color:#064E3B
-    style BE fill:#F0FDF4,stroke:#6DB33F,stroke-width:2px,color:#14532D
-    style DB fill:#FFF7ED,stroke:#F80000,stroke-width:2px,color:#7C2D12
+    U --> P
+    IC == "/api · JSON over HTTPS" ==> F
+    R ==> DATA
+    S -.-> EXT
 
-    classDef node fill:#FFFFFF,stroke:#94A3B8,color:#0F172A
+    style CLIENT fill:#FFF1F2,stroke:#DD0031,stroke-width:2px,color:#881337
+    style SERVER fill:#F0FDF4,stroke:#6DB33F,stroke-width:2px,color:#14532D
+    style DATA fill:#EFF6FF,stroke:#2563EB,stroke-width:2px,color:#1E3A8A
+    classDef box fill:#FFFFFF,stroke:#94A3B8,color:#0F172A
+    classDef ext fill:#FEFCE8,stroke:#CA8A04,color:#713F12
     classDef user fill:#EEF2FF,stroke:#4F46E5,stroke-width:2px,color:#1E1B4B
-    classDef store fill:#FFFFFF,stroke:#F80000,color:#7C2D12
-    class UI,G,I,N,SEC,C,S,R,X,F node
-    class O,H store
+    class P,GU,IC,F,C,S,R box
+    class EXT ext
     class U user
 ```
 
-### How a request is protected
+The same backend runs on three databases, picked by Spring profile:
 
-Every API call passes through five gates before it can read or change data:
+| Profile | Database | Schema | Used for |
+| :--- | :--- | :--- | :--- |
+| `h2` *(default)* | H2 file in `backend/data` | Hibernate `update` | Local run, no setup, data kept across restarts |
+| `dev` / `prod` | Oracle XE 21c | Flyway + `validate` | Docker Compose and production |
+| `cloud` | PostgreSQL (Neon) | Hibernate `update` | Free hosted demo |
+
+### Inside the backend
 
 ```mermaid
-flowchart LR
-    REQ(["HTTP request"]) --> CORS{"CORS<br/>allowed origin?"}
-    CORS -- no --> X1["❌ blocked"]
-    CORS -- yes --> RL{"Login rate limit<br/>10 / min / IP"}
-    RL -- exceeded --> X2["❌ 429"]
-    RL -- ok --> JWT{"JWT filter<br/>valid · type = access"}
-    JWT -- no --> X3["❌ 401"]
-    JWT -- yes --> ROLE{"@PreAuthorize<br/>right role?"}
-    ROLE -- no --> X4["❌ 403"]
-    ROLE -- yes --> OWN{"@authz<br/>self or own team?"}
-    OWN -- no --> X5["❌ 403"]
-    OWN -- yes --> OK["✅ Controller<br/>sensitive fields masked<br/>for non-HR roles"]
+flowchart TB
+    REQ(["HTTP request"]) --> SEC
 
-    classDef bad fill:#FEE2E2,stroke:#DC2626,color:#7f1d1d
-    classDef good fill:#DCFCE7,stroke:#16A34A,color:#14532d
-    classDef gate fill:#F1F5F9,stroke:#475569,color:#0f172a
-    class X1,X2,X3,X4,X5 bad
-    class OK good
-    class CORS,RL,JWT,ROLE,OWN gate
+    subgraph SEC["🛡️ Security layer"]
+        direction LR
+        CO["CORS"] --> RL["Rate limiter<br/>sign-in endpoints"] --> JW["JWT filter"]
+    end
+
+    SEC --> CTRL
+
+    subgraph CTRL["🎯 Web layer"]
+        direction LR
+        CT["Controllers<br/>DTOs + Bean Validation"] --> AZ["@authz<br/>self / team / HR checks"]
+    end
+
+    CTRL --> SVC
+
+    subgraph SVC["⚙️ Service layer"]
+        direction LR
+        EMP["Employees<br/>Org"] ~~~ ATT["Attendance<br/>Leave"] ~~~ PAY["Payroll<br/>engine"] ~~~ PERF["Performance"] ~~~ EXIT["Offboarding<br/>FnF"] ~~~ ANA["Analytics"]
+    end
+
+    SVC --> REPO["🗃️ Repositories · JPQL aggregates"] --> DB[("Database")]
+    SVC -. "events" .-> SIDE["📝 Audit log · 🔔 Notifications · 📧 Async email"]
+    CTRL -. "errors" .-> GEH["Global exception handler<br/>400 · 401 · 403 · 404 · 409 · 423 JSON"]
+
+    style SEC fill:#FEF2F2,stroke:#DC2626,color:#7F1D1D
+    style CTRL fill:#EEF2FF,stroke:#4F46E5,color:#1E1B4B
+    style SVC fill:#F0FDF4,stroke:#16A34A,color:#14532D
+    classDef box fill:#FFFFFF,stroke:#94A3B8,color:#0F172A
+    class CO,RL,JW,CT,AZ,EMP,ATT,PAY,PERF,EXIT,ANA,REPO,SIDE,GEH box
 ```
+
+### Data model (core)
+
+```mermaid
+erDiagram
+    USER }o--o{ ROLE : has
+    USER ||--o| EMPLOYEE : "signs in as"
+    DEPARTMENT ||--o{ EMPLOYEE : employs
+    EMPLOYEE ||--o{ EMPLOYEE : manages
+    EMPLOYEE ||--o{ ATTENDANCE : punches
+    EMPLOYEE ||--o{ LEAVE_APPLICATION : applies
+    PAYROLL_RUN ||--o{ PAYSLIP : produces
+    EMPLOYEE ||--o{ PAYSLIP : receives
+    REVIEW_CYCLE ||--o{ PERFORMANCE_REVIEW : contains
+    EMPLOYEE ||--o{ PERFORMANCE_REVIEW : "is reviewed"
+    EMPLOYEE ||--o| EXIT_REQUEST : resigns
+    EXIT_REQUEST ||--o| FNF_SETTLEMENT : "settles in"
+
+    EMPLOYEE {
+        string employee_code UK
+        string email UK
+        string status "ACTIVE · ON_NOTICE · EXITED"
+        decimal salary_ctc
+        boolean is_deleted "soft delete"
+    }
+    USER {
+        string username UK
+        string password "BCrypt"
+        int failed_attempts "lockout"
+    }
+    PAYSLIP {
+        decimal gross_salary
+        decimal pf_deduction
+        decimal tds_deduction
+        decimal net_salary
+    }
+```
+
+Deleted employees are **soft deleted**: hidden and unable to sign in, while their payslips, leave and attendance stay for audit.
 
 ---
 
-## 🔐 Authentication Flow
+## 🔐 Security
 
-Access tokens live **only in memory** (never in `localStorage`), so an XSS bug cannot steal a long-lived credential. The refresh token is an **HttpOnly** cookie that JavaScript cannot read; the database stores only its **SHA-256 hash**.
+### Five gates on every request
+
+```mermaid
+flowchart LR
+    R(["Request"]) --> A{"CORS"} -->|ok| B{"Rate limit<br/>10/min/IP"} -->|ok| C{"Valid<br/>access JWT?"} -->|yes| D{"Right<br/>role?"} -->|yes| E{"Own record<br/>or own team?"} -->|yes| OK["✅ Handled<br/>PAN · bank masked<br/>for non-HR"]
+    A -->|no| X1["❌"]
+    B -->|no| X2["❌ 429"]
+    C -->|no| X3["❌ 401"]
+    D -->|no| X4["❌ 403"]
+    E -->|no| X5["❌ 403"]
+
+    classDef bad fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D
+    classDef good fill:#DCFCE7,stroke:#16A34A,color:#14532D
+    classDef gate fill:#F1F5F9,stroke:#475569,color:#0F172A
+    class X1,X2,X3,X4,X5 bad
+    class OK good
+    class A,B,C,D,E gate
+```
+
+### Sign-in and token rotation
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor U as Browser (Angular)
+    actor B as Browser
     participant API as Spring Boot
     participant DB as Database
 
-    U->>API: POST /auth/login (username, password)
-    API->>DB: verify BCrypt hash · check lockout (5 fails → 15 min)
-    API->>DB: save SHA-256(refresh token)
-    API-->>U: { accessToken (15 min) } + Set-Cookie: refresh (7 days, HttpOnly)
+    B->>API: POST /auth/login (or Google ID token)
+    API->>DB: BCrypt check · lockout after 5 fails
+    API-->>B: access JWT (15 min, memory only) + HttpOnly refresh cookie (7 days)
+    B->>API: GET /api/... with Bearer token
+    API-->>B: 200
 
-    U->>API: GET /api/... (Authorization: Bearer access)
-    API-->>U: 200 OK
-
-    Note over U,API: Access token expires → 401
-    U->>API: POST /auth/refresh (cookie)
-    API->>DB: token valid? → revoke it, link to replacement
-    API-->>U: new accessToken + new refresh cookie (rotation)
-
-    Note over U,API: Page reload / app start
-    U->>API: POST /auth/refresh (cookie)
-    API-->>U: session restored without logging in again
+    Note over B,API: Token expired or page reloaded
+    B->>API: POST /auth/refresh (cookie)
+    API->>DB: revoke old token, store SHA-256 of new one
+    API-->>B: new access JWT + new cookie
 
     rect rgb(254, 226, 226)
-    Note over U,DB: 🚨 Old (already rotated) token replayed by an attacker
-    U->>API: POST /auth/refresh (stolen cookie)
-    API->>DB: revoke ALL sessions of this user
-    API-->>U: 400 · everyone must log in again
+    Note over B,DB: 🚨 An already-used refresh token comes back (stolen)
+    B->>API: POST /auth/refresh (old cookie)
+    API->>DB: revoke ALL sessions of that user
+    API-->>B: 400 · sign in again
     end
-
-    U->>API: POST /auth/logout
-    API->>DB: revoke token
-    API-->>U: cookie cleared
 ```
 
-> A replay within **10 seconds** of a rotation whose new token is still unused is treated as a harmless race (fast reload, two tabs) and gets a fresh pair, so real users are not logged out.
+### Who can do what
 
-### Getting an account
+| | Admin | HR manager | Manager | Employee |
+| :--- | :---: | :---: | :---: | :---: |
+| Employee profiles | ✅ all | ✅ all | 👥 team | 🙋 self |
+| Salary, PAN, bank | ✅ | ✅ | 🔒 masked | 🙋 self |
+| Approve leave | ✅ | ✅ | 👥 direct reports | ❌ |
+| Payroll runs | ✅ | ✅ | ❌ | ❌ |
+| Payslips | ✅ | ✅ | ❌ | 🙋 self |
+| Analytics | ✅ company | ✅ company | 👥 team | ❌ |
+| Users, roles, audit log | ✅ | audit log | ❌ | ❌ |
+
+New sign-ups start as **Employee**; the admin promotes people in **User Management**. Rules live on the server; the endpoint-by-endpoint list is in [`docs/SECURITY_MATRIX.md`](docs/SECURITY_MATRIX.md).
+
+---
+
+## 🧩 Features
 
 ```mermaid
 flowchart LR
-    A["✍️ Create account<br/>name · email · password"] --> N["🆕 Account + own employee profile<br/>role: Employee"]
-    G["🌐 Continue with Google<br/>(new email)"] --> N
-    N --> IN["✅ Signed in<br/>portal, attendance, leave"]
-    H["🧑‍💼 HR adds an employee"] --> T["🔑 Temporary password<br/>must change on first sign-in"]
-    T --> IN
-    AD["👩‍💼 Admin"] -. "promote to Manager or HR<br/>in User Management" .-> N
+    J["📢 Job posting"] --> I["🗓️ Interviews"] --> H["✅ Hire<br/>employee + login"] --> O["🧭 Onboarding"]
+    O --> W["⏱️ Attendance<br/>& leave"]
+    W --> P["💰 Payroll"] --> W
+    W --> A["⭐ Appraisal"] --> W
+    W --> E["🚪 Exit"] --> F["🧾 Full & final"]
 
-    classDef ok fill:#DCFCE7,stroke:#16A34A,color:#14532D
-    classDef step fill:#EEF2FF,stroke:#4F46E5,color:#1E1B4B
-    class N,IN ok
-    class A,G,H,T,AD step
+    classDef hire fill:#EEF2FF,stroke:#4F46E5,color:#1E1B4B
+    classDef run fill:#ECFDF5,stroke:#059669,color:#064E3B
+    classDef exit fill:#FFF7ED,stroke:#EA580C,color:#7C2D12
+    class J,I,H,O hire
+    class W,P,A run
+    class E,F exit
 ```
 
-| Way in | How it works |
+| Module | What it does |
 | :--- | :--- |
-| **Create account** | Anyone can sign up with a name, email and strong password. They are signed in straight away as an **Employee** with their own profile (leave quota, attendance, payslips). Someone HR has already added should sign in instead (or use **Forgot password**). |
-| **Continue with Google** | Google's ID token is verified on the server (signature, issuer, audience, expiry, verified email). A known email signs in; a new email gets an account the same way as above. |
-| **Email or username + password** | One field accepts either. 5 wrong passwords lock the account for 15 minutes; each network address is rate limited. |
-| **Forgot password** | Sends a one-time link (valid 30 minutes, only its SHA-256 hash is stored). The answer is the same whether or not the email exists. Using it ends all other sessions. |
-| **Added by HR** | Gets a temporary password that must be changed on first sign-in. |
-
-New accounts can never see HR, payroll or admin pages; the admin promotes people to Manager or HR in **User Management**. To make new sign-ups wait for an administrator instead, set `APP_SIGNUP_REQUIRES_APPROVAL=true`.
-
-If an account ever has no employee record, it sees a clear "not linked yet" message, never another employee's data.
-
----
-
-## 🔄 Employee Lifecycle
-
-```mermaid
-flowchart LR
-    J["📢 Job posting"] --> AP["📄 Application<br/>APPLIED → SCREENING"]
-    AP --> IV["🗓️ Interviews<br/>rating + feedback"]
-    IV --> OF["✉️ Offer"]
-    OF --> HI["✅ Hire<br/>creates Employee + login<br/>(must change password)"]
-    HI --> ON["🧭 Onboarding<br/>checklist & progress"]
-    ON --> WK["⏱️ Daily work<br/>attendance · leave"]
-    WK --> PY["💰 Monthly payroll<br/>PF · ESI · PT · TDS · LOP"]
-    PY --> WK
-    WK --> PR["⭐ Appraisal<br/>goals · self · manager · 360°"]
-    PR --> WK
-    WK --> EX["🚪 Exit<br/>resignation · clearance"]
-    EX --> FNF["🧾 Full & Final<br/>encashment · gratuity"]
-
-    classDef hire fill:#EEF2FF,stroke:#4F46E5,color:#1e1b4b
-    classDef run fill:#ECFDF5,stroke:#059669,color:#064e3b
-    classDef exit fill:#FFF7ED,stroke:#EA580C,color:#7c2d12
-    class J,AP,IV,OF,HI,ON hire
-    class WK,PY,PR run
-    class EX,FNF exit
-```
-
----
-
-## 🛠️ Technology Stack
-
-| Layer | Technologies |
-| :--- | :--- |
-| **Backend** | Java 17, Spring Boot 3.2.5, Spring Security 6, Spring Data JPA, Hibernate 6, Bean Validation |
-| **Auth** | JJWT 0.12 (HS512), BCrypt, HttpOnly refresh cookie, per-IP rate limit, account lockout, Google Identity Services + Spring Security OAuth2 JOSE (ID-token verification) |
-| **Frontend** | Angular 21 (standalone components, signals), Angular Material, RxJS, Chart.js 4, SCSS |
-| **Database** | Oracle XE 21c (`dev`, `prod`, Docker) · PostgreSQL (`cloud`, hosted demo on Neon) · H2 file database (`h2` profile) · H2 in-memory (tests) |
-| **Migrations** | Flyway, 12 versioned scripts (`V1`–`V12`) |
-| **Reports** | Apache POI 5.2 (Excel), OpenPDF 1.3 (payslips and analytics PDF) |
-| **API docs** | springdoc-openapi (Swagger UI) |
-| **Testing** | JUnit 5, Mockito, MockMvc, Spring Security Test · Vitest (frontend) |
-| **DevOps** | Multi-stage Dockerfiles (Temurin 17, Node 22, Nginx), Docker Compose, GitHub Actions · Render + Vercel + Neon with auto-deploy on push |
-
----
-
-## 📦 Modules
-
-<details open>
-<summary><b>👥 Employees & Organisation</b></summary>
-
-- Employee profiles with department, designation, reporting manager, emergency contact and address
-- Document vault (ID proof, offer letter) with file-type/size checks and path-traversal protection
-- PAN, Aadhaar and bank details are masked (`XXXX-XXXX-1234`) for everyone except HR/Admin and the employee themselves
-- Departments and designations management
-</details>
+| 👥 **People** | Profiles, departments, designations, reporting lines, document vault, masked PAN/Aadhaar/bank |
+| 🧲 **Recruitment** | Job postings, candidate pipeline, interviews with ratings, offers; hiring creates the employee and a login |
+| ⏱️ **Attendance & leave** | Check-in/out, half days, holiday calendar, casual/sick/earned/unpaid quotas, approval by the employee's own manager |
+| 💰 **Payroll** | Monthly runs (draft → processed → paid, locked once paid) and PDF payslips |
+| ⭐ **Performance** | Review cycles, weighted goals, self and manager review, 360° feedback; rating = 60 % manager + 40 % goals |
+| 🚪 **Offboarding** | Resignation, clearance checklist, full and final with leave encashment and gratuity |
+| 📊 **Analytics & portal** | Company or team dashboard, Excel/PDF export, self-service portal, audit log, notifications |
 
 <details>
-<summary><b>🧲 Recruitment & Onboarding</b></summary>
-
-- Job postings (`DRAFT` → `OPEN` → `CLOSED`) linked to department and designation
-- Candidate pipeline: `APPLIED` → `SCREENING` → `INTERVIEW` → `OFFERED` → `HIRED` / `REJECTED`
-- Interview scheduling with interviewer, 1–5 rating and feedback; offers
-- Hiring a candidate creates the employee record **and** a login with a temporary password
-- Onboarding checklist templates assigned to new joiners with progress tracking
-</details>
-
-<details>
-<summary><b>⏱️ Attendance & Leave</b></summary>
-
-- Check-in / check-out; status from hours worked (≥ 7.5 h `PRESENT`, ≥ 4 h `HALF_DAY`)
-- Monthly calendar view and company holiday calendar
-- Casual, Sick, Earned and Unpaid leave with yearly quotas and live balances
-- Overlap and balance checks; approval by the employee's **own manager** or HR (never self-approval)
-</details>
-
-<details>
-<summary><b>💰 Payroll (Indian statutory)</b></summary>
+<summary><b>💰 Payroll rules</b></summary>
 
 | Component | Rule |
 | :--- | :--- |
-| Provident Fund | 12 % of (LOP-adjusted) basic |
-| ESI | 0.75 % of gross when monthly gross ≤ ₹21,000 |
-| Professional Tax | ₹200 / month when gross ≥ ₹10,000 |
-| TDS | Annual slab calculation, deducted monthly |
-| Loss of Pay | Pro-rated for unpaid leave and mid-month joiners |
+| Provident fund | 12 % of basic (after loss of pay) |
+| ESI | 0.75 % of gross when gross ≤ ₹21,000 |
+| Professional tax | ₹200 / month when gross ≥ ₹10,000 |
+| TDS | Annual slab tax, deducted monthly |
+| Loss of pay | Pro-rated for unpaid leave and mid-month joiners |
+| Gratuity (FnF) | 15 × basic ÷ 26 × years, after 5 years |
 
-Monthly payroll runs (`DRAFT` → `PROCESSED` → `PAID`, locked once paid) and downloadable PDF payslips. Employees can only see their own payslips.
-</details>
-
-<details>
-<summary><b>⭐ Performance</b></summary>
-
-- Review cycles created by HR; goals/KRAs with weightage and progress
-- Workflow: `NOT_STARTED` → `SELF_REVIEW` → `MANAGER_REVIEW` → `COMPLETED`
-- Final rating = **60 %** manager rating + **40 %** weighted goal score
-- 360° peer feedback (not allowed on your own review)
-</details>
-
-<details>
-<summary><b>🚪 Offboarding & Full-and-Final</b></summary>
-
-- Resignation with notice period → departmental clearance checklist (`PENDING` / `CLEARED` / `WAIVED`)
-- FnF settlement: payable days + leave encashment (basic ÷ 30 × days) + gratuity for ≥ 5 years (15 × basic ÷ 26 × years) − recoveries
-- Finalising marks the employee `EXITED` and disables their login
-</details>
-
-<details>
-<summary><b>📊 Analytics, Portal & Compliance</b></summary>
-
-- Dashboard: headcount, attrition, average tenure, payroll cost, open requisitions, hiring vs exit trend, gender ratio, recruitment funnel, rating distribution. HR/Admin see the company, managers see their team.
-- Excel and PDF export of the executive report
-- Employee self-service portal: punch in/out, leave balance, latest payslip, holidays, profile change requests (HR approval required)
-- Audit log of sensitive changes (salary, status, roles) with user, time, old/new value and IP
-- In-app notifications plus asynchronous email (configurable SMTP)
 </details>
 
 ---
 
-## 🛡️ Roles & Permissions
+## 🛠️ Tech Stack
 
-| Area | ADMIN | HR_MANAGER | MANAGER | EMPLOYEE |
-| :--- | :---: | :---: | :---: | :---: |
-| User accounts, roles, unlock | ✅ | ❌ | ❌ | ❌ |
-| Audit log | ✅ | ✅ | ❌ | ❌ |
-| Employee list | ✅ all | ✅ all | 👥 team | ❌ |
-| Employee profile | ✅ | ✅ | 👥 team | 🙋 self |
-| Salary, PAN, Aadhaar, bank | ✅ | ✅ | 🔒 masked | 🙋 self |
-| Create / edit employees | ✅ | ✅ | ❌ | ❌ |
-| Documents | ✅ | ✅ | ❌ | 🙋 self |
-| Attendance | ✅ | ✅ | 👥 team | 🙋 self |
-| Approve leave | ✅ | ✅ | 👥 direct reports | ❌ |
-| Payroll runs & salary structures | ✅ | ✅ | ❌ | ❌ |
-| Payslips | ✅ | ✅ | ❌ | 🙋 self |
-| Recruitment (candidates, offers, hire) | ✅ | ✅ | interviews & stages | ❌ |
-| Review cycles | ✅ | ✅ | ❌ | ❌ |
-| Appraisals | ✅ | ✅ | 👥 team (manager review) | 🙋 self review |
-| Analytics dashboard | ✅ company | ✅ company | 👥 team | ❌ |
-| Analytics export | ✅ | ✅ | ❌ | ❌ |
-| Resignation / FnF finalise | ✅ | ✅ | approve & clear | 🙋 resign |
-
-Rules are enforced on the **backend** (`@PreAuthorize` + the `@authz` ownership component); the Angular guards only hide what a user cannot open. The full endpoint-by-endpoint list is in [`docs/SECURITY_MATRIX.md`](docs/SECURITY_MATRIX.md).
-
----
-
-## 🔑 Accounts
-
-**Everyone:** open the app and choose **Create account** (or **Continue with Google**).
-
-**Admin:** the built-in `admin` account gets its password from the `ADMIN_PASSWORD` setting, which is never shown in the app. Set it before starting the backend (see below). The admin can then give people the Manager or HR role in **User Management**.
-
-**Local demo data:** the `h2` profile also seeds **50 sample employees** with salaries, leave, a payroll run and an appraisal cycle, plus three sample logins for trying each role on your own machine: `hrmanager` / `Hr@123`, `manager` / `Manager@123`, `employee` / `Employee@123`. Demo data is never loaded in `prod`; don't deploy the `h2` profile publicly.
-
----
-
-## 🚀 Getting Started
-
-**Prerequisites:** Java 17+, Node.js 22 with npm 11, Git. Maven is included via the wrapper.
-
-### Option 1 · Local, no database setup (H2)
-
-```bash
-# Terminal 1 – backend (http://localhost:8080/api)
-cd backend
-export ADMIN_PASSWORD='Choose-a-strong-one1!'   # Windows PowerShell: $env:ADMIN_PASSWORD="Choose-a-strong-one1!"
-./mvnw spring-boot:run                          # Windows: .\mvnw.cmd spring-boot:run
-
-# Terminal 2 – frontend (http://localhost:4200)
-cd frontend
-npm install
-npm start
-```
-
-- Swagger UI: http://localhost:8080/api/swagger-ui.html
-- Your data is saved in `backend/data/hrgenius.mv.db`, so accounts, role changes, leave and payroll are still there after a restart. Stop the backend and delete the `backend/data` folder to start again from the demo data.
-- H2 console: http://localhost:8080/api/h2-console (JDBC URL `jdbc:h2:file:./data/hrgenius;MODE=Oracle;AUTO_SERVER=TRUE`, user `sa`, empty password)
-
-### Option 2 · Everything in Docker (Oracle + backend + frontend)
-
-```bash
-cp .env.example .env            # then set JWT_SECRET, ADMIN_PASSWORD and the database passwords
-docker compose up --build
-```
-
-| Service | URL / Port |
+| | |
 | :--- | :--- |
-| Frontend (Nginx) | http://localhost |
-| Backend API | http://localhost:8080/api |
-| Oracle XE | `localhost:1521/XEPDB1` |
+| **Backend** | Java 17 · Spring Boot 3.2 · Spring Security 6 · Spring Data JPA / Hibernate 6 · Bean Validation |
+| **Auth** | JJWT (HS512) · BCrypt · HttpOnly cookies · Google Identity Services + OAuth2 JOSE |
+| **Frontend** | Angular 21 (standalone, signals) · Angular Material · RxJS · Chart.js · SCSS |
+| **Data** | Oracle XE 21c · PostgreSQL · H2 · Flyway |
+| **Reports** | Apache POI (Excel) · OpenPDF (payslips, reports) |
+| **Quality** | JUnit 5 · Mockito · MockMvc · Vitest · GitHub Actions |
+| **Ops** | Docker multi-stage builds · Docker Compose · Nginx · Vercel · Render · Neon |
 
-Stop with `docker compose down` (add `-v` to delete the database volume).
+---
 
-### Sign in with Google
+## 🚀 Run it
 
-The project already contains a Google OAuth client ID for `http://localhost:4200` and `http://localhost`, so the button works out of the box. To use your own:
+**Needs:** Java 17+, Node.js 22, Git.
 
-1. In [Google Cloud Console](https://console.cloud.google.com/apis/credentials) open **Google Auth Platform**, fill in **Branding** (no logo needed) and choose **External** audience.
-2. **Clients → Create client → Web application**. Under **Authorized JavaScript origins** add every address the app is opened from, e.g. `http://localhost:4200`, `http://localhost`, `https://your-domain`. No redirect URI is needed, and the client secret is not used.
-3. **Audience → Publish app**, so any Google account can sign in (not only test users). Only the basic email and profile scopes are used, so Google does not require verification.
-4. Start the backend with `GOOGLE_CLIENT_ID=<id>.apps.googleusercontent.com` (or put it in `.env` for Docker).
+### Local, no database setup
 
-### Password reset emails
+```bash
+# backend → http://localhost:8080/api   (Windows: .\mvnw.cmd spring-boot:run)
+cd backend
+export ADMIN_PASSWORD='Choose-a-strong-one1!'   # PowerShell: $env:ADMIN_PASSWORD="Choose-a-strong-one1!"
+./mvnw spring-boot:run
 
-Set `SPRING_MAIL_HOST` / `SPRING_MAIL_PORT` (and username/password if needed). Locally, without SMTP, the reset link is also written to the backend log (`log-password-reset-link`, always off in `prod`).
+# frontend → http://localhost:4200
+cd frontend && npm install && npm start
+```
 
-### Profiles
+- Sign in as `admin` with your `ADMIN_PASSWORD`, or **Create account**. Demo logins: `hrmanager / Hr@123`, `manager / Manager@123`, `employee / Employee@123`.
+- 50 sample employees are loaded. Data is saved in `backend/data`; delete that folder to start fresh.
+- API docs: http://localhost:8080/api/swagger-ui.html
 
-| Profile | Database | Schema | Demo data |
-| :--- | :--- | :--- | :--- |
-| `h2` *(default)* | H2 file in `backend/data` (kept across restarts) | Hibernate `update` | ✅ |
-| `dev` | Oracle XE on localhost | Flyway + `validate` | optional (`APP_SEED_DEMO_DATA=true`) |
-| `prod` | Oracle via `ORACLE_URL` | Flyway + `validate` | ❌ · fails fast without a strong `JWT_SECRET` |
-| `cloud` | PostgreSQL via `DB_URL` (Neon) | Hibernate `update` | ✅ (`APP_SEED_DEMO_DATA=false` to turn off) · needs a strong `JWT_SECRET` |
+### Docker (Oracle + backend + frontend)
 
-### Option 3 · Free hosted demo (auto-deploys on every push)
+```bash
+cp .env.example .env        # set JWT_SECRET, ADMIN_PASSWORD, database passwords
+docker compose up --build   # app on http://localhost, API on :8080
+```
+
+### Google sign-in with your own client
+
+In [Google Cloud Console](https://console.cloud.google.com/apis/credentials): create a **Web application** client, add every address the app runs on under **Authorized JavaScript origins**, **Publish** the app, and start the backend with `GOOGLE_CLIENT_ID=<id>`. No client secret is used.
+
+---
+
+## ☁️ Deploy (free, auto-deploys on push)
 
 ```mermaid
 flowchart LR
-    U(["🌐 Browser"]) -->|"https://your-app.vercel.app"| V["▲ Vercel<br/>Angular app"]
-    V -->|"/api/* (same origin, proxied)"| R["Render<br/>Spring Boot · Docker"]
-    R -->|"JDBC + TLS"| N[("Neon<br/>PostgreSQL")]
-    G["GitHub main"] -. "push" .-> V
-    G -. "push" .-> R
+    DEV(["💻 git push"]) --> GH["🐙 GitHub<br/>main"]
+    GH -->|CI: tests + builds| CI["✅ GitHub Actions"]
+    GH -->|auto deploy| V["▲ Vercel<br/>Angular app"]
+    GH -->|auto deploy| R["🟣 Render<br/>Spring Boot (Docker)"]
+    USER(["🌐 Visitor"]) -->|https://your-app.vercel.app| V
+    V -->|"/api/* proxied<br/>same-origin cookie"| R
+    R -->|JDBC + TLS| N[("🐘 Neon<br/>PostgreSQL")]
+    KA["⏰ Keep-alive workflow<br/>every 10 min"] -.-> R
+
+    classDef host fill:#F8FAFC,stroke:#334155,color:#0F172A
+    classDef db fill:#EFF6FF,stroke:#2563EB,color:#1E3A8A
+    class GH,CI,V,R,KA host
+    class N db
 ```
 
-Vercel serves the Angular app and forwards `/api/*` to the backend, so the browser sees one site and the refresh cookie stays first-party. Pushing to `main` redeploys both.
-
-1. **Database (Neon):** create a project, open **Connect**, and note host, database, user and password. The JDBC URL is `jdbc:postgresql://<host>/<database>?sslmode=require`.
-2. **Backend (Render):** *New → Web Service*, pick this repository, **Root Directory** `backend`, **Language** Docker, **Instance** Free, **Health Check Path** `/api/auth/config`. Environment variables:
+1. **Neon:** create a project (region Singapore), turn **connection pooling off**, copy host, database, user and password.
+2. **Render:** *New → Web Service* → this repo, **Root Directory** `backend`, **Docker**, **Free**, health check `/api/auth/config`, with these variables:
 
    | Variable | Value |
    | :--- | :--- |
    | `SPRING_PROFILES_ACTIVE` | `cloud` |
-   | `DB_URL` / `DB_USERNAME` / `DB_PASSWORD` | from Neon |
+   | `DB_URL` | `jdbc:postgresql://<host>/<database>?sslmode=require` |
+   | `DB_USERNAME` · `DB_PASSWORD` | from Neon |
    | `JWT_SECRET` | 64+ random characters |
-   | `ADMIN_PASSWORD` | password of the `admin` account |
-   | `APP_FRONTEND_URL` | your Vercel URL (used in reset-password emails) |
-   | `CORS_ALLOWED_ORIGINS` | your Vercel URL, e.g. `https://hrgenius.vercel.app` (requests arrive through Vercel's proxy) |
+   | `ADMIN_PASSWORD` | password for `admin` |
+   | `APP_FRONTEND_URL` · `CORS_ALLOWED_ORIGINS` | your Vercel URL |
+   | `APP_SEED_DEMO_DATA` | `false` to start without the 50 sample employees |
 
-3. **Frontend (Vercel):** put the Render URL in `frontend/vercel.json` (the `/api/:path*` rewrite), push, then *Add New → Project*, import this repository and set **Root Directory** `frontend`. Everything else comes from `vercel.json`.
-4. **Google sign-in:** add the Vercel URL to the client's **Authorized JavaScript origins**.
-5. *(Optional)* Free Render services sleep after 15 idle minutes. Set the repository variable `BACKEND_URL` to the Render URL and the `Keep demo awake` workflow pings it every 10 minutes.
+3. **Vercel:** make sure the Render URL in [`frontend/vercel.json`](frontend/vercel.json) is right, then *Add New → Project* → this repo, **Root Directory** `frontend`.
+4. **Google:** add the Vercel URL to **Authorized JavaScript origins**.
+5. **Keep awake** *(optional)*: add the repository variable `BACKEND_URL` = Render URL. Free Render services otherwise sleep after 15 idle minutes.
 
 ---
 
-## 🧪 Testing
+## 🧪 Tests
 
 ```bash
-cd backend && ./mvnw verify     # 223 tests
-cd frontend && npm test         # 16 tests
+cd backend && ./mvnw verify   # 223 tests
+cd frontend && npm test       # 16 tests
 ```
 
-| Suite | What it proves |
+| Suite | Proves |
 | :--- | :--- |
-| `SecurityRulesParameterizedTest` | 61 role / self / team / IDOR cases across all 17 controllers, using real JWTs |
-| `RealFlowIntegrationTest` | Unmocked flows: stolen-token detection, reload race, analytics on real data |
-| `AccountFlowIntegrationTest` | Instant sign-up with own profile, email login, lockout, password reset, Google sign-in, no resigning on someone else's behalf |
-| `SignupApprovalModeIntegrationTest` | `ADMIN_PASSWORD` replaces the default admin password; optional approval mode; no data leak for accounts without an employee record |
-| Service tests | Payroll (PF/ESI/PT/TDS/LOP), leave balances, appraisal scoring, FnF, lockout |
-
-GitHub Actions runs the backend tests, the Angular production build and both Docker image builds on every push and pull request.
+| `SecurityRulesParameterizedTest` | 61 role, self, team and IDOR cases across all controllers with real JWTs |
+| `RealFlowIntegrationTest` | Stolen-token detection, reload race, analytics on real data |
+| `AccountFlowIntegrationTest` | Sign-up, email and Google sign-in, lockout, password reset |
+| `DeleteRulesIntegrationTest` | Soft delete keeps history; records in use return a clear 409 |
+| Service tests | PF, ESI, PT, TDS, LOP, leave balances, appraisal score, FnF |
 
 ---
 
@@ -452,58 +372,16 @@ GitHub Actions runs the backend tests, the Angular production build and both Doc
 
 ```text
 HRGenius/
-├── backend/                         Spring Boot API
+├── backend/                 Spring Boot API
 │   └── src/main/java/com/hrgenius/
-│       ├── config/                  CORS, OpenAPI, auditing, demo-data seeder
-│       ├── controller/              17 REST controllers
-│       ├── dto/  mapper/            request/response models (entities never exposed)
-│       ├── entity/                  JPA entities + converters
-│       ├── exception/               global JSON error handling (400/401/403/404/409/423)
-│       ├── repository/              Spring Data repositories and JPQL aggregates
-│       ├── security/                JWT, filters, rate limiter, @authz rules
-│       └── service/                 business logic and transactions
-│   └── src/main/resources/db/migration/   Flyway V1–V12 (Oracle SQL)
-├── frontend/                        Angular 21 SPA
-│   └── src/app/
-│       ├── core/                    guards, interceptor, services, models
-│       ├── features/                landing page, sign-in/sign-up/reset pages, 14 app pages
-│       └── layout/                  shell with role-aware sidebar
-├── docs/SECURITY_MATRIX.md          endpoint-level access rules
-├── docker-compose.yml  .env.example
-└── .github/workflows/ci.yml
+│       ├── security/        JWT, filters, rate limiter, @authz rules
+│       ├── controller/      17 REST controllers
+│       ├── service/         business rules and transactions
+│       ├── repository/      Spring Data + JPQL aggregates
+│       ├── entity/ dto/     JPA entities, request/response models
+│       └── config/          CORS, OpenAPI, demo data, admin password
+├── frontend/                Angular 21 SPA (core/, features/, layout/)
+├── docs/SECURITY_MATRIX.md  endpoint access rules
+├── docker-compose.yml       Oracle + backend + Nginx frontend
+└── .github/workflows/       CI and keep-alive
 ```
-
----
-
-## 📚 Key API Endpoints
-
-All paths are under `/api`. Full interactive docs are in Swagger UI.
-
-| Method | Endpoint | Who |
-| :--- | :--- | :--- |
-| `POST` | `/auth/login` · `/auth/refresh` · `/auth/logout` · `/auth/logout-all` | public / logged in |
-| `POST` | `/auth/change-password` | logged in |
-| `GET` | `/auth/config` | public (is sign-up on, Google client ID) |
-| `POST` | `/auth/register` | public, rate limited (creates the account and signs in) |
-| `POST` | `/auth/password-reset/request` · `/auth/password-reset/confirm` | public, rate limited |
-| `POST` | `/auth/google` | public, rate limited |
-| `PUT` | `/users/{id}/status` | Admin (enable / disable; approves sign-ups in approval mode) |
-| `GET` | `/employees` · `/employees/{id}` | HR, Admin, Manager (team), self |
-| `POST` | `/attendance/check-in` · `/attendance/check-out` | logged in |
-| `POST` | `/leaves` · `GET /leaves/balance` | logged in (self) |
-| `POST` | `/leaves/{id}/action` | the employee's manager, HR, Admin |
-| `POST` | `/payroll/runs` · `/payroll/runs/{id}/pay` | HR, Admin |
-| `GET` | `/payroll/my-payslips` · `/payroll/payslips/{id}/pdf` | self, HR, Admin |
-| `POST` | `/performance/reviews/{id}/self-review` · `/manager-review` | employee · their manager |
-| `GET` | `/analytics/dashboard` · `/analytics/export/excel` · `/pdf` | Admin, HR (Manager: dashboard, team only) |
-| `POST` | `/recruitment/hire` | HR, Admin |
-| `POST` | `/offboarding/resign` · `/offboarding/settlement/{id}/finalize` | self · HR, Admin |
-| `GET` | `/audit/logs` | Admin, HR |
-| `GET` | `/users` | Admin |
-
----
-
-## 📝 Notes
-
-- Automated tests run on H2. The Flyway scripts are written for Oracle; run `docker compose up --build` to check the app against a real Oracle XE.
-- Email notifications need an SMTP server (`SPRING_MAIL_HOST`, `SPRING_MAIL_PORT`); without one the app keeps working and only logs a warning.
