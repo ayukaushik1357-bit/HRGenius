@@ -26,7 +26,7 @@
 | 🛡️ **Real authorization** | Role checks **plus** ownership checks on every endpoint: employees see only their own data, managers only their direct reports |
 | 🇮🇳 **Indian payroll engine** | PF, ESI, Professional Tax, slab-based TDS and loss-of-pay, with PDF payslips |
 | 📊 **HR analytics** | Headcount, attrition, tenure, payroll cost, hiring funnel and rating distribution, exportable to Excel and PDF |
-| 🧪 **Tested** | 217 backend tests (incl. a 61-case authorization matrix and unmocked end-to-end account flows), 16 frontend tests, CI on every push |
+| 🧪 **Tested** | 222 backend tests (incl. a 61-case authorization matrix and unmocked end-to-end account flows), 16 frontend tests, CI on every push |
 | 🐳 **One-command deploy** | Docker Compose runs Oracle XE, Spring Boot and Angular behind Nginx |
 
 ---
@@ -61,7 +61,7 @@ flowchart TB
 
     subgraph DB["🗄️  DATA"]
         direction LR
-        F["🧬 Flyway V1–V11"]
+        F["🧬 Flyway V1–V12"]
         O[("Oracle XE 21c<br/>dev · prod · Docker")]
         H[("H2 file DB<br/>local run · tests in memory")]
         F --> O
@@ -222,7 +222,7 @@ flowchart LR
 | **Auth** | JJWT 0.12 (HS512), BCrypt, HttpOnly refresh cookie, per-IP rate limit, account lockout, Google Identity Services + Spring Security OAuth2 JOSE (ID-token verification) |
 | **Frontend** | Angular 21 (standalone components, signals), Angular Material, RxJS, Chart.js 4, SCSS |
 | **Database** | Oracle XE 21c (`dev`, `prod`, Docker) · H2 file database (`h2` profile) · H2 in-memory (tests) |
-| **Migrations** | Flyway, 11 versioned scripts (`V1`–`V11`) |
+| **Migrations** | Flyway, 12 versioned scripts (`V1`–`V12`) |
 | **Reports** | Apache POI 5.2 (Excel), OpenPDF 1.3 (payslips and analytics PDF) |
 | **API docs** | springdoc-openapi (Swagger UI) |
 | **Testing** | JUnit 5, Mockito, MockMvc, Spring Security Test · Vitest (frontend) |
@@ -402,7 +402,7 @@ Set `SPRING_MAIL_HOST` / `SPRING_MAIL_PORT` (and username/password if needed). L
 ## 🧪 Testing
 
 ```bash
-cd backend && ./mvnw verify     # 217 tests
+cd backend && ./mvnw verify     # 222 tests
 cd frontend && npm test         # 16 tests
 ```
 
@@ -432,7 +432,7 @@ HRGenius/
 │       ├── repository/              Spring Data repositories and JPQL aggregates
 │       ├── security/                JWT, filters, rate limiter, @authz rules
 │       └── service/                 business logic and transactions
-│   └── src/main/resources/db/migration/   Flyway V1–V11 (Oracle SQL)
+│   └── src/main/resources/db/migration/   Flyway V1–V12 (Oracle SQL)
 ├── frontend/                        Angular 21 SPA
 │   └── src/app/
 │       ├── core/                    guards, interceptor, services, models

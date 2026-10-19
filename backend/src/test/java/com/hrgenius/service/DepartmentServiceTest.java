@@ -6,7 +6,10 @@ import com.hrgenius.entity.Department;
 import com.hrgenius.exception.DuplicateResourceException;
 import com.hrgenius.exception.ResourceNotFoundException;
 import com.hrgenius.mapper.DepartmentMapper;
+import com.hrgenius.exception.ResourceInUseException;
 import com.hrgenius.repository.DepartmentRepository;
+import com.hrgenius.repository.EmployeeRepository;
+import com.hrgenius.repository.JobPostingRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -30,6 +34,12 @@ class DepartmentServiceTest {
 
     @Mock
     private DepartmentRepository departmentRepository;
+
+    @Mock
+    private EmployeeRepository employeeRepository;
+
+    @Mock
+    private JobPostingRepository jobPostingRepository;
 
     @Spy
     private DepartmentMapper departmentMapper;
@@ -111,10 +121,21 @@ class DepartmentServiceTest {
 
     @Test
     void testDeleteDepartment_Success() {
-        when(departmentRepository.existsById(1L)).thenReturn(true);
+        when(departmentRepository.findById(1L)).thenReturn(Optional.of(department));
 
         departmentService.deleteDepartment(1L);
 
-        verify(departmentRepository).deleteById(1L);
+        verify(departmentRepository).delete(department);
+    }
+
+    @Test
+    void testDeleteDepartment_StillHasEmployees() {
+        when(departmentRepository.findById(1L)).thenReturn(Optional.of(department));
+        when(employeeRepository.countActiveInDepartment(1L)).thenReturn(3L);
+
+        ResourceInUseException ex = assertThrows(ResourceInUseException.class,
+                () -> departmentService.deleteDepartment(1L));
+        assertEquals("Engineering still has 3 employees. Move them to another department first.", ex.getMessage());
+        verify(departmentRepository, never()).delete(any());
     }
 }

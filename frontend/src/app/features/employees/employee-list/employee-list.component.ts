@@ -96,7 +96,7 @@ export class EmployeeListComponent implements OnInit {
   }
 
   deleteEmployee(emp: Employee): void {
-    if (!confirm(`Are you sure you want to delete ${emp.firstName} ${emp.lastName}?`)) {
+    if (!confirm(`Delete ${emp.firstName} ${emp.lastName}?\n\nThey are removed from the employee list and can no longer sign in. Their payslips, leave and attendance history are kept.`)) {
       return;
     }
 

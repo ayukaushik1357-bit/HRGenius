@@ -7,5 +7,10 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import java.util.List;
 
 public interface JobPostingRepository extends JpaRepository<JobPosting, Long>, JpaSpecificationExecutor<JobPosting> {
+
+    long countByDepartmentId(Long departmentId);
+
+    long countByDesignationId(Long designationId);
+
     List<JobPosting> findByStatus(JobPosting.JobPostingStatus status);
 }

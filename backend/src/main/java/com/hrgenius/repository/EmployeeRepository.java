@@ -33,7 +33,8 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long>, JpaSp
            "LEFT JOIN e.department d " +
            "WHERE (:name IS NULL OR LOWER(CONCAT(e.firstName, ' ', e.lastName)) LIKE :name) " +
            "AND (:departmentId IS NULL OR d.id = :departmentId) " +
-           "AND (:status IS NULL OR e.status = :status)")
+           "AND (:status IS NULL OR e.status = :status) " +
+           "AND e.deleted = false")
     Page<Employee> searchEmployees(
             @Param("name") String name,
             @Param("departmentId") Long departmentId,
@@ -55,5 +56,20 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long>, JpaSp
     long countDirectReports(@Param("managerId") Long managerId);
 
     java.util.List<Employee> findByReportingManagerId(Long managerId);
+
+    @Query("SELECT COUNT(e) FROM Employee e WHERE e.department.id = :departmentId AND e.deleted = false")
+    long countActiveInDepartment(@Param("departmentId") Long departmentId);
+
+    @Query("SELECT COUNT(e) FROM Employee e WHERE e.designation.id = :designationId AND e.deleted = false")
+    long countActiveWithDesignation(@Param("designationId") Long designationId);
+
+    /** Deleted employees keep their history, but should not stop a department from being removed. */
+    @org.springframework.data.jpa.repository.Modifying
+    @Query("UPDATE Employee e SET e.department = null WHERE e.department.id = :departmentId AND e.deleted = true")
+    int detachDeletedFromDepartment(@Param("departmentId") Long departmentId);
+
+    @org.springframework.data.jpa.repository.Modifying
+    @Query("UPDATE Employee e SET e.designation = null WHERE e.designation.id = :designationId AND e.deleted = true")
+    int detachDeletedFromDesignation(@Param("designationId") Long designationId);
 }
 

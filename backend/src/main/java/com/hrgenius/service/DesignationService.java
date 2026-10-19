@@ -4,9 +4,12 @@ import com.hrgenius.dto.designation.DesignationRequest;
 import com.hrgenius.dto.designation.DesignationResponse;
 import com.hrgenius.entity.Designation;
 import com.hrgenius.exception.DuplicateResourceException;
+import com.hrgenius.exception.ResourceInUseException;
 import com.hrgenius.exception.ResourceNotFoundException;
 import com.hrgenius.mapper.DesignationMapper;
 import com.hrgenius.repository.DesignationRepository;
+import com.hrgenius.repository.EmployeeRepository;
+import com.hrgenius.repository.JobPostingRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +22,8 @@ public class DesignationService {
 
     private final DesignationRepository designationRepository;
     private final DesignationMapper designationMapper;
+    private final EmployeeRepository employeeRepository;
+    private final JobPostingRepository jobPostingRepository;
 
     @Transactional(readOnly = true)
     public List<DesignationResponse> getAllDesignations() {
@@ -62,9 +67,19 @@ public class DesignationService {
 
     @Transactional
     public void deleteDesignation(Long id) {
-        if (!designationRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Designation", "id", id);
+        Designation designation = designationRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Designation", "id", id));
+
+        long people = employeeRepository.countActiveWithDesignation(id);
+        if (people > 0) {
+            throw new ResourceInUseException(designation.getTitle() + " is still given to " + people + (people == 1 ? " employee" : " employees") + ". Change their designation first.");
         }
-        designationRepository.deleteById(id);
+        long postings = jobPostingRepository.countByDesignationId(id);
+        if (postings > 0) {
+            throw new ResourceInUseException(designation.getTitle() + " is used by " + postings
+                    + (postings == 1 ? " job posting" : " job postings") + ". Change or delete them first.");
+        }
+        employeeRepository.detachDeletedFromDesignation(id);
+        designationRepository.delete(designation);
     }
 }

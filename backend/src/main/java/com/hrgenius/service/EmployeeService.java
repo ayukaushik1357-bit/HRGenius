@@ -8,6 +8,7 @@ import com.hrgenius.entity.Department;
 import com.hrgenius.entity.Designation;
 import com.hrgenius.entity.EmergencyContact;
 import com.hrgenius.entity.Employee;
+import com.hrgenius.exception.BadRequestException;
 import com.hrgenius.exception.DuplicateResourceException;
 import com.hrgenius.exception.ResourceNotFoundException;
 import com.hrgenius.mapper.EmployeeMapper;
@@ -16,6 +17,7 @@ import com.hrgenius.entity.User;
 import com.hrgenius.repository.DepartmentRepository;
 import com.hrgenius.repository.DesignationRepository;
 import com.hrgenius.repository.EmployeeRepository;
+import com.hrgenius.repository.RefreshTokenRepository;
 import com.hrgenius.repository.RoleRepository;
 import com.hrgenius.repository.UserRepository;
 import com.hrgenius.security.CurrentUserService;
@@ -48,6 +50,7 @@ public class EmployeeService {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final CurrentUserService currentUserService;
+    private final RefreshTokenRepository refreshTokenRepository;
 
     @Transactional(readOnly = true)
     public PagedResponse<EmployeeResponse> searchEmployees(
@@ -82,6 +85,8 @@ public class EmployeeService {
             if (status != null) {
                 predicates.add(cb.equal(root.get("status"), status));
             }
+
+            predicates.add(cb.equal(root.get("deleted"), false));
 
             // Managers see only their team (themselves and direct reports)
             if (currentUserService != null && !currentUserService.isHrOrAdmin() && currentUserService.isManager()) {
@@ -197,10 +202,26 @@ public class EmployeeService {
 
     @Transactional
     public void deleteEmployee(Long id) {
-        if (!employeeRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Employee", "id", id);
+        Employee employee = employeeRepository.findById(id)
+                .filter(e -> !e.isDeleted())
+                .orElseThrow(() -> new ResourceNotFoundException("Employee", "id", id));
+
+        if (currentUserService.getCurrentEmployeeId().filter(id::equals).isPresent()) {
+            throw new BadRequestException("You can't delete your own employee record.");
         }
-        employeeRepository.deleteById(id);
+
+        // Soft delete: payslips, leave and attendance stay intact for audit and payroll history
+        employee.setDeleted(true);
+        employee.setStatus(Employee.EmployeeStatus.EXITED);
+        for (Employee report : employeeRepository.findByReportingManagerId(id)) {
+            report.setReportingManager(null);
+        }
+        User login = employee.getUser();
+        if (login != null) {
+            login.setEnabled(false);
+            refreshTokenRepository.revokeAllByUser(login);
+        }
+        employeeRepository.save(employee);
     }
 
     /**

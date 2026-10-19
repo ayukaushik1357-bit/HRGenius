@@ -59,7 +59,7 @@ public class AnalyticsService {
     public AnalyticsDashboardResponse getDashboardData(String roleOverride, Long departmentId) {
         if (!currentUserService.isHrOrAdmin()) {
             Long managerEmpId = currentUserService.getCurrentEmployeeId().orElse(null);
-            List<Employee> team = managerEmpId != null ? employeeRepository.findByReportingManagerId(managerEmpId) : List.of();
+            List<Employee> team = managerEmpId != null ? employeeRepository.findByReportingManagerId(managerEmpId).stream().filter(e -> !e.isDeleted()).toList() : List.of();
             return buildTeamDashboard(managerEmpId, team);
         }
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();

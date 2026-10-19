@@ -4,9 +4,12 @@ import com.hrgenius.dto.department.DepartmentRequest;
 import com.hrgenius.dto.department.DepartmentResponse;
 import com.hrgenius.entity.Department;
 import com.hrgenius.exception.DuplicateResourceException;
+import com.hrgenius.exception.ResourceInUseException;
 import com.hrgenius.exception.ResourceNotFoundException;
 import com.hrgenius.mapper.DepartmentMapper;
 import com.hrgenius.repository.DepartmentRepository;
+import com.hrgenius.repository.EmployeeRepository;
+import com.hrgenius.repository.JobPostingRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +22,8 @@ public class DepartmentService {
 
     private final DepartmentRepository departmentRepository;
     private final DepartmentMapper departmentMapper;
+    private final EmployeeRepository employeeRepository;
+    private final JobPostingRepository jobPostingRepository;
 
     @Transactional(readOnly = true)
     public List<DepartmentResponse> getAllDepartments() {
@@ -71,9 +76,19 @@ public class DepartmentService {
 
     @Transactional
     public void deleteDepartment(Long id) {
-        if (!departmentRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Department", "id", id);
+        Department department = departmentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Department", "id", id));
+
+        long people = employeeRepository.countActiveInDepartment(id);
+        if (people > 0) {
+            throw new ResourceInUseException(department.getName() + " still has " + people + (people == 1 ? " employee" : " employees") + ". Move them to another department first.");
         }
-        departmentRepository.deleteById(id);
+        long postings = jobPostingRepository.countByDepartmentId(id);
+        if (postings > 0) {
+            throw new ResourceInUseException(department.getName() + " is used by " + postings
+                    + (postings == 1 ? " job posting" : " job postings") + ". Change or delete them first.");
+        }
+        employeeRepository.detachDeletedFromDepartment(id);
+        departmentRepository.delete(department);
     }
 }

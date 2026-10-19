@@ -105,6 +105,12 @@ public class Employee extends BaseEntity {
     @JoinColumn(name = "user_id")
     private User user;
 
+    /** Deleted employees are hidden from lists; their history (payslips, leave, attendance) is kept. */
+    @jakarta.persistence.Convert(converter = org.hibernate.type.NumericBooleanConverter.class)
+    @org.hibernate.annotations.ColumnDefault("0")
+    @Column(name = "is_deleted", nullable = false)
+    private boolean deleted = false;
+
     @OneToMany(mappedBy = "employee", cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true)
     private List<Address> addresses = new ArrayList<>();
 
