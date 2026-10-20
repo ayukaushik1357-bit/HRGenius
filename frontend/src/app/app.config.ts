@@ -14,6 +14,8 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes, withComponentInputBinding()),
     provideHttpClient(withInterceptors([jwtInterceptor])),
     provideAnimationsAsync(),
-    provideAppInitializer(() => inject(AuthService).initAuth())
+    // Start restoring the session without blocking the first paint: public pages (landing, sign-in)
+    // show at once even while a sleeping free-tier backend wakes up. Guarded routes still wait for it.
+    provideAppInitializer(() => { inject(AuthService).initAuth(); })
   ]
 };

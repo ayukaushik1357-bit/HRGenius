@@ -1,6 +1,6 @@
 import { Injectable, signal, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, tap, catchError, throwError, of, firstValueFrom, from, map } from 'rxjs';
+import { Observable, tap, catchError, throwError, of, firstValueFrom, from, map, timeout } from 'rxjs';
 import { Router } from '@angular/router';
 import { environment } from '../../../environments/environment';
 import { AuthConfig, AuthResponse, CurrentUser, LoginRequest, RegisterRequest, SignInResult } from '../models/auth.model';
@@ -30,6 +30,8 @@ export class AuthService {
     if (!this.initPromise) {
       this.initPromise = firstValueFrom(
         this.refreshToken().pipe(
+          // A sleeping server can take about a minute to answer; don't wait forever
+          timeout(90000),
           catchError(() => of(null))
         )
       ).then(() => {
